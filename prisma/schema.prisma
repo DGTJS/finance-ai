@@ -14,15 +14,41 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Transaction{
-  id String @id @default(uuid())
-  name String
-  type TransactionType
-  amount Float
+model Transaction {
+  id            String                   @id @default(uuid())
+  name          String
+  type          TransactionType
+  amount        Float
+  category      TranscationCategory
+  paymentMethod TransactionPaymentMethod
+  createdAt     DateTime                 @default(now())
+  updatedAt     DateTime                 @updatedAt
 }
 
-enum TransactionType{
+enum TransactionType {
   DEPOSIT
   EXPENSE
   INVESTMENT
+}
+
+enum TranscationCategory {
+  HOUSING
+  TRANSPORTATION
+  FOOD
+  ENTERTAINMENT
+  HEALTH
+  UTILITY
+  SALARY
+  EDUCATION
+  OTHER
+}
+
+enum TransactionPaymentMethod {
+  CREDIT_CARD
+  DEBIT_CARD
+  BANK_TRANSFER
+  BANK_SLIP
+  CASH
+  PIX
+  OTHER
 }
