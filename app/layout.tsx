@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Mulish } from "next/font/google";
 import "./globals.css";
 import { ClerkProvider } from "@clerk/nextjs";
+import { ptBR } from "@clerk/localizations";
+import { dark } from "@clerk/themes";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -34,7 +36,14 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${mulish.variable} ${geistMono.variable} dark antialiased`}
       >
-        <ClerkProvider>{children}</ClerkProvider>
+        <ClerkProvider
+          localization={ptBR}
+          appearance={{
+            baseTheme: dark,
+          }}
+        >
+          {children}
+        </ClerkProvider>
       </body>
     </html>
   );

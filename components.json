@@ -18,5 +18,7 @@
     "lib": "@/app/_lib",
     "hooks": "@/app/_hooks"
   },
-  "registries": {}
+  "registries": {
+    "@clerk": "https://clerk.com/r/{name}.json"
+  }
 }
