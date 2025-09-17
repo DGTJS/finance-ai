@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 const mulish = Mulish({
   subsets: ["latin"],
   variable: "--font-mulish",
-  weight: ["400", "600", "700", "200", "500"], // ajuste se precisar
+  weight: ["400", "600", "700", "200", "500"], // espessura da fonte
   display: "swap",
 });
 export const metadata: Metadata = {
