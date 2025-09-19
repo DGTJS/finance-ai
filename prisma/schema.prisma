@@ -21,6 +21,7 @@ model Transaction {
   amount        Float
   category      TranscationCategory
   paymentMethod TransactionPaymentMethod
+  date          DateTime?
   createdAt     DateTime                 @default(now())
   updatedAt     DateTime                 @updatedAt
   UserId        String
