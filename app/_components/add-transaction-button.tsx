@@ -26,28 +26,45 @@ import {
   FormMessage,
 } from "@/app/_components/ui/form";
 import { Input } from "@/app/_components/ui/input";
-import { Select, SelectTrigger, SelectValue } from "./ui/select";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "./ui/select";
+import { MoneyInput } from "@/app/_components/money-input";
+import {
+  TRANSACTION_CATEGORY_LABELS,
+  TRANSACTION_CATEGORY_OPTIONS,
+  TRANSACTION_PAYMENT_METHOD_OPTIONS,
+  TRANSACTION_TYPE_OPTIONS,
+} from "../_constants/transactions";
 
 const AddTransactionButton = () => {
+  // Arrays de valores dos enums para o z.enum
+  const transactionTypeValues = Object.values(TransactionType) as unknown as [
+    string,
+    ...string[],
+  ];
+  const transactionCategoryValues = Object.values(
+    TransacationCategory,
+  ) as unknown as [string, ...string[]];
+  const transactionPaymentMethodValues = Object.values(
+    TransactionPaymentMethod,
+  ) as unknown as [string, ...string[]];
+
   const formSchema = z.object({
     name: z.string().trim().min(1, {
       message: "O nome é obrigatorio",
     }),
     amount: z.string().trim().min(1, {
-      message: "O nome é obrigatorio",
+      message: "O valor é obrigatório",
     }),
-    type: z.nativeEnum(TransactionType, {
-      error: "O tipo é obrigatório.",
-    }),
-    category: z.enum(TransacationCategory, {
-      error: "A categoria é obrigatória.",
-    }),
-    PaymentMethod: z.enum(TransactionPaymentMethod, {
-      error: "O método é obrigatória",
-    }),
-    data: z.date({
-      error: "A data é obrigatária.",
-    }),
+    type: z.enum(transactionTypeValues),
+    category: z.enum(transactionCategoryValues),
+    PaymentMethod: z.enum(transactionPaymentMethodValues),
+    data: z.date(),
   });
   // 1. Define your form.
   const form = useForm<z.infer<typeof formSchema>>({
@@ -61,7 +78,10 @@ const AddTransactionButton = () => {
       type: TransactionType.EXPENSE,
     },
   });
-  const onSubmit = () => {};
+  const onSubmit = (values: z.infer<typeof formSchema>) => {
+    // TODO: Submeter dados
+    console.log(values);
+  };
 
   return (
     <>
@@ -75,7 +95,7 @@ const AddTransactionButton = () => {
           <DialogTitle>Adicionar Transação</DialogTitle>
           <DialogDescription>Insira as informações abaixo</DialogDescription>
           <Form {...form}>
-            <form onSubmit={form.handleSubmit()} className="space-y-8">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
               <FormField
                 control={form.control}
                 name="name"
@@ -85,22 +105,103 @@ const AddTransactionButton = () => {
                     <FormControl>
                       <Input placeholder="Título" {...field} />
                     </FormControl>
-                    <FormLabel>Valor</FormLabel>
-                    <FormControl>
-                      <Input placeholder="R$ 0.000,00" {...field} />
-                    </FormControl>
-                    <Select>
-                      <FormLabel>Tipo de transação</FormLabel>
-
-                      <SelectTrigger className="w-[full]">
-                        <SelectValue placeholder="Selecione" />
-                      </SelectTrigger>
-                    </Select>
-
                     <FormMessage />
                   </FormItem>
                 )}
               />
+
+              <FormField
+                control={form.control}
+                name="amount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Valor</FormLabel>
+                    <FormControl>
+                      <MoneyInput
+                        value={field.value}
+                        onValueChange={field.onChange}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="type"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tipo de transação</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="w-[full]">
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {TRANSACTION_TYPE_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="category"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Categoria</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="w-[full]">
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {TRANSACTION_CATEGORY_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="PaymentMethod"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Método de pagamento</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="w-[full]">
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {TRANSACTION_PAYMENT_METHOD_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
               <DialogHeader></DialogHeader>
               <DialogFooter>
                 <Button variant="outline">Cancelar</Button>
