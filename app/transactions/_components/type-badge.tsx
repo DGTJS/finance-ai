@@ -34,7 +34,7 @@ const TransactionTypeBadge: React.FC<TransactionTypeBadgeProps> = ({
   }
   return (
     <Badge className="bg-gray-800 text-white">
-      <CircleIcon className="fill-primary mr-1" size={10} />
+      <CircleIcon className="mr-1 fill-white" size={10} />
       Investimento
     </Badge>
   );
