@@ -19,7 +19,7 @@ model Transaction {
   name          String
   type          TransactionType
   amount        Float
-  category      TranscationCategory
+  category      TransacationCategory
   paymentMethod TransactionPaymentMethod
   date          DateTime?
   createdAt     DateTime                 @default(now())
@@ -33,7 +33,7 @@ enum TransactionType {
   INVESTMENT
 }
 
-enum TranscationCategory {
+enum TransacationCategory {
   HOUSING
   TRANSPORTATION
   FOOD
