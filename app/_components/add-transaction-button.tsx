@@ -3,6 +3,7 @@
 import { ArrowDownUp } from "lucide-react";
 import { Button } from "./ui/button";
 import {
+  DialogClose,
   DialogDescription,
   DialogTitle,
   DialogTrigger,
@@ -40,6 +41,7 @@ import {
   TRANSACTION_PAYMENT_METHOD_OPTIONS,
   TRANSACTION_TYPE_OPTIONS,
 } from "../_constants/transactions";
+import { DatePickerForm } from "./date-pick";
 
 const AddTransactionButton = () => {
   // Arrays de valores dos enums para o z.enum
@@ -66,8 +68,11 @@ const AddTransactionButton = () => {
     PaymentMethod: z.enum(transactionPaymentMethodValues),
     data: z.date(),
   });
+
+  type FormValues = z.infer<typeof formSchema>;
+
   // 1. Define your form.
-  const form = useForm<z.infer<typeof formSchema>>({
+  const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       amount: "",
@@ -78,14 +83,20 @@ const AddTransactionButton = () => {
       type: TransactionType.EXPENSE,
     },
   });
-  const onSubmit = (values: z.infer<typeof formSchema>) => {
+  const onSubmit = (values: FormValues) => {
     // TODO: Submeter dados
     console.log(values);
   };
 
   return (
     <>
-      <Dialog>
+      <Dialog
+        onOpenChange={(open) => {
+          if (!open) {
+            form.reset();
+          }
+        }}
+      >
         <DialogTrigger asChild>
           <Button className="rounded-full bg-green-600 text-white hover:bg-green-600">
             Adicionar Transação <ArrowDownUp />
@@ -154,31 +165,6 @@ const AddTransactionButton = () => {
 
               <FormField
                 control={form.control}
-                name="category"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Categoria</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger className="w-[full]">
-                          <SelectValue placeholder="Selecione" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {TRANSACTION_CATEGORY_OPTIONS.map((option) => (
-                          <SelectItem key={option.value} value={option.value}>
-                            {option.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
                 name="PaymentMethod"
                 render={({ field }) => (
                   <FormItem>
@@ -201,11 +187,60 @@ const AddTransactionButton = () => {
                   </FormItem>
                 )}
               />
+              <FormField
+                control={form.control}
+                name="category"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Categoria</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger className="w-[full]">
+                          <SelectValue placeholder="Selecione" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {TRANSACTION_CATEGORY_OPTIONS.map((option) => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="data"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormControl>
+                      <DatePickerForm
+                        value={field.value}
+                        onChange={(date) => field.onChange(date ?? new Date())}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
 
               <DialogHeader></DialogHeader>
-              <DialogFooter>
-                <Button variant="outline">Cancelar</Button>
-                <Button className="text-white" type="submit">
+              <DialogFooter className="flex justify-between">
+                <DialogClose asChild>
+                  <Button type="button" variant="outline">
+                    Cancelar
+                  </Button>
+                </DialogClose>
+                <Button
+                  className="text-white"
+                  type="submit"
+                  onClick={() => {
+                    console.log(form.getValues());
+                  }}
+                >
                   Adicionar
                 </Button>
               </DialogFooter>
