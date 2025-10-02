@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 import { ArrowDownUp } from "lucide-react";
 import { Button } from "./ui/button";
 import {
@@ -12,7 +14,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader } from "./ui/dialog";
 import { z } from "zod";
 import {
   TransactionType,
-  TransacationCategory,
+  TransactionCategory,
   TransactionPaymentMethod,
 } from "../generated/prisma";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -36,56 +38,53 @@ import {
 } from "./ui/select";
 import { MoneyInput } from "@/app/_components/money-input";
 import {
-  TRANSACTION_CATEGORY_LABELS,
   TRANSACTION_CATEGORY_OPTIONS,
   TRANSACTION_PAYMENT_METHOD_OPTIONS,
   TRANSACTION_TYPE_OPTIONS,
 } from "../_constants/transactions";
 import { DatePickerForm } from "./date-pick";
+import { addTransaction } from "../_actions/add-transaction";
+import { toast } from "sonner";
 
 const AddTransactionButton = () => {
-  // Arrays de valores dos enums para o z.enum
-  const transactionTypeValues = Object.values(TransactionType) as unknown as [
-    string,
-    ...string[],
-  ];
-  const transactionCategoryValues = Object.values(
-    TransacationCategory,
-  ) as unknown as [string, ...string[]];
-  const transactionPaymentMethodValues = Object.values(
-    TransactionPaymentMethod,
-  ) as unknown as [string, ...string[]];
-
   const formSchema = z.object({
-    name: z.string().trim().min(1, {
-      message: "O nome é obrigatorio",
-    }),
-    amount: z.string().trim().min(1, {
-      message: "O valor é obrigatório",
-    }),
-    type: z.enum(transactionTypeValues),
-    category: z.enum(transactionCategoryValues),
-    PaymentMethod: z.enum(transactionPaymentMethodValues),
+    name: z.string().trim().min(1, { message: "O nome é obrigatorio" }),
+    amount: z.string().trim().min(1, { message: "O valor é obrigatório" }),
+    type: z.nativeEnum(TransactionType),
+    category: z.nativeEnum(TransactionCategory),
+    paymentMethod: z.nativeEnum(TransactionPaymentMethod),
     data: z.date(),
   });
 
-  type FormValues = z.infer<typeof formSchema>;
+  type FormSchema = z.infer<typeof formSchema>;
 
-  // 1. Define your form.
-  const form = useForm<FormValues>({
+  const form = useForm<FormSchema>({
     resolver: zodResolver(formSchema),
     defaultValues: {
       amount: "",
-      category: TransacationCategory.OTHER,
-      data: new Date(),
+      category: TransactionCategory.OTHER,
+      data: undefined,
       name: "",
-      PaymentMethod: TransactionPaymentMethod.CASH,
-      type: TransactionType.EXPENSE,
+      paymentMethod: TransactionPaymentMethod.CASH,
+      type: TransactionType.DEPOSIT,
     },
   });
-  const onSubmit = (values: FormValues) => {
-    // TODO: Submeter dados
-    console.log(values);
+  const onSubmit = async (data: FormSchema) => {
+    try {
+      await addTransaction({
+        name: data.name,
+        amount: Number(data.amount),
+        type: data.type,
+        category: data.category,
+        paymentMethod: data.paymentMethod,
+        date: data.data || new Date(),
+      });
+      toast.success("Transação adicionada com sucesso");
+      form.reset();
+    } catch (error) {
+      toast.error("Erro ao adicionar transação");
+      console.error("Erro ao adicionar transação:", error);
+    }
   };
 
   return (
@@ -165,7 +164,7 @@ const AddTransactionButton = () => {
 
               <FormField
                 control={form.control}
-                name="PaymentMethod"
+                name="paymentMethod"
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Método de pagamento</FormLabel>

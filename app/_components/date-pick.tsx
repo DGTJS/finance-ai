@@ -44,7 +44,7 @@ export function DatePickerForm({ value, onChange }: DatePickerFormProps) {
             selected={value}
             onSelect={onChange}
             locale={ptBR}
-            fromDate={new Date()}
+            fromDate={undefined}
             captionLayout="dropdown"
           />
         </PopoverContent>

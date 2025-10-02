@@ -1,5 +1,5 @@
 import {
-  TransacationCategory,
+  TransactionCategory,
   TransactionPaymentMethod,
   TransactionType,
 } from "../generated/prisma";
@@ -44,39 +44,39 @@ export const TRANSACTION_TYPE_OPTIONS = [
 export const TRANSACTION_CATEGORY_OPTIONS = [
   {
     label: "Educação",
-    value: TransacationCategory.EDUCATION,
+    value: TransactionCategory.EDUCATION,
   },
   {
     label: "Entretenimento",
-    value: TransacationCategory.ENTERTAINMENT,
+    value: TransactionCategory.ENTERTAINMENT,
   },
   {
     label: "Alimentação",
-    value: TransacationCategory.FOOD,
+    value: TransactionCategory.FOOD,
   },
   {
     label: "Saúde",
-    value: TransacationCategory.HEALTH,
+    value: TransactionCategory.HEALTH,
   },
   {
     label: "Moradia",
-    value: TransacationCategory.HOUSING,
+    value: TransactionCategory.HOUSING,
   },
   {
     label: "Outros",
-    value: TransacationCategory.OTHER,
+    value: TransactionCategory.OTHER,
   },
   {
     label: "Salário",
-    value: TransacationCategory.SALARY,
+    value: TransactionCategory.SALARY,
   },
   {
     label: "Transporte",
-    value: TransacationCategory.TRANSPORTATION,
+    value: TransactionCategory.TRANSPORTATION,
   },
   {
     label: "Utilidades",
-    value: TransacationCategory.UTILITY,
+    value: TransactionCategory.UTILITY,
   },
 ];
 
