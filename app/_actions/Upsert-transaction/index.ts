@@ -5,7 +5,7 @@ import { auth } from "@clerk/nextjs/server";
 import { addTransactionSchema } from "./schema";
 import { revalidatePath } from "next/cache";
 
-export const addTransaction = async (
+export const UpsertTransaction = async (
   params: Omit<Prisma.TransactionCreateInput, "UserId">,
 ) => {
   await addTransactionSchema.parseAsync(params);
@@ -16,8 +16,15 @@ export const addTransaction = async (
     throw new Error("Não autorizado");
   }
 
-  await db.transaction.create({
-    data: {
+  await db.transaction.upsert({
+    where: {
+      id: params.id,
+    },
+    update: {
+      ...params,
+      UserId: userId,
+    },
+    create: {
       ...params,
       UserId: userId,
     },

@@ -6,6 +6,7 @@ import {
 import { z } from "zod";
 
 export const addTransactionSchema = z.object({
+  id: z.string().optional(),
   name: z.string().trim().min(1),
   amount: z.number().positive().min(1),
   type: z.enum(
