@@ -1,3 +1,4 @@
+"use client";
 import { useEffect } from "react";
 
 import { Button } from "./ui/button";
@@ -121,10 +122,7 @@ const UpsertTransactionDialog = ({
       }}
     >
       <DialogTrigger asChild>
-        <Button className={className}>
-          {/** O texto do botão agora é controlado pelo componente pai via prop children */}
-          {children}
-        </Button>
+        <Button className={className}>{children}</Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <DialogTitle>

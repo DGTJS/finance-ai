@@ -6,6 +6,7 @@ import {
   getCoreRowModel,
   useReactTable,
 } from "@tanstack/react-table";
+import { useEffect, useState } from "react";
 
 import {
   Table,
@@ -25,11 +26,27 @@ export function DataTable<TData, TValue>({
   columns,
   data,
 }: DataTableProps<TData, TValue>) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const table = useReactTable({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
   });
+
+  if (!mounted) {
+    return (
+      <div className="overflow-hidden rounded-md border">
+        <div className="p-4 text-center text-gray-500">
+          Carregando tabela...
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="overflow-hidden rounded-md border">
