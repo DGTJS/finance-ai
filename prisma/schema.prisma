@@ -4,21 +4,114 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
+// Family Account - Conta compartilhada para múltiplos usuários
+model FamilyAccount {
+  id        String   @id @default(cuid())
+  name      String   // Nome da conta (ex: "Casa", "Família")
+  ownerId   String   // ID do usuário dono da conta
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  users User[]
+
+  @@index([id])
+  @@index([ownerId])
+}
+
+// NextAuth Models
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  image         String?  @db.MediumText
+  password      String?
+  familyAccountId String?  // ID da conta compartilhada
+  familyAccount   FamilyAccount? @relation(fields: [familyAccountId], references: [id], onDelete: SetNull)
+  role          UserRole  @default(MEMBER) // Nível de permissão na conta familiar
+  accounts      Account[]
+  sessions      Session[]
+  transactions  Transaction[]
+  createdTransactions Transaction[] @relation("TransactionCreator")
+  subscriptions Subscription[]
+  notifications Notification[]
+  bankAccounts  BankAccount[]
+  userSettings  UserSettings?
+  goals         Goal[]
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+model Account {
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?  @db.Text
+  access_token      String?  @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?  @db.Text
+  session_state     String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([provider, providerAccountId])
+}
+
+model Session {
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+
+  @@id([identifier, token])
+}
+
 model Transaction {
-  id            String                   @id @default(uuid())
-  name          String
-  type          TransactionType
-  amount        Float
-  category      TransactionCategory
-  paymentMethod TransactionPaymentMethod
-  createdAt     DateTime                 @default(now())
-  updatedAt     DateTime                 @updatedAt
-  UserId        String
-  date          DateTime?
+  id                 String                   @id @default(uuid())
+  name               String
+  type               TransactionType
+  amount             Float
+  category           TransactionCategory
+  paymentMethod      TransactionPaymentMethod
+  createdAt          DateTime                 @default(now())
+  updatedAt          DateTime                 @updatedAt
+  userId             String                   // Usuário da conta (para filtros)
+  user               User                     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdByUserId    String                   // Usuário que criou a transação
+  createdBy          User                     @relation("TransactionCreator", fields: [createdByUserId], references: [id], onDelete: Cascade)
+  date               DateTime?
+  installments       Int?                     // Total de parcelas (ex: 12)
+  currentInstallment Int?                     // Parcela atual (ex: 1)
+  installmentGroupId String?                  // ID para agrupar parcelas da mesma compra
+  bankAccountId     String?                  // Conta/Cartão vinculado à transação
+  bankAccount        BankAccount?             @relation(fields: [bankAccountId], references: [id], onDelete: SetNull)
+  icon               String?                  // Ícone/emoji da transação
+
+  @@index([userId])
+  @@index([createdByUserId])
+  @@index([installmentGroupId])
+  @@index([bankAccountId])
 }
 
 enum TransactionType {
@@ -47,4 +140,147 @@ enum TransactionPaymentMethod {
   CASH
   PIX
   OTHER
+}
+
+// Subscription Management
+model Subscription {
+  id          String    @id @default(cuid())
+  userId      String
+  name        String
+  logoUrl     String?
+  amount      Float
+  dueDate     DateTime
+  recurring   Boolean   @default(true)
+  nextDueDate DateTime?
+  active      Boolean   @default(true)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([nextDueDate])
+  @@index([active])
+}
+
+// Notifications System
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      NotificationType
+  title     String
+  message   String   @db.Text
+  read      Boolean  @default(false)
+  meta      Json?
+  createdAt DateTime @default(now())
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([read])
+  @@index([createdAt])
+}
+
+enum NotificationType {
+  SUBSCRIPTION_DUE
+  AI_INSIGHT
+  TRANSACTION_ALERT
+  SYSTEM
+}
+
+// Bank Accounts - Contas Bancárias Vinculadas
+model BankAccount {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String   // Nome da conta (ex: "Conta Corrente Nubank")
+  bankName    String   // Nome do banco (ex: "Nubank", "Itaú")
+  accountType BankAccountType
+  balance     Float    @default(0)
+  isActive    Boolean  @default(true)
+  color       String?  // Cor para identificação visual
+  icon        String?  // Ícone/emoji para identificação
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  transactions Transaction[]
+
+  @@index([userId])
+  @@index([isActive])
+}
+
+enum BankAccountType {
+  CHECKING_ACCOUNT  // Conta Corrente
+  SAVINGS_ACCOUNT   // Poupança
+  INVESTMENT_ACCOUNT // Conta de Investimento
+  CREDIT_CARD       // Cartão de Crédito
+  OTHER             // Outro
+}
+
+// User Settings - Configurações individuais do usuário
+model UserSettings {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  userTitle     String?  // Título personalizado exibido na sidebar (ex: "Gerente Financeiro")
+  hfApiKey      String?  @db.Text // Chave da API Hugging Face
+  closingDay    Int?     @default(5) // Dia de fechamento
+  emailNotifications Boolean @default(true)
+  subscriptionAlerts Boolean @default(true)
+  transactionAlerts Boolean @default(false)
+  aiInsights    Boolean  @default(true)
+  categoryIcons Json?    // Ícones personalizados por categoria: { "FOOD": "🍔", "TRANSPORTATION": "🚗", ... }
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// Goals - Metas Financeiras
+model Goal {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String
+  description String?  @db.Text
+  targetAmount Float
+  currentAmount Float  @default(0)
+  deadline    DateTime
+  category    GoalCategory
+  status      GoalStatus @default(ACTIVE)
+  icon        String?  // Ícone/emoji para identificação
+  color       String?  // Cor para identificação visual
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([deadline])
+}
+
+enum GoalCategory {
+  SAVINGS      // Poupança
+  INVESTMENT   // Investimento
+  EMERGENCY    // Reserva de Emergência
+  VACATION     // Viagem/Férias
+  HOUSE        // Casa/Imóvel
+  VEHICLE      // Veículo
+  EDUCATION    // Educação
+  WEDDING      // Casamento
+  OTHER        // Outro
+}
+
+enum GoalStatus {
+  ACTIVE       // Ativa
+  COMPLETED    // Concluída
+  CANCELLED    // Cancelada
+  PAUSED       // Pausada
+}
+
+enum UserRole {
+  OWNER        // Dono da conta - pode fazer tudo
+  ADMIN        // Administrador - pode gerenciar usuários (exceto dono)
+  MEMBER       // Membro - usuário comum, não pode editar outros usuários
 }

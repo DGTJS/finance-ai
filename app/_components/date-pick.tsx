@@ -19,36 +19,32 @@ interface DatePickerFormProps {
 
 export function DatePickerForm({ value, onChange }: DatePickerFormProps) {
   return (
-    <div className="flex flex-col">
-      <label className="mb-2 text-sm font-medium">Data</label>
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button
-            variant={"outline"}
-            className={cn(
-              "w-[full] pl-3 text-left font-normal",
-              !value && "text-muted-foreground",
-            )}
-          >
-            {value ? (
-              format(value, "PPP", { locale: ptBR })
-            ) : (
-              <span>Selecione uma data</span>
-            )}
-            <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-auto p-0" align="start">
-          <Calendar
-            mode="single"
-            selected={value}
-            onSelect={onChange}
-            locale={ptBR}
-            fromDate={undefined}
-            captionLayout="dropdown"
-          />
-        </PopoverContent>
-      </Popover>
-    </div>
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button
+          variant={"outline"}
+          className={cn(
+            "w-full pl-3 text-left font-normal",
+            !value && "text-muted-foreground",
+          )}
+        >
+          {value ? (
+            format(value, "PPP", { locale: ptBR })
+          ) : (
+            <span>Selecione uma data</span>
+          )}
+          <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-auto p-0" align="start">
+        <Calendar
+          mode="single"
+          selected={value}
+          onSelect={onChange}
+          locale={ptBR}
+          captionLayout="dropdown"
+        />
+      </PopoverContent>
+    </Popover>
   );
 }

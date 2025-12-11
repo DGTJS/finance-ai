@@ -1,29 +1,29 @@
 "use server";
 import { db } from "@/app/_lib/prisma";
 import { Prisma } from "@/app/generated/prisma/client";
-import { auth } from "@clerk/nextjs/server";
+import { auth } from "@/auth";
 import { addTransactionSchema } from "./schema";
 import { revalidatePath } from "next/cache";
 
 export const UpsertTransaction = async (
-  params: Omit<Prisma.TransactionCreateInput, "UserId">,
+  params: Omit<Prisma.TransactionCreateInput, "userId" | "user">,
 ) => {
   await addTransactionSchema.parseAsync(params);
 
-  const { userId } = await auth();
+  const session = await auth();
 
-  if (!userId) {
+  if (!session?.user?.id) {
     throw new Error("Não autorizado");
   }
 
   await db.transaction.upsert({
     update: {
       ...params,
-      UserId: userId,
+      userId: session.user.id,
     },
     create: {
       ...params,
-      UserId: userId,
+      userId: session.user.id,
     },
     where: {
       id: params.id ?? "",

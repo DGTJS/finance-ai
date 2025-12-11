@@ -1,5 +1,5 @@
 import { Badge } from "@/app/_components/ui/badge";
-import { CircleIcon } from "lucide-react";
+import { FaCircle } from "react-icons/fa";
 
 // If you have a Transaction type, import it correctly or define it here
 export type TransactionType = "DEPOSIT" | "EXPENSE" | "INVESTMENT";
@@ -19,7 +19,7 @@ const TransactionTypeBadge: React.FC<TransactionTypeBadgeProps> = ({
   if (transaction.type === "DEPOSIT") {
     return (
       <Badge className="bg-green-950 text-green-500 hover:bg-green-950">
-        <CircleIcon className="mr-1 bg-green-950 fill-green-500" size={10} />
+        <FaCircle className="mr-1 bg-green-950 fill-green-500" size={10} />
         Depósito
       </Badge>
     );
@@ -27,14 +27,14 @@ const TransactionTypeBadge: React.FC<TransactionTypeBadgeProps> = ({
   if (transaction.type === "EXPENSE") {
     return (
       <Badge className="bg-red-950 text-red-500 hover:bg-red-950">
-        <CircleIcon className="mr-1 bg-red-950 fill-red-500" size={10} />
+        <FaCircle className="mr-1 bg-red-950 fill-red-500" size={10} />
         Despesas
       </Badge>
     );
   }
   return (
-    <Badge className="bg-gray-800 text-white">
-      <CircleIcon className="mr-1 fill-white" size={10} />
+    <Badge className="bg-muted text-muted-foreground dark:bg-muted dark:text-muted-foreground">
+      <FaCircle className="mr-1 fill-current" size={10} />
       Investimento
     </Badge>
   );

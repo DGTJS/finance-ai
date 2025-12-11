@@ -19,4 +19,6 @@ export const addTransactionSchema = z.object({
   paymentMethod: z.enum(
     Object.values(TransactionPaymentMethod) as unknown as [string, ...string[]],
   ),
+  bankAccountId: z.string().optional().nullable(),
+  icon: z.string().optional().nullable(),
 });
