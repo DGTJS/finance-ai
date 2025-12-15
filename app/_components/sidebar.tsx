@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FaHome, FaReceipt, FaCreditCard, FaDollarSign, FaChartLine, FaCog, FaQuestionCircle, FaBullseye, FaShoppingCart, FaBriefcase, FaComments } from "react-icons/fa";
+import { FaHome, FaReceipt, FaCreditCard, FaDollarSign, FaChartLine, FaCog, FaQuestionCircle, FaBullseye, FaShoppingCart, FaBriefcase, FaComments, FaUser, FaClock } from "react-icons/fa";
 import { useSession } from "next-auth/react";
 import { getUserSettings } from "@/app/_actions/user-settings";
 
@@ -17,6 +17,8 @@ const Sidebar = () => {
     { href: "/transactions", label: "Transações", icon: FaShoppingCart },
     { href: "/subscription", label: "Assinaturas", icon: FaBriefcase },
     { href: "/goals", label: "Metas", icon: FaComments },
+    { href: "/entrepreneur", label: "Freelancer", icon: FaClock },
+    { href: "/profile-finance", label: "Perfil Financeiro", icon: FaUser },
   ];
 
   const bottomItems = [

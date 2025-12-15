@@ -54,8 +54,15 @@ export async function createSubscription(input: CreateSubscriptionInput) {
 
     const data = validation.data;
 
-    // Detectar logo automaticamente
-    const logoResult = await detectLogo(data.name);
+    // Usar logoUrl fornecido ou detectar automaticamente
+    let logoUrl: string | null = null;
+    if (data.logoUrl) {
+      logoUrl = data.logoUrl;
+    } else {
+      // Detectar logo automaticamente apenas se não foi fornecido
+      const logoResult = await detectLogo(data.name);
+      logoUrl = logoResult.logoUrl;
+    }
 
     // Calcular próxima data de vencimento
     const nextDueDate = data.nextDueDate
@@ -72,7 +79,7 @@ export async function createSubscription(input: CreateSubscriptionInput) {
         recurring: data.recurring,
         nextDueDate,
         active: data.active,
-        logoUrl: logoResult.logoUrl,
+        logoUrl,
       },
     });
 

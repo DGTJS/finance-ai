@@ -69,21 +69,52 @@ export async function createTransaction(data: TransactionInput) {
     const userId = await getUserId();
     const validatedData = transactionSchema.parse(data);
 
+    console.log("📝 Criando transação:", {
+      userId,
+      amount: validatedData.amount,
+      category: validatedData.category,
+      paymentMethod: validatedData.paymentMethod,
+    });
+
+    // Se o método de pagamento é BENEFIT, descontar do benefício
+    if (validatedData.paymentMethod === TransactionPaymentMethod.BENEFIT) {
+      console.log("💳 Descontando do benefício...");
+      const { deductFromBenefit } = await import(
+        "@/app/_actions/financial-profile/deduct-benefit"
+      );
+      const deductResult = await deductFromBenefit(
+        validatedData.amount,
+        validatedData.category
+      );
+
+      if (!deductResult.success) {
+        console.error("❌ Erro ao descontar benefício:", deductResult.error);
+        return {
+          success: false,
+          error: deductResult.error || "Erro ao descontar do benefício",
+        };
+      }
+      console.log("✅ Benefício descontado com sucesso. Saldo restante:", deductResult.remaining);
+    }
+
     // Se não tem parcelas ou não é despesa, cria transação normal
     if (
       !validatedData.installments ||
       validatedData.type !== TransactionType.EXPENSE
     ) {
-      await db.transaction.create({
+      console.log("💾 Salvando transação no banco...");
+      const transaction = await db.transaction.create({
         data: {
           ...validatedData,
           userId: userId, // Sempre usar o userId do usuário atual
           createdByUserId: userId, // Sempre registrar quem criou
         },
       });
+      console.log("✅ Transação criada com sucesso:", transaction.id);
 
       revalidatePath("/transactions");
       revalidatePath("/");
+      revalidatePath("/profile-finance"); // Revalidar perfil financeiro se descontou benefício
       return { success: true };
     }
 
@@ -130,6 +161,28 @@ export async function createTransaction(data: TransactionInput) {
       });
     }
 
+    // Se o método de pagamento é BENEFIT, descontar do benefício para cada parcela
+    if (validatedData.paymentMethod === TransactionPaymentMethod.BENEFIT) {
+      const { deductFromBenefit } = await import(
+        "@/app/_actions/financial-profile/deduct-benefit"
+      );
+      
+      // Descontar cada parcela do benefício
+      for (const transaction of transactions) {
+        const deductResult = await deductFromBenefit(
+          transaction.amount,
+          transaction.category
+        );
+
+        if (!deductResult.success) {
+          return {
+            success: false,
+            error: `Erro ao descontar parcela ${transaction.currentInstallment}: ${deductResult.error}`,
+          };
+        }
+      }
+    }
+
     // Criar todas as transações de uma vez
     await db.transaction.createMany({
       data: transactions,
@@ -137,6 +190,7 @@ export async function createTransaction(data: TransactionInput) {
 
     revalidatePath("/transactions");
     revalidatePath("/");
+    revalidatePath("/profile-finance"); // Revalidar perfil financeiro se descontou benefício
     return {
       success: true,
       message: `${validatedData.installments} parcelas criadas com sucesso!`,

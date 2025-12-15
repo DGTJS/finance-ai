@@ -201,6 +201,11 @@ async function localFallback(
         };
       }
 
+      // Buscar perfil financeiro se disponível
+      const profile = await db.financialProfile.findUnique({
+        where: { userId },
+      });
+
       const [expenses, deposits, investments] = await Promise.all([
         db.transaction.aggregate({
           where: { userId, type: "EXPENSE" },
@@ -224,6 +229,17 @@ async function localFallback(
       const totalInvestments = investments._sum.amount || 0;
       const balance = totalDeposits - totalExpenses - totalInvestments;
 
+      let profileInfo = "";
+      if (profile) {
+        const rendaTotal = profile.rendaFixa + profile.rendaVariavelMedia;
+        const beneficiosTotal = Array.isArray(profile.beneficios)
+          ? profile.beneficios.reduce((sum: number, b: any) => sum + (b.value || 0), 0)
+          : 0;
+        profileInfo = `\n📋 Perfil Financeiro:\n` +
+          `• Renda Total: R$ ${rendaTotal.toFixed(2)}\n` +
+          `• Benefícios: R$ ${beneficiosTotal.toFixed(2)}\n`;
+      }
+
       return {
         ok: true,
         text:
@@ -231,13 +247,146 @@ async function localFallback(
           `💰 Receitas: R$ ${totalDeposits.toFixed(2)} (${deposits._count} transações)\n` +
           `💸 Despesas: R$ ${totalExpenses.toFixed(2)} (${expenses._count} transações)\n` +
           `📈 Investimentos: R$ ${totalInvestments.toFixed(2)} (${investments._count} transações)\n` +
-          `💵 Saldo: R$ ${balance.toFixed(2)}\n\n` +
+          `💵 Saldo: R$ ${balance.toFixed(2)}${profileInfo}\n\n` +
           `${balance > 0 ? "✅ Parabéns! Você está no positivo." : "⚠️ Atenção: suas despesas superam suas receitas."}`,
         data: {
           expenses: totalExpenses,
           deposits: totalDeposits,
           investments: totalInvestments,
           balance,
+          profile: profile ? {
+            rendaTotal: profile.rendaFixa + profile.rendaVariavelMedia,
+            beneficios: profile.beneficios,
+          } : null,
+        },
+      };
+    }
+
+    // Caso 4: Perguntas sobre renda ou perfil financeiro
+    if (
+      promptLower.includes("renda") ||
+      promptLower.includes("salário") ||
+      promptLower.includes("quanto recebo") ||
+      promptLower.includes("perfil financeiro")
+    ) {
+      if (!userId) {
+        return {
+          ok: true,
+          text: "Por favor, faça login para ver seu perfil financeiro.",
+        };
+      }
+
+      const profile = await db.financialProfile.findUnique({
+        where: { userId },
+      });
+
+      if (!profile) {
+        return {
+          ok: true,
+          text: "Você ainda não configurou seu perfil financeiro. Acesse 'Perfil Financeiro' no menu para configurar sua renda e benefícios.",
+        };
+      }
+
+      const rendaTotal = profile.rendaFixa + profile.rendaVariavelMedia;
+      const beneficios = Array.isArray(profile.beneficios) ? profile.beneficios : [];
+      const beneficiosTotal = beneficios.reduce((sum: number, b: any) => sum + (b.value || 0), 0);
+
+      let beneficiosInfo = "";
+      if (beneficios.length > 0) {
+        beneficiosInfo = "\n\n💼 Benefícios:\n" +
+          beneficios.map((b: any) => 
+            `• ${b.type === "VA" ? "Vale Alimentação" : b.type === "VR" ? "Vale Refeição" : b.type === "VT" ? "Vale Transporte" : "Outro"}: R$ ${(b.value || 0).toFixed(2)}`
+          ).join("\n");
+      }
+
+      return {
+        ok: true,
+        text:
+          `📋 Seu Perfil Financeiro:\n\n` +
+          `💰 Renda Fixa: R$ ${profile.rendaFixa.toFixed(2)}\n` +
+          `📊 Renda Variável (média): R$ ${profile.rendaVariavelMedia.toFixed(2)}\n` +
+          `💵 Renda Total Mensal: R$ ${rendaTotal.toFixed(2)}${beneficiosInfo}\n\n` +
+          `💡 Configure seu perfil completo em "Perfil Financeiro" para obter projeções e insights mais precisos.`,
+        data: {
+          rendaFixa: profile.rendaFixa,
+          rendaVariavelMedia: profile.rendaVariavelMedia,
+          rendaTotal,
+          beneficios,
+        },
+      };
+    }
+
+    // Caso 5: Perguntas sobre projeção ou sobra
+    if (
+      promptLower.includes("sobra") ||
+      promptLower.includes("disponível") ||
+      promptLower.includes("projeção") ||
+      promptLower.includes("quanto sobra")
+    ) {
+      if (!userId) {
+        return {
+          ok: true,
+          text: "Por favor, faça login para ver sua projeção financeira.",
+        };
+      }
+
+      const profile = await db.financialProfile.findUnique({
+        where: { userId },
+      });
+
+      if (!profile) {
+        return {
+          ok: true,
+          text: "Configure seu perfil financeiro primeiro para obter projeções. Acesse 'Perfil Financeiro' no menu.",
+        };
+      }
+
+      // Calcular projeção do mês atual
+      const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+
+      const [subscriptions, expenses] = await Promise.all([
+        db.subscription.findMany({
+          where: { userId, active: true },
+        }),
+        db.transaction.findMany({
+          where: {
+            userId,
+            type: "EXPENSE",
+            date: { gte: startOfMonth, lte: endOfMonth },
+          },
+        }),
+      ]);
+
+      const rendaTotal = profile.rendaFixa + profile.rendaVariavelMedia;
+      const beneficios = Array.isArray(profile.beneficios) ? profile.beneficios : [];
+      const beneficiosTotal = beneficios.reduce((sum: number, b: any) => sum + (b.value || 0), 0);
+      const assinaturasTotal = subscriptions.reduce((sum, s) => sum + s.amount, 0);
+      const despesasTotal = expenses.reduce((sum, e) => sum + e.amount, 0);
+      const saldoPrevisto = rendaTotal + beneficiosTotal - assinaturasTotal - despesasTotal;
+      const percentComprometido = rendaTotal > 0 
+        ? ((assinaturasTotal + despesasTotal) / rendaTotal) * 100 
+        : 0;
+
+      return {
+        ok: true,
+        text:
+          `📊 Projeção do Mês Atual:\n\n` +
+          `💰 Renda Total: R$ ${rendaTotal.toFixed(2)}\n` +
+          `💼 Benefícios: R$ ${beneficiosTotal.toFixed(2)}\n` +
+          `💳 Assinaturas: R$ ${assinaturasTotal.toFixed(2)}\n` +
+          `💸 Despesas: R$ ${despesasTotal.toFixed(2)}\n\n` +
+          `💵 Saldo Previsto: R$ ${saldoPrevisto.toFixed(2)}\n` +
+          `📈 % Comprometido: ${percentComprometido.toFixed(1)}%\n\n` +
+          `${saldoPrevisto > 0 ? "✅ Você terá sobra este mês!" : "⚠️ Atenção: suas despesas superam sua renda."}`,
+        data: {
+          saldoPrevisto,
+          percentComprometido,
+          rendaTotal,
+          beneficiosTotal,
+          assinaturasTotal,
+          despesasTotal,
         },
       };
     }

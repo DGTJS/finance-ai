@@ -4,6 +4,8 @@ import { chat } from "@/app/_lib/ai";
 import { z } from "zod";
 import type { ChatMessage } from "@/types/ai";
 
+export const runtime = "nodejs";
+
 const ChatRequestSchema = z.object({
   message: z.string().min(1).max(2000),
   history: z

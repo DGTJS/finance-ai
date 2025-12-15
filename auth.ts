@@ -166,7 +166,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
         return true; // Permitir login mesmo se houver erro
       }
     },
-    async jwt({ token, user, account }) {
+    async jwt({ token, user, account, trigger }) {
       // Se é um novo login, garantir que o ID vem do banco
       if (user) {
         try {
@@ -179,7 +179,9 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
             token.id = dbUser.id;
             token.email = dbUser.email;
             token.name = dbUser.name;
-            token.image = dbUser.image;
+            // NÃO armazenar a imagem no token para evitar cookies muito grandes (erro 431)
+            // A imagem será buscada do banco no callback session
+            // token.image = dbUser.image; // REMOVIDO
             if (process.env.NODE_ENV === "development") {
               console.log(
                 "✅ Token JWT criado com ID do banco:",
@@ -193,7 +195,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
             token.id = user.id;
             token.email = user.email || undefined;
             token.name = user.name || undefined;
-            token.image = user.image || undefined;
+            // token.image = user.image || undefined; // REMOVIDO
           }
         } catch (error: any) {
           console.error("❌ Erro ao buscar usuário para JWT:", error);
@@ -204,53 +206,67 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
           token.id = user.id;
           token.email = user.email || undefined;
           token.name = user.name || undefined;
-          token.image = user.image || undefined;
+          // token.image = user.image || undefined; // REMOVIDO - não armazenar imagem no token
+          (token as any).lastUpdate = Date.now();
         }
       }
+
+      // NÃO atualizar o token periodicamente para evitar cookies muito grandes
+      // A imagem será buscada diretamente do banco quando necessário (via session)
+      // Isso evita o erro 431 (Request Header Fields Too Large)
+
       return token;
     },
     async session({ session, token }) {
-      if (session.user && token.id) {
+      // Buscar dados do usuário do banco para pegar a imagem atualizada
+      // NÃO armazenamos a imagem no token para evitar cookies muito grandes (erro 431)
+      if (token.id) {
         try {
-          // Buscar dados atualizados do usuário do banco de dados
           const dbUser = await db.user.findUnique({
             where: { id: token.id as string },
-            select: {
-              id: true,
-              name: true,
-              email: true,
-              image: true,
-            },
+            select: { id: true, email: true, name: true, image: true },
           });
 
           if (dbUser) {
-            // Atualizar a sessão com os dados mais recentes do banco
-            session.user.id = dbUser.id;
-            session.user.name = dbUser.name;
-            session.user.email = dbUser.email;
-            session.user.image = dbUser.image;
+            if (session.user) {
+              session.user.id = dbUser.id;
+              session.user.email = dbUser.email;
+              session.user.name = dbUser.name;
+              // Apenas incluir a imagem se não for muito grande (máximo 50KB base64 para evitar erro 431)
+              if (dbUser.image && dbUser.image.length <= 50 * 1024) {
+                session.user.image = dbUser.image;
+              } else {
+                // Se a imagem for muito grande, não incluir na sessão
+                // A imagem será buscada diretamente do banco quando necessário
+                session.user.image = null;
+              }
+            } else {
+              session.user = {
+                id: dbUser.id,
+                email: dbUser.email,
+                name: dbUser.name,
+                image: dbUser.image && dbUser.image.length <= 50 * 1024 ? dbUser.image : null,
+              };
+            }
           } else {
-            // Se não encontrar no banco, usar dados do token
-            console.warn("⚠️ Usuário não encontrado no banco para sessão:", token.id);
-            session.user.id = token.id as string;
+            // Fallback para dados do token
+            if (session.user) {
+              session.user.id = token.id as string;
+              session.user.email = (token.email as string) || "";
+              session.user.name = (token.name as string) || null;
+              session.user.image = null; // Não incluir imagem do token para evitar cookies grandes
+            }
           }
-        } catch (error) {
+        } catch (error: any) {
           console.error("❌ Erro ao buscar usuário para sessão:", error);
-          // Em caso de erro, usar dados do token para não quebrar a sessão
-          session.user.id = token.id as string;
-          // Garantir que pelo menos temos um email do token
-          if (!session.user.email && token.email) {
-            session.user.email = token.email as string;
+          // Fallback para dados do token sem imagem
+          if (session.user) {
+            session.user.id = token.id as string;
+            session.user.email = (token.email as string) || "";
+            session.user.name = (token.name as string) || null;
+            session.user.image = null;
           }
         }
-      } else if (token.id) {
-        // Se não houver session.user mas houver token.id, criar estrutura básica
-        session.user = {
-          id: token.id as string,
-          email: (token.email as string) || "",
-          name: (token.name as string) || null,
-          image: (token.image as string) || null,
-        };
       }
       return session;
     },

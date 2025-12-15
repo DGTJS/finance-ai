@@ -33,8 +33,11 @@ git clone https://github.com/seu-usuario/finance-ai.git
 cd finance-ai
 npm install
 
-# 2. Configure .env.local (copie do .env.example)
-# Adicione DATABASE_URL, NEXTAUTH_SECRET, etc.
+# 2. Configure .env.local
+# Crie o arquivo .env.local na raiz e adicione:
+# DATABASE_URL="mysql://root:@localhost:3306/finance_ai"
+# NEXTAUTH_URL="http://localhost:3000"
+# NEXTAUTH_SECRET="sua-chave-secreta" (gere com: openssl rand -base64 32)
 
 # 3. Configure o banco
 npx prisma generate
@@ -47,6 +50,8 @@ npm run dev
 # 5. Acesse http://localhost:3000
 # Login teste: teste@finance.ai / 123456
 ```
+
+📖 **Para instruções detalhadas, veja [TUTORIAL_INSTALACAO.md](./TUTORIAL_INSTALACAO.md)**
 
 ---
 

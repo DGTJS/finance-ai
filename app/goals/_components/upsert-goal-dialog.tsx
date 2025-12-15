@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useSession } from "next-auth/react";
 import {
   Dialog,
   DialogContent,
@@ -38,6 +39,10 @@ import { Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { createGoal, updateGoal } from "@/app/_actions/goal";
 import { GoalCategory, GoalStatus } from "@/app/generated/prisma/client";
+import { getFamilyAccount } from "@/app/_actions/family-account";
+import { Checkbox } from "@/app/_components/ui/checkbox";
+import { Avatar, AvatarFallback, AvatarImage } from "@/app/_components/ui/avatar";
+import { X, UserPlus } from "lucide-react";
 
 const goalFormSchema = z.object({
   name: z.string().min(1, "Nome é obrigatório"),
@@ -54,6 +59,8 @@ const goalFormSchema = z.object({
   status: z.nativeEnum(GoalStatus).optional().default(GoalStatus.ACTIVE),
   icon: z.string().optional().nullable(),
   color: z.string().optional().nullable(),
+  isShared: z.boolean().default(false),
+  sharedWith: z.array(z.string()).default([]),
 });
 
 type GoalFormInput = z.infer<typeof goalFormSchema>;
@@ -72,6 +79,8 @@ interface UpsertGoalDialogProps {
     status: string;
     icon: string | null;
     color: string | null;
+    isShared?: boolean;
+    sharedWith?: string[] | null;
   };
   onSuccess: () => void;
 }
@@ -101,7 +110,10 @@ export default function UpsertGoalDialog({
   goal,
   onSuccess,
 }: UpsertGoalDialogProps) {
+  const { data: session } = useSession();
+  const currentUserId = session?.user?.id;
   const [isLoading, setIsLoading] = useState(false);
+  const [familyMembers, setFamilyMembers] = useState<Array<{ id: string; name: string | null; email: string; image: string | null }>>([]);
   const isEditing = !!goal;
 
   const form = useForm<GoalFormInput>({
@@ -116,9 +128,22 @@ export default function UpsertGoalDialog({
       status: GoalStatus.ACTIVE,
       icon: "",
       color: "",
+      isShared: false,
+      sharedWith: [],
     },
     mode: "onChange",
   });
+
+  // Buscar membros da família quando o dialog abrir
+  useEffect(() => {
+    if (isOpen) {
+      getFamilyAccount().then((result) => {
+        if (result.success && result.data?.users) {
+          setFamilyMembers(result.data.users);
+        }
+      });
+    }
+  }, [isOpen]);
 
   // Resetar form quando o dialog abrir/fechar ou a goal mudar
   useEffect(() => {
@@ -134,6 +159,8 @@ export default function UpsertGoalDialog({
           status: goal.status as GoalStatus,
           icon: goal.icon || "",
           color: goal.color || "",
+          isShared: goal.isShared || false,
+          sharedWith: Array.isArray(goal.sharedWith) ? goal.sharedWith : [],
         });
       } else {
         form.reset({
@@ -358,6 +385,139 @@ export default function UpsertGoalDialog({
                 </FormItem>
               )}
             />
+
+            {/* Meta Conjunta */}
+            {familyMembers.length > 0 && (
+              <>
+                <FormField
+                  control={form.control}
+                  name="isShared"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4">
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={field.onChange}
+                        />
+                      </FormControl>
+                      <div className="space-y-1 leading-none">
+                        <FormLabel>Meta Conjunta</FormLabel>
+                        <FormDescription>
+                          {isEditing 
+                            ? "Esta é uma meta compartilhada. Todos os participantes podem contribuir e ver o histórico de contribuições."
+                            : "Marque esta opção para criar uma meta compartilhada com outros membros da família. Todos poderão contribuir e ver o histórico de contribuições."}
+                        </FormDescription>
+                      </div>
+                    </FormItem>
+                  )}
+                />
+
+                {form.watch("isShared") && (
+                  <FormField
+                    control={form.control}
+                    name="sharedWith"
+                    render={({ field }) => {
+                      const selectedIds = field.value || [];
+                      // Filtrar: remover usuário atual e membros já selecionados
+                      const availableMembers = familyMembers.filter(
+                        (m) => m.id !== currentUserId && !selectedIds.includes(m.id)
+                      );
+
+                      return (
+                        <FormItem>
+                          <div className="mb-4">
+                            <FormLabel className="text-base">Participantes</FormLabel>
+                            <FormDescription>
+                              Selecione os membros da família que participarão desta meta.
+                            </FormDescription>
+                          </div>
+
+                          {/* Select para adicionar usuários */}
+                          {availableMembers.length > 0 && (
+                            <div className="mb-4">
+                              <Select
+                                onValueChange={(value) => {
+                                  if (value && !selectedIds.includes(value)) {
+                                    field.onChange([...selectedIds, value]);
+                                  }
+                                }}
+                              >
+                                <SelectTrigger>
+                                  <UserPlus className="mr-2 h-4 w-4" />
+                                  <SelectValue placeholder="Selecione um membro para adicionar" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  {availableMembers.map((member) => (
+                                    <SelectItem key={member.id} value={member.id}>
+                                      {member.name || member.email}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
+                            </div>
+                          )}
+
+                          {/* Cards dos usuários selecionados */}
+                          {selectedIds.length > 0 && (
+                            <div className="space-y-2">
+                              {selectedIds.map((userId) => {
+                                const member = familyMembers.find((m) => m.id === userId);
+                                if (!member) return null;
+
+                                return (
+                                  <div
+                                    key={userId}
+                                    className="flex items-center justify-between rounded-lg border bg-card p-3"
+                                  >
+                                    <div className="flex items-center gap-3">
+                                      <Avatar className="h-10 w-10">
+                                        <AvatarImage
+                                          src={member.image || undefined}
+                                          alt={member.name || member.email}
+                                        />
+                                        <AvatarFallback>
+                                          {(member.name || member.email)
+                                            .charAt(0)
+                                            .toUpperCase()}
+                                        </AvatarFallback>
+                                      </Avatar>
+                                      <div>
+                                        <p className="font-medium">
+                                          {member.name || member.email}
+                                        </p>
+                                        {member.name && (
+                                          <p className="text-muted-foreground text-xs">
+                                            {member.email}
+                                          </p>
+                                        )}
+                                      </div>
+                                    </div>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => {
+                                        field.onChange(
+                                          selectedIds.filter((id) => id !== userId)
+                                        );
+                                      }}
+                                    >
+                                      <X className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          )}
+
+                          <FormMessage />
+                        </FormItem>
+                      );
+                    }}
+                  />
+                )}
+              </>
+            )}
 
             {/* Ícone (Opcional) */}
             <FormField

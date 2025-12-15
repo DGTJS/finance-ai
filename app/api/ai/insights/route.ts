@@ -4,6 +4,8 @@ import { generateInsights } from "@/app/_lib/ai";
 import { db } from "@/app/_lib/prisma";
 import { z } from "zod";
 
+export const runtime = "nodejs";
+
 const InsightsRequestSchema = z.object({
   userId: z.string().optional(),
   from: z.string().datetime().or(z.string().regex(/^\d{4}-\d{2}-\d{2}$/)),

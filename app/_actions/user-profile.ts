@@ -64,9 +64,9 @@ export async function updateUserProfile(data: z.infer<typeof updateProfileSchema
         updateData.image = null;
         console.log("ℹ️ Imagem será removida (null ou vazia)");
       } else {
-        // MEDIUMTEXT no MySQL pode armazenar até 16MB, mas vamos limitar a 2MB base64 para performance
-        // Base64 aumenta o tamanho em ~33%, então 2MB base64 = ~1.5MB original
-        const maxSize = 2 * 1024 * 1024; // 2MB em caracteres base64
+        // MEDIUMTEXT no MySQL pode armazenar até 16MB, mas vamos limitar a 200KB base64 para evitar erro 431
+        // Base64 aumenta o tamanho em ~33%, então 200KB base64 = ~150KB original
+        const maxSize = 200 * 1024; // 200KB em caracteres base64
         if (validatedData.image.length > maxSize) {
           console.warn("⚠️ Imagem muito grande (", validatedData.image.length, "caracteres), não será salva. Máximo: 2MB");
           updateData.image = null;

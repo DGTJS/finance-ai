@@ -23,7 +23,7 @@ import {
 } from "../ui/form";
 import { Input } from "../ui/input";
 import { DatePickerForm } from "../date-pick";
-import { Loader2 } from "lucide-react";
+import { Loader2, Upload, X } from "lucide-react";
 import { toast } from "sonner";
 import {
   createSubscription,
@@ -56,6 +56,7 @@ interface UpsertSubscriptionDialogProps {
     recurring: boolean;
     nextDueDate: Date | null;
     active: boolean;
+    logoUrl?: string | null;
   };
   onSuccess: (subscription?: Subscription) => void;
 }
@@ -67,6 +68,8 @@ export default function UpsertSubscriptionDialog({
   onSuccess,
 }: UpsertSubscriptionDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
+  const [isUploadingImage, setIsUploadingImage] = useState(false);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const isEditing = !!subscription;
 
   const form = useForm<CreateSubscriptionInput>({
@@ -78,12 +81,15 @@ export default function UpsertSubscriptionDialog({
       recurring: true,
       nextDueDate: null,
       active: true,
+      logoUrl: null,
     },
   });
 
   // Resetar form quando o dialog abrir/fechar ou a subscription mudar
   useEffect(() => {
     if (subscription) {
+      // Buscar logoUrl da subscription se existir
+      const logoUrl = subscription.logoUrl || null;
       form.reset({
         name: subscription.name,
         amount: subscription.amount,
@@ -91,7 +97,9 @@ export default function UpsertSubscriptionDialog({
         recurring: subscription.recurring,
         nextDueDate: subscription.nextDueDate,
         active: subscription.active,
+        logoUrl,
       });
+      setImagePreview(logoUrl);
     } else {
       form.reset({
         name: "",
@@ -100,9 +108,96 @@ export default function UpsertSubscriptionDialog({
         recurring: true,
         nextDueDate: null,
         active: true,
+        logoUrl: null,
       });
+      setImagePreview(null);
     }
   }, [subscription, form]);
+
+  // Função para comprimir e converter imagem para base64
+  const compressImage = (
+    file: File,
+    maxWidth: number = 200,
+    maxHeight: number = 200,
+    quality: number = 0.8,
+  ): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          const canvas = document.createElement("canvas");
+          let width = img.width;
+          let height = img.height;
+
+          // Calcular novas dimensões mantendo proporção
+          if (width > height) {
+            if (width > maxWidth) {
+              height = (height * maxWidth) / width;
+              width = maxWidth;
+            }
+          } else {
+            if (height > maxHeight) {
+              width = (width * maxHeight) / height;
+              height = maxHeight;
+            }
+          }
+
+          canvas.width = width;
+          canvas.height = height;
+
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            reject(new Error("Não foi possível criar contexto do canvas"));
+            return;
+          }
+
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressedDataUrl = canvas.toDataURL("image/jpeg", quality);
+          resolve(compressedDataUrl);
+        };
+        img.onerror = () => reject(new Error("Erro ao carregar imagem"));
+        img.src = e.target?.result as string;
+      };
+      reader.onerror = () => reject(new Error("Erro ao ler arquivo"));
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    // Validar tamanho (5MB máximo)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error("A imagem deve ter no máximo 5MB");
+      return;
+    }
+
+    // Validar tipo
+    if (!file.type.startsWith("image/")) {
+      toast.error("Por favor, selecione um arquivo de imagem");
+      return;
+    }
+
+    setIsUploadingImage(true);
+    try {
+      const compressedImage = await compressImage(file);
+      setImagePreview(compressedImage);
+      form.setValue("logoUrl", compressedImage);
+      toast.success("Imagem carregada com sucesso!");
+    } catch (error) {
+      console.error("Erro ao processar imagem:", error);
+      toast.error("Erro ao processar imagem. Tente novamente.");
+    } finally {
+      setIsUploadingImage(false);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setImagePreview(null);
+    form.setValue("logoUrl", null);
+  };
 
   const onSubmit = async (data: CreateSubscriptionInput) => {
     setIsLoading(true);
@@ -161,6 +256,66 @@ export default function UpsertSubscriptionDialog({
 
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            {/* Logo/Imagem */}
+            <FormField
+              control={form.control}
+              name="logoUrl"
+              render={() => (
+                <FormItem>
+                  <FormLabel>Logo da Assinatura</FormLabel>
+                  <FormControl>
+                    <div className="space-y-3">
+                      {imagePreview ? (
+                        <div className="relative inline-block">
+                          <img
+                            src={imagePreview}
+                            alt="Preview"
+                            className="h-20 w-20 rounded-lg object-cover border"
+                          />
+                          <button
+                            type="button"
+                            onClick={handleRemoveImage}
+                            className="absolute -right-2 -top-2 rounded-full bg-red-500 p-1 text-white hover:bg-red-600"
+                            disabled={isLoading || isUploadingImage}
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-4">
+                          <label
+                            htmlFor="logo-upload"
+                            className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed p-4 hover:bg-muted"
+                          >
+                            <Upload className="h-5 w-5 text-muted-foreground" />
+                            <span className="text-sm text-muted-foreground">
+                              {isUploadingImage
+                                ? "Carregando..."
+                                : "Clique para fazer upload"}
+                            </span>
+                          </label>
+                          <input
+                            type="file"
+                            id="logo-upload"
+                            accept="image/*"
+                            className="hidden"
+                            onChange={handleImageUpload}
+                            disabled={isLoading || isUploadingImage}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </FormControl>
+                  <FormDescription>
+                    {imagePreview
+                      ? "Imagem carregada. Clique no X para remover."
+                      : "Faça upload de um logo ou deixe em branco para detecção automática"}
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             {/* Nome */}
             <FormField
               control={form.control}
@@ -176,7 +331,9 @@ export default function UpsertSubscriptionDialog({
                     />
                   </FormControl>
                   <FormDescription>
-                    O logo será detectado automaticamente
+                    {imagePreview
+                      ? "Nome da assinatura"
+                      : "O logo será detectado automaticamente se não houver upload"}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>

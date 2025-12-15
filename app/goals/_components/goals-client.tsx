@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/app/_components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, RefreshCw } from "lucide-react";
 import GoalCard from "./goal-card";
 import UpsertGoalDialog from "./upsert-goal-dialog";
 import { deleteGoal } from "@/app/_actions/goal";
@@ -30,6 +30,13 @@ interface Goal {
   status: string;
   icon: string | null;
   color: string | null;
+  isShared?: boolean;
+  sharedWith?: string[] | null;
+  contributions?: Array<{
+    userId: string;
+    amount: number;
+    date: string;
+  }>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -45,6 +52,7 @@ export default function GoalsClient({ initialGoals }: GoalsClientProps) {
   const [selectedGoal, setSelectedGoal] = useState<Goal | undefined>(undefined);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   // Atualizar goals quando initialGoals mudar (após refresh)
   useEffect(() => {
@@ -96,6 +104,22 @@ export default function GoalsClient({ initialGoals }: GoalsClientProps) {
     setSelectedGoal(undefined);
   };
 
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      // Pequeno delay para garantir que o estado seja atualizado visualmente
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      router.refresh();
+      // Aguardar um pouco mais para garantir que o refresh foi processado
+      await new Promise((resolve) => setTimeout(resolve, 300));
+      toast.success("Metas atualizadas com sucesso!");
+    } catch (error) {
+      toast.error("Erro ao atualizar metas");
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
   // Agrupar metas por status
   const activeGoals = goals.filter((g) => g.status === "ACTIVE");
   const completedGoals = goals.filter((g) => g.status === "COMPLETED");
@@ -107,16 +131,32 @@ export default function GoalsClient({ initialGoals }: GoalsClientProps) {
     <>
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-lg font-semibold sm:text-xl">Todas as Metas</h2>
-        <Button
-          onClick={() => {
-            setSelectedGoal(undefined);
-            setIsDialogOpen(true);
-          }}
-          className="gap-2 w-full sm:w-auto"
-        >
-          <Plus className="h-4 w-4" />
-          Nova Meta
-        </Button>
+        <div className="flex gap-2 w-full sm:w-auto">
+          <Button
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            variant="outline"
+            size="sm"
+            className="gap-2 w-full sm:w-auto transition-all duration-200 hover:scale-105 active:scale-95"
+          >
+            <RefreshCw
+              className={`h-4 w-4 transition-transform duration-300 ${
+                isRefreshing ? "animate-spin" : "hover:rotate-180"
+              }`}
+            />
+            {isRefreshing ? "Atualizando..." : "Atualizar"}
+          </Button>
+          <Button
+            onClick={() => {
+              setSelectedGoal(undefined);
+              setIsDialogOpen(true);
+            }}
+            className="gap-2 w-full sm:w-auto"
+          >
+            <Plus className="h-4 w-4" />
+            Nova Meta
+          </Button>
+        </div>
       </div>
 
       {goals.length === 0 ? (

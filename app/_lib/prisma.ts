@@ -16,4 +16,9 @@ if (process.env.NODE_ENV === "production") {
   prisma = globalThis.cachedPrisma;
 }
 
+// Verificar se o modelo financialProfile está disponível
+if (process.env.NODE_ENV === "development" && !prisma.financialProfile) {
+  console.warn("⚠️ Modelo financialProfile não encontrado no Prisma Client. Execute: npx prisma generate");
+}
+
 export const db = prisma;

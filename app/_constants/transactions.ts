@@ -160,7 +160,6 @@ export const TRANSACTION_PAYMENT_METHOD_OPTIONS = [
     label: "Dinheiro",
     value: TransactionPaymentMethod.CASH,
   },
-
   {
     label: "Cartão de Crédito",
     value: TransactionPaymentMethod.CREDIT_CARD,
@@ -169,13 +168,16 @@ export const TRANSACTION_PAYMENT_METHOD_OPTIONS = [
     label: "Cartão de Débito",
     value: TransactionPaymentMethod.DEBIT_CARD,
   },
-
-  {
-    label: "Outros",
-    value: TransactionPaymentMethod.OTHER,
-  },
   {
     label: "Pix",
     value: TransactionPaymentMethod.PIX,
+  },
+  {
+    label: "Benefício",
+    value: TransactionPaymentMethod.BENEFIT,
+  },
+  {
+    label: "Outros",
+    value: TransactionPaymentMethod.OTHER,
   },
 ];

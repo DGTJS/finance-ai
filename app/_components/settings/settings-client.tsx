@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import {
   Card,
@@ -76,6 +77,7 @@ export default function SettingsClient({
 }: SettingsClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { update: updateSession } = useSession();
   const [mounted, setMounted] = useState(false);
   const [activeTab, setActiveTab] = useState("profile");
 
@@ -204,6 +206,8 @@ export default function SettingsClient({
 
       if (result.success) {
         toast.success("Perfil atualizado com sucesso!");
+        // Atualizar a sessão do NextAuth para refletir as mudanças
+        await updateSession();
         // Forçar atualização da sessão e da página
         // Primeiro, revalidar as rotas
         router.refresh();
@@ -414,9 +418,9 @@ export default function SettingsClient({
                         // Comprimir a imagem antes de converter para base64
                         const compressImage = (
                           file: File,
-                          maxWidth: number = 800,
-                          maxHeight: number = 800,
-                          quality: number = 0.8,
+                          maxWidth: number = 300,
+                          maxHeight: number = 300,
+                          quality: number = 0.5,
                         ): Promise<string> => {
                           return new Promise((resolve, reject) => {
                             const reader = new FileReader();
@@ -501,18 +505,42 @@ export default function SettingsClient({
                           return;
                         }
 
+                        // Verificar se a imagem comprimida não excede 200KB base64 (~150KB original)
+                        // Reduzido para evitar erro 431 (Request Header Fields Too Large)
+                        const maxSize = 200 * 1024; // 200KB em caracteres base64
+                        let finalBase64 = base64String;
+                        if (base64String.length > maxSize) {
+                          // Comprimir ainda mais se necessário (200x200, qualidade 0.4)
+                          finalBase64 = await compressImage(file, 200, 200, 0.4);
+                          if (finalBase64.length > maxSize) {
+                            toast.warning(
+                              "Imagem muito grande. Será redimensionada para um tamanho menor.",
+                            );
+                            // Última tentativa com tamanho ainda menor
+                            finalBase64 = await compressImage(file, 150, 150, 0.3);
+                            // Se ainda for muito grande, rejeitar
+                            if (finalBase64.length > maxSize) {
+                              toast.error(
+                                "Imagem muito grande mesmo após compressão. Por favor, use uma imagem menor (máximo 200KB).",
+                              );
+                              setIsUploadingImage(false);
+                              return;
+                            }
+                          }
+                        }
+
                         console.log(
                           "📸 Imagem comprimida e convertida para base64, tamanho:",
-                          base64String.length,
+                          finalBase64.length,
                           "caracteres",
                         );
                         console.log(
                           "📸 Primeiros 100 caracteres:",
-                          base64String.substring(0, 100),
+                          finalBase64.substring(0, 100),
                         );
                         console.log(
                           "📸 Últimos 50 caracteres:",
-                          base64String.substring(base64String.length - 50),
+                          finalBase64.substring(finalBase64.length - 50),
                         );
 
                         // Criar uma imagem para testar se está completa
@@ -526,11 +554,11 @@ export default function SettingsClient({
                           );
                           console.log(
                             "✅ Tamanho final da string base64:",
-                            base64String.length,
+                            finalBase64.length,
                             "caracteres",
                           );
-                          setImagePreview(base64String);
-                          setImage(base64String);
+                          setImagePreview(finalBase64);
+                          setImage(finalBase64);
                           setIsUploadingImage(false);
                           toast.success(
                             "Foto carregada e comprimida! Clique em 'Salvar Alterações' para salvar.",
@@ -541,7 +569,7 @@ export default function SettingsClient({
                           toast.error("Erro: Imagem corrompida ou inválida");
                           setIsUploadingImage(false);
                         };
-                        testImg.src = base64String;
+                        testImg.src = finalBase64;
                       } catch (error) {
                         console.error("❌ Erro ao processar imagem:", error);
                         toast.error(

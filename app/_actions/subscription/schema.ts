@@ -16,6 +16,7 @@ export const createSubscriptionSchema = z.object({
   recurring: z.boolean().default(true),
   nextDueDate: z.coerce.date().optional().nullable(),
   active: z.boolean().default(true),
+  logoUrl: z.string().optional().nullable(),
 });
 
 export const updateSubscriptionSchema = z.object({

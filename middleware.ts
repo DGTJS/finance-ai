@@ -1,6 +1,9 @@
 import { auth } from "@/auth";
 import { NextResponse } from "next/server";
 
+// Garantir que o middleware use Node.js runtime (não Edge)
+export const runtime = "nodejs";
+
 export default auth((req) => {
   const { pathname } = req.nextUrl;
   

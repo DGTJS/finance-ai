@@ -8,7 +8,7 @@ import {
 } from "@/app/_components/ui/card";
 import { Button } from "@/app/_components/ui/button";
 import { Badge } from "@/app/_components/ui/badge";
-import { Trash2, Edit, Calendar, Target, TrendingUp } from "lucide-react";
+import { Trash2, Edit, Calendar, Target, TrendingUp, Users } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -24,6 +24,13 @@ interface GoalCardProps {
     status: string;
     icon: string | null;
     color: string | null;
+    isShared?: boolean;
+    contributions?: Array<{
+      userId: string;
+      amount: number;
+      date: string;
+    }>;
+    sharedWith?: Array<{ id: string; name: string | null; email: string }>;
   };
   onEdit: (id: string) => void;
   onDelete: (id: string) => void;
@@ -186,6 +193,43 @@ export default function GoalCard({ goal, onEdit, onDelete }: GoalCardProps) {
             <p className="text-xs text-muted-foreground line-clamp-2">
               {goal.description}
             </p>
+          )}
+
+          {/* Histórico de Contribuições (Metas Compartilhadas) */}
+          {goal.isShared && goal.contributions && goal.contributions.length > 0 && (
+            <div className="mt-3 rounded-lg border bg-muted/30 p-3">
+              <div className="mb-2 flex items-center gap-2 text-xs font-semibold text-muted-foreground">
+                <Users className="h-3 w-3" />
+                Histórico de Contribuições
+              </div>
+              <div className="space-y-1.5 max-h-32 overflow-y-auto">
+                {goal.contributions
+                  .slice()
+                  .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+                  .slice(0, 5)
+                  .map((contribution, index) => (
+                    <div
+                      key={index}
+                      className="flex items-center justify-between text-xs"
+                    >
+                      <span className="text-muted-foreground">
+                        {format(new Date(contribution.date), "dd/MM/yyyy", { locale: ptBR })}
+                      </span>
+                      <span className="font-semibold text-green-600 dark:text-green-400">
+                        +{new Intl.NumberFormat("pt-BR", {
+                          style: "currency",
+                          currency: "BRL",
+                        }).format(contribution.amount)}
+                      </span>
+                    </div>
+                  ))}
+                {goal.contributions.length > 5 && (
+                  <p className="text-xs text-muted-foreground text-center">
+                    +{goal.contributions.length - 5} mais contribuições
+                  </p>
+                )}
+              </div>
+            </div>
           )}
         </div>
       </CardContent>

@@ -14,3 +14,6 @@ export const CATEGORY_EMOJIS: Record<TransactionCategory, string> = {
 };
 
 
+
+
+

@@ -28,7 +28,9 @@ const Navbar = () => {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
 
   const handleSignOut = async () => {
-    await signOut({ callbackUrl: "/login" });
+    // Usar window.location.origin para garantir que usa a porta correta
+    const callbackUrl = `${window.location.origin}/login`;
+    await signOut({ callbackUrl });
   };
 
   const navLinks = [

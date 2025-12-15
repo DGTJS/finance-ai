@@ -23,6 +23,7 @@ interface AddGoalAmountDialogProps {
   goalName: string;
   currentAmount: number;
   targetAmount: number;
+  onSubmit?: (amount: number) => Promise<void>;
 }
 
 export default function AddGoalAmountDialog({
@@ -32,6 +33,7 @@ export default function AddGoalAmountDialog({
   goalName,
   currentAmount,
   targetAmount,
+  onSubmit,
 }: AddGoalAmountDialogProps) {
   const router = useRouter();
   const [amount, setAmount] = useState("");
@@ -39,9 +41,11 @@ export default function AddGoalAmountDialog({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    const amountValue = parseFloat(amount.replace(/[^\d,.-]/g, "").replace(",", "."));
-    
+
+    const amountValue = parseFloat(
+      amount.replace(/[^\d,.-]/g, "").replace(",", "."),
+    );
+
     if (isNaN(amountValue) || amountValue <= 0) {
       toast.error("Por favor, insira um valor válido");
       return;
@@ -49,15 +53,22 @@ export default function AddGoalAmountDialog({
 
     setIsLoading(true);
     try {
-      const result = await addGoalAmount(goalId, amountValue);
-      
-      if (result.success) {
-        toast.success("Valor adicionado à meta com sucesso!");
+      // Se onSubmit foi fornecido, usar ele; caso contrário, usar a função padrão
+      if (onSubmit) {
+        await onSubmit(amountValue);
         setAmount("");
         onClose();
-        router.refresh();
       } else {
-        toast.error(result.error || "Erro ao adicionar valor");
+        const result = await addGoalAmount(goalId, amountValue);
+
+        if (result.success) {
+          toast.success("Valor adicionado à meta com sucesso!");
+          setAmount("");
+          onClose();
+          router.refresh();
+        } else {
+          toast.error(result.error || "Erro ao adicionar valor");
+        }
       }
     } catch (error) {
       toast.error("Erro ao adicionar valor à meta");
@@ -93,8 +104,9 @@ export default function AddGoalAmountDialog({
               }}
               disabled={isLoading}
             />
-            <p className="text-xs text-muted-foreground">
-              Restante: {new Intl.NumberFormat("pt-BR", {
+            <p className="text-muted-foreground text-xs">
+              Restante:{" "}
+              {new Intl.NumberFormat("pt-BR", {
                 style: "currency",
                 currency: "BRL",
               }).format(remaining)}
@@ -118,4 +130,3 @@ export default function AddGoalAmountDialog({
     </Dialog>
   );
 }
-
