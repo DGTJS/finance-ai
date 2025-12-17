@@ -29,10 +29,9 @@ import {
   createSubscription,
   updateSubscription,
 } from "@/app/_actions/subscription";
-import {
-  createSubscriptionSchema,
-  type CreateSubscriptionInput,
-} from "@/app/_actions/subscription/schema";
+import { createSubscriptionSchema } from "@/app/_actions/subscription/schema";
+import { z } from "zod";
+import Image from "next/image";
 
 interface Subscription {
   id: string;
@@ -72,7 +71,7 @@ export default function UpsertSubscriptionDialog({
   const [imagePreview, setImagePreview] = useState<string | null>(null);
   const isEditing = !!subscription;
 
-  const form = useForm<CreateSubscriptionInput>({
+  const form = useForm({
     resolver: zodResolver(createSubscriptionSchema),
     defaultValues: {
       name: "",
@@ -123,8 +122,8 @@ export default function UpsertSubscriptionDialog({
   ): Promise<string> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = (e) => {
-        const img = new Image();
+      reader.onload = (event) => {
+        const img = new window.Image();
         img.onload = () => {
           const canvas = document.createElement("canvas");
           let width = img.width;
@@ -157,7 +156,7 @@ export default function UpsertSubscriptionDialog({
           resolve(compressedDataUrl);
         };
         img.onerror = () => reject(new Error("Erro ao carregar imagem"));
-        img.src = e.target?.result as string;
+        img.src = event.target?.result as string;
       };
       reader.onerror = () => reject(new Error("Erro ao ler arquivo"));
       reader.readAsDataURL(file);
@@ -199,7 +198,7 @@ export default function UpsertSubscriptionDialog({
     form.setValue("logoUrl", null);
   };
 
-  const onSubmit = async (data: CreateSubscriptionInput) => {
+  const onSubmit = async (data: unknown) => {
     setIsLoading(true);
 
     try {
@@ -208,10 +207,12 @@ export default function UpsertSubscriptionDialog({
       if (isEditing) {
         result = await updateSubscription({
           id: subscription.id,
-          ...data,
+          ...(data as z.infer<typeof createSubscriptionSchema>),
         });
       } else {
-        result = await createSubscription(data);
+        result = await createSubscription(
+          data as z.infer<typeof createSubscriptionSchema>,
+        );
       }
 
       if (result.success && result.data) {
@@ -225,7 +226,9 @@ export default function UpsertSubscriptionDialog({
         const subscription: Subscription = {
           ...result.data,
           dueDate: new Date(result.data.dueDate),
-          nextDueDate: result.data.nextDueDate ? new Date(result.data.nextDueDate) : null,
+          nextDueDate: result.data.nextDueDate
+            ? new Date(result.data.nextDueDate)
+            : null,
         };
         onSuccess(subscription);
         onClose();
@@ -267,15 +270,17 @@ export default function UpsertSubscriptionDialog({
                     <div className="space-y-3">
                       {imagePreview ? (
                         <div className="relative inline-block">
-                          <img
+                          <Image
                             src={imagePreview}
                             alt="Preview"
-                            className="h-20 w-20 rounded-lg object-cover border"
+                            width={80}
+                            height={80}
+                            className="h-20 w-20 rounded-lg border object-cover"
                           />
                           <button
                             type="button"
                             onClick={handleRemoveImage}
-                            className="absolute -right-2 -top-2 rounded-full bg-red-500 p-1 text-white hover:bg-red-600"
+                            className="absolute -top-2 -right-2 rounded-full bg-red-500 p-1 text-white hover:bg-red-600"
                             disabled={isLoading || isUploadingImage}
                           >
                             <X className="h-3 w-3" />
@@ -285,10 +290,10 @@ export default function UpsertSubscriptionDialog({
                         <div className="flex items-center gap-4">
                           <label
                             htmlFor="logo-upload"
-                            className="flex cursor-pointer items-center gap-2 rounded-lg border border-dashed p-4 hover:bg-muted"
+                            className="hover:bg-muted flex cursor-pointer items-center gap-2 rounded-lg border border-dashed p-4"
                           >
-                            <Upload className="h-5 w-5 text-muted-foreground" />
-                            <span className="text-sm text-muted-foreground">
+                            <Upload className="text-muted-foreground h-5 w-5" />
+                            <span className="text-muted-foreground text-sm">
                               {isUploadingImage
                                 ? "Carregando..."
                                 : "Clique para fazer upload"}
@@ -353,7 +358,9 @@ export default function UpsertSubscriptionDialog({
                       step="0.01"
                       placeholder="0.00"
                       {...field}
-                      onChange={(e) => field.onChange(parseFloat(e.target.value))}
+                      onChange={(e) =>
+                        field.onChange(parseFloat(e.target.value))
+                      }
                       disabled={isLoading}
                     />
                   </FormControl>
@@ -366,18 +373,18 @@ export default function UpsertSubscriptionDialog({
             <FormField
               control={form.control}
               name="dueDate"
-              // Ensure value is always a Date object
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Data de Vencimento</FormLabel>
                   <FormControl>
-                    <DatePickerForm value={field.value} onChange={field.onChange} />
+                    <DatePickerForm
+                      value={field.value as Date | undefined}
+                      onChange={field.onChange}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
               )}
-              // Add this to ensure correct type
-              setValueAs={value => value instanceof Date ? value : new Date(value)}
             />
 
             {/* Recorrente */}
@@ -452,4 +459,3 @@ export default function UpsertSubscriptionDialog({
     </Dialog>
   );
 }
-
