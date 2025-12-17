@@ -894,3 +894,4 @@ A página está acessível através do menu lateral:
 A página Freelancer é uma ferramenta completa e intuitiva para trabalhadores autônomos gerenciarem seus períodos de trabalho, calcular ganhos e organizar projetos. Com cálculos automáticos, interface clara e funcionalidades essenciais, oferece uma solução prática para o controle financeiro de freelancers.
 
 **Última atualização**: 15/12/2025
+

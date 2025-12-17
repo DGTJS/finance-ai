@@ -4,6 +4,7 @@ import "./globals.css";
 import Providers from "./_components/providers";
 import AuthWrapper from "./_components/auth-wrapper";
 import { PWAInstallPrompt } from "./_components/pwa-install-prompt";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -77,6 +78,7 @@ export default async function RootLayout({
             <PWAInstallPrompt />
           </AuthWrapper>
         </Providers>
+        <SpeedInsights />
       </body>
     </html>
   );

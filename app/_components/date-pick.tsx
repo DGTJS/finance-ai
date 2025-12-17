@@ -43,6 +43,9 @@ export function DatePickerForm({ value, onChange }: DatePickerFormProps) {
           onSelect={onChange}
           locale={ptBR}
           captionLayout="dropdown"
+          fromDate={new Date(new Date().getFullYear(), 0, 1)}
+          fromYear={new Date().getFullYear()} // <-- Adicione esta linha
+          toYear={2040} // ou outro limite futuro desejado
         />
       </PopoverContent>
     </Popover>

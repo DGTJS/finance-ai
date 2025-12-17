@@ -38,3 +38,4 @@ magick convert public/logo.png -resize 512x512 public/icon-512x512.png
 - Nome exato: `icon-192x192.png` e `icon-512x512.png`
 - Colocar na pasta `public/`
 
+

@@ -38,6 +38,12 @@ const Navbar = () => {
     { href: "/transactions", label: "Transações", icon: FaReceipt },
     { href: "/subscription", label: "Assinatura", icon: FaCreditCard },
     { href: "/goals", label: "Metas", icon: FaBullseye },
+    { href: "/freelancer", label: "Freelancer", icon: FaUser }, // Adicionado
+    {
+      href: "/financial-profile",
+      label: "Perfil Financeiro",
+      icon: FaCreditCard,
+    }, // Adicionado
     { href: "/economy", label: "Economia", icon: FaDollarSign },
     { href: "/settings", label: "Configurações", icon: FaCog },
   ];

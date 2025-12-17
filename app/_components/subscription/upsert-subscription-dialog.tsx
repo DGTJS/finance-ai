@@ -366,6 +366,7 @@ export default function UpsertSubscriptionDialog({
             <FormField
               control={form.control}
               name="dueDate"
+              // Ensure value is always a Date object
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Data de Vencimento</FormLabel>
@@ -375,6 +376,8 @@ export default function UpsertSubscriptionDialog({
                   <FormMessage />
                 </FormItem>
               )}
+              // Add this to ensure correct type
+              setValueAs={value => value instanceof Date ? value : new Date(value)}
             />
 
             {/* Recorrente */}

@@ -313,34 +313,36 @@ export default function SettingsClient({
       <Tabs
         value={activeTab}
         onValueChange={setActiveTab}
-        className="space-y-4 sm:space-y-6"
+        className="space-y-6" // aumenta o espaçamento entre as abas e o conteúdo
       >
-        <TabsList className="grid w-full grid-cols-2 gap-1 sm:grid-cols-3 lg:grid-cols-7">
-          <TabsTrigger value="profile" className="gap-2">
-            <User className="h-4 w-4" />
-            <span className="hidden sm:inline">Perfil</span>
-          </TabsTrigger>
-          <TabsTrigger value="users" className="gap-2">
-            <User className="h-4 w-4" />
-            <span className="hidden sm:inline">Usuários</span>
-          </TabsTrigger>
-          <TabsTrigger value="financial" className="gap-2">
-            <DollarSign className="h-4 w-4" />
-            <span className="hidden sm:inline">Financeiro</span>
-          </TabsTrigger>
-          <TabsTrigger value="notifications" className="gap-2">
-            <Bell className="h-4 w-4" />
-            <span className="hidden sm:inline">Notificações</span>
-          </TabsTrigger>
-          <TabsTrigger value="ai" className="gap-2">
-            <Sparkles className="h-4 w-4" />
-            <span className="hidden sm:inline">IA</span>
-          </TabsTrigger>
-          <TabsTrigger value="security" className="gap-2">
-            <Shield className="h-4 w-4" />
-            <span className="hidden sm:inline">Segurança</span>
-          </TabsTrigger>
-        </TabsList>
+        <div className="bg-muted/50 relative overflow-hidden rounded-lg">
+          <TabsList className="scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent flex w-full gap-1 overflow-x-auto bg-transparent p-1 pb-2 *:mb-0 sm:grid sm:flex-none sm:grid-cols-3 sm:overflow-x-visible lg:grid-cols-7">
+            <TabsTrigger value="profile" className="min-w-[120px] gap-2">
+              <User className="h-4 w-4" />
+              <span className="hidden sm:inline">Perfil</span>
+            </TabsTrigger>
+            <TabsTrigger value="users" className="min-w-[120px] gap-2">
+              <User className="h-4 w-4" />
+              <span className="hidden sm:inline">Usuários</span>
+            </TabsTrigger>
+            <TabsTrigger value="financial" className="min-w-[120px] gap-2">
+              <DollarSign className="h-4 w-4" />
+              <span className="hidden sm:inline">Financeiro</span>
+            </TabsTrigger>
+            <TabsTrigger value="notifications" className="min-w-[120px] gap-2">
+              <Bell className="h-4 w-4" />
+              <span className="hidden sm:inline">Notificações</span>
+            </TabsTrigger>
+            <TabsTrigger value="ai" className="min-w-[120px] gap-2">
+              <Sparkles className="h-4 w-4" />
+              <span className="hidden sm:inline">IA</span>
+            </TabsTrigger>
+            <TabsTrigger value="security" className="min-w-[120px] gap-2">
+              <Shield className="h-4 w-4" />
+              <span className="hidden sm:inline">Segurança</span>
+            </TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* Perfil */}
         <TabsContent value="profile" className="space-y-6">
@@ -511,13 +513,23 @@ export default function SettingsClient({
                         let finalBase64 = base64String;
                         if (base64String.length > maxSize) {
                           // Comprimir ainda mais se necessário (200x200, qualidade 0.4)
-                          finalBase64 = await compressImage(file, 200, 200, 0.4);
+                          finalBase64 = await compressImage(
+                            file,
+                            200,
+                            200,
+                            0.4,
+                          );
                           if (finalBase64.length > maxSize) {
                             toast.warning(
                               "Imagem muito grande. Será redimensionada para um tamanho menor.",
                             );
                             // Última tentativa com tamanho ainda menor
-                            finalBase64 = await compressImage(file, 150, 150, 0.3);
+                            finalBase64 = await compressImage(
+                              file,
+                              150,
+                              150,
+                              0.3,
+                            );
                             // Se ainda for muito grande, rejeitar
                             if (finalBase64.length > maxSize) {
                               toast.error(
@@ -682,10 +694,7 @@ export default function SettingsClient({
 
         {/* Usuários da Conta */}
         <TabsContent value="users" className="space-y-6">
-          <FamilyUsersTab
-            currentUserId={user.id || ""}
-            initialFamilyAccount={familyAccount}
-          />
+          <FamilyUsersTab currentUserId={user.id || ""} />
         </TabsContent>
 
         {/* Financeiro */}
