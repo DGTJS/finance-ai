@@ -32,6 +32,7 @@ import { toast } from "sonner";
 import { saveUserSettings } from "@/app/_actions/user-settings";
 import { updateUserProfile } from "@/app/_actions/user-profile";
 import FamilyUsersTab from "./family-users-tab";
+import Image from "next/image";
 
 interface LinkedAccount {
   provider: string;
@@ -71,9 +72,7 @@ interface SettingsClientProps {
 
 export default function SettingsClient({
   user,
-  accounts,
   initialSettings,
-  familyAccount,
 }: SettingsClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -359,7 +358,7 @@ export default function SettingsClient({
                 <div className="relative overflow-hidden">
                   {imagePreview ? (
                     <div className="border-primary/20 h-16 w-16 overflow-hidden rounded-full border-2 sm:h-20 sm:w-20">
-                      <img
+                      <Image
                         src={imagePreview}
                         alt={name || "Perfil"}
                         className="h-full w-full object-cover object-center"
@@ -368,11 +367,15 @@ export default function SettingsClient({
                           minWidth: "100%",
                           minHeight: "100%",
                         }}
+                        width={80}
+                        height={80}
+                        unoptimized
                         onError={(e) => {
                           // Se a imagem falhar ao carregar, mostrar inicial
-                          e.currentTarget.style.display = "none";
-                          const parent =
-                            e.currentTarget.parentElement?.parentElement;
+                          (e.currentTarget as HTMLImageElement).style.display =
+                            "none";
+                          const parent = (e.currentTarget as HTMLImageElement)
+                            .parentElement?.parentElement;
                           if (parent) {
                             const fallback =
                               parent.querySelector(".fallback-avatar");
@@ -427,7 +430,8 @@ export default function SettingsClient({
                           return new Promise((resolve, reject) => {
                             const reader = new FileReader();
                             reader.onload = (e) => {
-                              const img = new Image();
+                              // const img = new Image();
+                              const img = document.createElement("img");
                               img.onload = () => {
                                 const canvas = document.createElement("canvas");
                                 let width = img.width;
@@ -556,7 +560,8 @@ export default function SettingsClient({
                         );
 
                         // Criar uma imagem para testar se está completa
-                        const testImg = new Image();
+                        // const testImg = new Image();
+                        const testImg = document.createElement("img");
                         testImg.onload = () => {
                           console.log(
                             "✅ Imagem carregada com sucesso, dimensões:",

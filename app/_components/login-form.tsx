@@ -36,7 +36,9 @@ const LoginForm = () => {
     }
   };
 
-  const handleCredentialsSignIn = async (e: React.FormEvent) => {
+  const handleCredentialsSignIn = async (
+    e: React.FormEvent<HTMLFormElement>,
+  ) => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
@@ -50,8 +52,13 @@ const LoginForm = () => {
 
       if (result?.error) {
         // Mensagens de erro mais específicas
-        if (result.error.includes("banco de dados") || result.error.includes("conexão")) {
-          setError("Erro de conexão com o banco de dados. Verifique se o MySQL está rodando.");
+        if (
+          result.error.includes("banco de dados") ||
+          result.error.includes("conexão")
+        ) {
+          setError(
+            "Erro de conexão com o banco de dados. Verifique se o MySQL está rodando.",
+          );
         } else {
           setError("Email ou senha inválidos");
         }
@@ -64,10 +71,16 @@ const LoginForm = () => {
         // Usar window.location para garantir que a página seja recarregada completamente
         window.location.href = "/";
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Erro ao fazer login:", error);
-      if (error.message?.includes("banco de dados") || error.message?.includes("conexão")) {
-        setError("Erro de conexão com o banco de dados. Verifique se o MySQL está rodando.");
+      if (
+        error instanceof Error &&
+        (error.message.includes("banco de dados") ||
+          error.message.includes("conexão"))
+      ) {
+        setError(
+          "Erro de conexão com o banco de dados. Verifique se o MySQL está rodando.",
+        );
       } else {
         setError("Erro ao fazer login. Tente novamente.");
       }
@@ -105,12 +118,20 @@ const LoginForm = () => {
       } else {
         setRegisterError(result.error || "Erro ao criar conta");
       }
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error("Erro ao registrar:", error);
-      if (error.message?.includes("banco de dados") || error.message?.includes("conexão")) {
-        setRegisterError("Erro de conexão com o banco de dados. Verifique se o MySQL está rodando.");
-      } else {
-        setRegisterError(error.message || "Erro ao criar conta. Tente novamente.");
+      if (
+        error instanceof Error &&
+        (error.message.includes("banco de dados") ||
+          error.message.includes("conexão"))
+      ) {
+        setRegisterError(
+          "Erro de conexão com o banco de dados. Verifique se o MySQL está rodando.",
+        );
+      } else if (error instanceof Error) {
+        setRegisterError(
+          error.message || "Erro ao criar conta. Tente novamente.",
+        );
       }
     } finally {
       setIsLoading(false);
@@ -147,7 +168,7 @@ const LoginForm = () => {
           <div className="space-y-2">
             <Label htmlFor="password">Senha</Label>
             <div className="relative">
-              <Lock className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 z-10" />
+              <Lock className="text-muted-foreground absolute top-1/2 left-3 z-10 h-4 w-4 -translate-y-1/2" />
               <PasswordInput
                 id="password"
                 placeholder="••••••••"
@@ -199,7 +220,7 @@ const LoginForm = () => {
           Entrar com Google
         </Button>
 
-        {/* Credenciais de Teste */}
+        {/* Credenciais de Teste
         <div className="border-primary/30 bg-primary/5 rounded-lg border p-4">
           <div className="space-y-2">
             <h3 className="text-primary text-sm font-semibold">
@@ -214,7 +235,7 @@ const LoginForm = () => {
               </p>
             </div>
           </div>
-        </div>
+        </div> */}
       </TabsContent>
 
       {/* ABA DE CADASTRO */}
@@ -266,7 +287,7 @@ const LoginForm = () => {
               <div className="space-y-2">
                 <Label htmlFor="register-password">Senha</Label>
                 <div className="relative">
-                  <Lock className="text-muted-foreground absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 z-10" />
+                  <Lock className="text-muted-foreground absolute top-1/2 left-3 z-10 h-4 w-4 -translate-y-1/2" />
                   <PasswordInput
                     id="register-password"
                     placeholder="Mínimo 6 caracteres"

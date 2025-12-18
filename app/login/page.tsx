@@ -71,11 +71,12 @@ const LoginPage = async () => {
         <div className="absolute right-0 bottom-0 left-0 p-10 text-white">
           <blockquote className="space-y-4">
             <p className="text-lg font-medium">
-              "A Finance AI transformou completamente a forma como gerencio
-              minhas finanças. Agora tenho controle total e insights incríveis!"
+              &quot;A Finance AI transformou completamente a forma como gerencio
+              minhas finanças. Agora tenho controle total e insights
+              incríveis!&quot;
             </p>
             <footer className="text-sm opacity-80">
-              — Maria Silva, Usuária Premium
+              — Maria da Silva, Usuária Premium
             </footer>
           </blockquote>
         </div>

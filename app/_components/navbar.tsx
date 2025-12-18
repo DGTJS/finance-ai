@@ -38,7 +38,7 @@ const Navbar = () => {
     { href: "/transactions", label: "Transações", icon: FaReceipt },
     { href: "/subscription", label: "Assinatura", icon: FaCreditCard },
     { href: "/goals", label: "Metas", icon: FaBullseye },
-    { href: "/freelancer", label: "Freelancer", icon: FaUser }, // Adicionado
+    { href: "/entrepreneur", label: "Freelancer", icon: FaUser }, // Adicionado
     {
       href: "/financial-profile",
       label: "Perfil Financeiro",
@@ -61,14 +61,10 @@ const Navbar = () => {
                 width={120}
                 height={27}
                 alt="Finance AI"
-                className="h-10 w-full sm:h-10"
+                className="h-6 w-full *:w-auto sm:h-10"
                 priority
               />
             </Link>
-            {/* <h1 className="text-lg font-bold truncate sm:text-xl md:text-2xl">
-              {navLinks.find((link) => link.href === pathname)?.label ||
-                "Dashboard"}
-            </h1> */}
           </div>
 
           {/* Busca e Ações */}
@@ -95,9 +91,11 @@ const Navbar = () => {
                 >
                   {session?.user?.image ? (
                     <div className="h-8 w-8 cursor-pointer overflow-hidden rounded-full border border-gray-200">
-                      <img
+                      <Image
                         src={session.user.image}
                         alt={session.user.name || "Usuário"}
+                        width={32}
+                        height={32}
                         className="h-full w-full object-cover object-center"
                         style={{
                           objectPosition: "center center",
@@ -120,7 +118,7 @@ const Navbar = () => {
                   <div className="flex items-center gap-3">
                     {session?.user?.image ? (
                       <div className="h-10 w-10 overflow-hidden rounded-full border border-gray-200">
-                        <img
+                        <Image
                           src={session.user.image}
                           alt={session.user.name || "Usuário"}
                           className="h-full w-full object-cover object-center"
@@ -196,21 +194,6 @@ const Navbar = () => {
       {mobileMenuOpen && (
         <div className="bg-background fixed top-16 right-0 left-0 z-[100] max-h-[calc(100vh-4rem)] overflow-y-auto border-t border-b shadow-lg md:hidden">
           <div className="container mx-auto px-4 py-4">
-            {/* User Info Mobile */}
-            <div className="bg-muted/50 mb-4 flex items-center gap-3 rounded-lg border p-3">
-              <div className="bg-primary/10 flex h-10 w-10 items-center justify-center rounded-full">
-                <FaUser className="text-primary h-5 w-5" />
-              </div>
-              <div className="flex-1">
-                <p className="text-sm font-medium">
-                  {session?.user?.name || "Usuário"}
-                </p>
-                <p className="text-muted-foreground truncate text-xs">
-                  {session?.user?.email}
-                </p>
-              </div>
-            </div>
-
             {/* Navigation Links Mobile */}
             <div className="space-y-1">
               {navLinks.map((link) => {
