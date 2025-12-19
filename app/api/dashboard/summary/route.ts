@@ -286,7 +286,7 @@ export async function GET(request: NextRequest) {
     const expensesTotal = fixedExpensesTotal + variableExpensesTotal;
     const netBalance = incomeTotal - expensesTotal - investmentsTotal;
 
-    // ===== 6. CALCULAR SALDO PREVISTO (projeção até fim do mês) =====
+    // ===== 6. CALCULAR SALDO PREVISTO (projeção até fim do mês + gastos do próximo mês) =====
     const daysInMonth = currentMonthEnd.getDate();
     const currentDay = now.getDate();
     const daysRemaining = daysInMonth - currentDay;
@@ -306,8 +306,80 @@ export async function GET(request: NextRequest) {
     // Projeção de receitas = receitas já recebidas + salário esperado
     const projectedIncome = incomeTotal + expectedSalaryThisMonth;
 
+    // ===== 6.1. CALCULAR GASTOS PREVISTOS DO PRÓXIMO MÊS =====
+    // Período do próximo mês
+    const nextMonthStart = new Date(
+      now.getFullYear(),
+      now.getMonth() + 1,
+      1,
+    );
+    const nextMonthEnd = new Date(
+      now.getFullYear(),
+      now.getMonth() + 2,
+      0,
+      23,
+      59,
+      59,
+    );
+
+    // Buscar assinaturas que vão vencer no próximo mês
+    const nextMonthSubscriptions = subscriptions.filter((sub) => {
+      if (!sub.recurring) return false;
+
+      // Se tem nextDueDate, usar ele
+      if (sub.nextDueDate) {
+        return (
+          sub.nextDueDate >= nextMonthStart && sub.nextDueDate <= nextMonthEnd
+        );
+      }
+
+      // Se não tem nextDueDate, calcular a próxima data baseada no dueDate
+      const dueDate = new Date(sub.dueDate);
+      const dayOfMonth = dueDate.getDate();
+      
+      // Calcular a próxima data de vencimento (mesmo dia do mês seguinte)
+      const nextDue = new Date(
+        nextMonthStart.getFullYear(),
+        nextMonthStart.getMonth(),
+        Math.min(dayOfMonth, nextMonthEnd.getDate()), // Garantir que não ultrapasse o último dia do mês
+      );
+
+      return nextDue >= nextMonthStart && nextDue <= nextMonthEnd;
+    });
+
+    const nextMonthSubscriptionsTotal = nextMonthSubscriptions.reduce(
+      (sum, sub) => sum + Number(sub.amount),
+      0,
+    );
+
+    // Buscar parcelas que vão vencer no próximo mês
+    // Buscar todas as transações futuras (não apenas dos últimos 3 meses)
+    const nextMonthInstallments = await db.transaction.findMany({
+      where: {
+        userId: { in: familyUserIds },
+        type: "EXPENSE",
+        date: {
+          gte: nextMonthStart,
+          lte: nextMonthEnd,
+        },
+        installments: { not: null }, // Apenas transações parceladas
+      },
+    });
+
+    const nextMonthInstallmentsTotal = nextMonthInstallments
+      .filter((t) => t.type === "EXPENSE")
+      .reduce((sum, t) => sum + Number(t.amount), 0);
+
+    // Total de gastos previstos do próximo mês
+    const nextMonthProjectedExpenses =
+      nextMonthSubscriptionsTotal + nextMonthInstallmentsTotal;
+
+    // Saldo previsto = receitas projetadas do mês atual - despesas projetadas do mês atual - investimentos - gastos previstos do próximo mês
     const projectedBalance =
-      projectedIncome - projectedExpenses - investmentsTotal;
+      projectedIncome -
+      projectedExpenses -
+      investmentsTotal -
+      nextMonthProjectedExpenses;
 
     // ===== 7. COMPARAR COM MÊS ANTERIOR =====
     let previousMonthIncome = 0;

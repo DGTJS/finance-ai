@@ -69,3 +69,4 @@ finance-ai/
 **Data:** Janeiro 2025
 
 
+

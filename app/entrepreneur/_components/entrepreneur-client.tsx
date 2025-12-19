@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/app/_components/ui/button";
 import { Plus, Target } from "lucide-react";
+import { cn } from "@/app/_lib/utils";
 import WorkPeriodForm from "./work-period-form";
 import ProjectForm from "./project-form";
 import WorkGoalForm from "./work-goal-form";
@@ -73,6 +74,7 @@ interface EntrepreneurClientProps {
   initialStats: Stats;
   todayStats: Stats;
   initialProjects: Project[];
+  hideHeader?: boolean;
 }
 
 export default function EntrepreneurClient({
@@ -80,6 +82,7 @@ export default function EntrepreneurClient({
   initialStats,
   todayStats,
   initialProjects,
+  hideHeader = false,
 }: EntrepreneurClientProps) {
   const router = useRouter();
   const [periods, setPeriods] = useState<WorkPeriod[]>(initialPeriods);
@@ -367,38 +370,63 @@ export default function EntrepreneurClient({
   return (
     <>
       <div className="space-y-6">
-        {/* Ações Principais */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Freelancer</h1>
-            <p className="text-muted-foreground text-sm sm:text-base">
-              Gerencie seus períodos de trabalho e ganhos
-            </p>
+        {/* Ações Principais - Só mostrar se não estiver dentro do dashboard */}
+        {!hideHeader && (
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Dashboard</h1>
+                <p className="text-muted-foreground text-sm sm:text-base">
+                  Selecione a visualização desejada
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => router.push("/")}
+                  className="gap-2"
+                >
+                  <span>💰</span>
+                  Financeiro
+                </Button>
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="gap-2 bg-primary text-primary-foreground"
+                >
+                  <span>💼</span>
+                  Freelancer
+                </Button>
+              </div>
+            </div>
           </div>
-          <div className="flex flex-col gap-2 sm:flex-row">
-            <Button
-              variant="outline"
-              size="lg"
-              onClick={() => {
-                setIsGoalFormOpen(true);
-              }}
-              className="gap-2"
-            >
-              <Target className="h-5 w-5" />
-              {goal ? "Editar Meta" : "Definir Meta"}
-            </Button>
-            <Button
-              size="lg"
-              onClick={() => {
-                setSelectedPeriod(null);
-                setIsFormOpen(true);
-              }}
-              className="gap-2"
-            >
-              <Plus className="h-5 w-5" />
-              Registrar trabalho de hoje
-            </Button>
-          </div>
+        )}
+
+        {/* Botões de Ação */}
+        <div className="flex flex-col gap-2 sm:flex-row">
+          <Button
+            variant="outline"
+            size="lg"
+            onClick={() => {
+              setIsGoalFormOpen(true);
+            }}
+            className="gap-2"
+          >
+            <Target className="h-5 w-5" />
+            {goal ? "Editar Meta" : "Definir Meta"}
+          </Button>
+          <Button
+            size="lg"
+            onClick={() => {
+              setSelectedPeriod(null);
+              setIsFormOpen(true);
+            }}
+            className="gap-2"
+          >
+            <Plus className="h-5 w-5" />
+            Registrar trabalho de hoje
+          </Button>
         </div>
 
         {/* 1. Hero Section - Meta em Primeiro Lugar */}

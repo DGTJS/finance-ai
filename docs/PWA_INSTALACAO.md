@@ -91,3 +91,4 @@ Veja instruções detalhadas em `scripts/generate-pwa-icons.md`
 **Última atualização:** Janeiro 2025
 
 
+

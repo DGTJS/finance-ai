@@ -173,6 +173,9 @@ export function SaldoOverview({
             >
               {formatCurrency(projectedBalance)}
             </div>
+            <p className="mt-1 text-xs text-muted-foreground">
+              Inclui gastos previstos do próximo mês (assinaturas e parcelas)
+            </p>
             {hasImprovement && (
               <p className="mt-1 text-xs text-green-600 dark:text-green-400">
                 Projeção indica melhora no saldo até o fim do mês

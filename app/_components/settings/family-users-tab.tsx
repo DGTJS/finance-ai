@@ -477,12 +477,20 @@ export default function FamilyUsersTab({
               <p className="text-muted-foreground mb-4 text-sm">
                 Adicione usuários para compartilhar a mesma conta financeira
               </p>
+              {/* Botão para adicionar primeiro usuário */}
+              <Button
+                onClick={() => setIsAdding(true)}
+                className="gap-2"
+              >
+                <UserPlus className="h-4 w-4" />
+                Adicionar Usuário
+              </Button>
             </div>
           )}
 
-          {/* Botão para abrir modal de adicionar usuário */}
-          {(() => {
-            const currentUserRole = familyAccount?.users.find(u => u.id === currentUserId)?.role || "MEMBER";
+          {/* Botão para abrir modal de adicionar usuário (quando já há usuários) */}
+          {familyAccount && familyAccount.users.length > 0 && (() => {
+            const currentUserRole = familyAccount.users.find(u => u.id === currentUserId)?.role || "MEMBER";
             const canAddUsers = currentUserRole === "OWNER" || currentUserRole === "ADMIN";
             
             if (!canAddUsers) return null;

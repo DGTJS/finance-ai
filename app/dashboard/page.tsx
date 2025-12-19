@@ -18,6 +18,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useDashboardData } from "@/src/hooks/useDashboardData";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { addGoalAmount } from "@/src/lib/api";
@@ -44,16 +45,33 @@ import {
 } from "./components/Skeletons";
 import { Button } from "@/app/_components/ui/button";
 import { RefreshCw } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { cn } from "@/app/_lib/utils";
+import { FreelancerDashboard } from "./components/FreelancerDashboard";
 
 export default function DashboardPage() {
+  const searchParams = useSearchParams();
   const [mounted, setMounted] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [dashboardView, setDashboardView] = useState<"financeiro" | "freelancer">(() => {
+    // Verificar se há parâmetro na URL
+    const view = searchParams.get("view");
+    return view === "freelancer" ? "freelancer" : "financeiro";
+  });
   const { data, isLoading, error, refetch } = useDashboardData();
   const queryClient = useQueryClient();
+  const router = useRouter();
 
   useEffect(() => {
     setMounted(true);
-  }, []);
+    // Atualizar view se o parâmetro da URL mudar
+    const view = searchParams.get("view");
+    if (view === "freelancer") {
+      setDashboardView("freelancer");
+    } else if (view === "financeiro" || !view) {
+      setDashboardView("financeiro");
+    }
+  }, [searchParams]);
 
   const addGoalAmountMutation = useMutation({
     mutationFn: ({ goalId, amount }: { goalId: string; amount: number }) =>
@@ -116,16 +134,85 @@ export default function DashboardPage() {
     );
   }
 
+  // Renderizar conteúdo baseado na view selecionada
+  if (dashboardView === "freelancer") {
+    return (
+      <div className="bg-background min-h-screen">
+        <div className="container mx-auto space-y-4 p-3 sm:space-y-6 sm:p-4 md:p-6">
+          {/* ===== HEADER COM BOTÕES DE DASHBOARD E REFRESH ===== */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+              <div>
+                <h1 className="text-xl font-bold sm:text-2xl">Dashboard Freelancer</h1>
+                <p className="text-muted-foreground text-xs sm:text-sm">
+                  Gerencie seus períodos de trabalho e ganhos
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setDashboardView("financeiro")}
+                  className="gap-2"
+                >
+                  <span>💰</span>
+                  Financeiro
+                </Button>
+                <Button
+                  variant="default"
+                  size="sm"
+                  className="gap-2 bg-primary text-primary-foreground"
+                >
+                  <span>💼</span>
+                  Freelancer
+                </Button>
+              </div>
+            </div>
+          </div>
+          <FreelancerDashboard />
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-background min-h-screen">
       <div className="container mx-auto space-y-4 p-3 sm:space-y-6 sm:p-4 md:p-6">
-        {/* ===== HEADER COM BOTÃO DE REFRESH ===== */}
+        {/* ===== HEADER COM BOTÕES DE DASHBOARD E REFRESH ===== */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-xl font-bold sm:text-2xl">Dashboard Financeiro</h1>
-            <p className="text-muted-foreground text-xs sm:text-sm">
-              Visão geral das suas finanças
-            </p>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
+            <div>
+              <h1 className="text-xl font-bold sm:text-2xl">Dashboard</h1>
+              <p className="text-muted-foreground text-xs sm:text-sm">
+                Selecione a visualização desejada
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button
+                variant={dashboardView === "financeiro" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setDashboardView("financeiro")}
+                className={cn(
+                  "gap-2",
+                  dashboardView === "financeiro" && "bg-primary text-primary-foreground"
+                )}
+              >
+                <span>💰</span>
+                Financeiro
+              </Button>
+              <Button
+                variant={dashboardView === "freelancer" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setDashboardView("freelancer")}
+                className={cn(
+                  "gap-2",
+                  dashboardView === "freelancer" && "bg-primary text-primary-foreground"
+                )}
+              >
+                <span>💼</span>
+                Freelancer
+              </Button>
+            </div>
           </div>
           <Button
             onClick={handleRefresh}

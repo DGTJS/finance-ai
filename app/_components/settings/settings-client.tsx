@@ -5,6 +5,13 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../ui/tabs";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "../ui/select";
+import {
   Card,
   CardContent,
   CardDescription,
@@ -312,35 +319,85 @@ export default function SettingsClient({
       <Tabs
         value={activeTab}
         onValueChange={setActiveTab}
-        className="space-y-6" // aumenta o espaçamento entre as abas e o conteúdo
+        className="space-y-6"
       >
-        <div className="bg-muted/50 relative overflow-hidden rounded-lg">
-          <TabsList className="scrollbar-thin scrollbar-thumb-muted scrollbar-track-transparent flex w-full gap-1 overflow-x-auto bg-transparent p-1 pb-2 *:mb-0 sm:grid sm:flex-none sm:grid-cols-3 sm:overflow-x-visible lg:grid-cols-7">
-            <TabsTrigger value="profile" className="min-w-[120px] gap-2">
-              <User className="h-4 w-4" />
-              <span className="hidden sm:inline">Perfil</span>
-            </TabsTrigger>
-            <TabsTrigger value="users" className="min-w-[120px] gap-2">
-              <User className="h-4 w-4" />
-              <span className="hidden sm:inline">Usuários</span>
-            </TabsTrigger>
-            <TabsTrigger value="financial" className="min-w-[120px] gap-2">
-              <DollarSign className="h-4 w-4" />
-              <span className="hidden sm:inline">Financeiro</span>
-            </TabsTrigger>
-            <TabsTrigger value="notifications" className="min-w-[120px] gap-2">
-              <Bell className="h-4 w-4" />
-              <span className="hidden sm:inline">Notificações</span>
-            </TabsTrigger>
-            <TabsTrigger value="ai" className="min-w-[120px] gap-2">
-              <Sparkles className="h-4 w-4" />
-              <span className="hidden sm:inline">IA</span>
-            </TabsTrigger>
-            <TabsTrigger value="security" className="min-w-[120px] gap-2">
-              <Shield className="h-4 w-4" />
-              <span className="hidden sm:inline">Segurança</span>
-            </TabsTrigger>
-          </TabsList>
+        {/* Mobile: Select */}
+        <div className="sm:hidden">
+          <Select value={activeTab} onValueChange={setActiveTab}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Selecione uma opção" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="profile">
+                <div className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  <span>Perfil</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="users">
+                <div className="flex items-center gap-2">
+                  <User className="h-4 w-4" />
+                  <span>Usuários</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="financial">
+                <div className="flex items-center gap-2">
+                  <DollarSign className="h-4 w-4" />
+                  <span>Financeiro</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="notifications">
+                <div className="flex items-center gap-2">
+                  <Bell className="h-4 w-4" />
+                  <span>Notificações</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="ai">
+                <div className="flex items-center gap-2">
+                  <Sparkles className="h-4 w-4" />
+                  <span>IA</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="security">
+                <div className="flex items-center gap-2">
+                  <Shield className="h-4 w-4" />
+                  <span>Segurança</span>
+                </div>
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Desktop: Tabs */}
+        <div className="hidden sm:block">
+          <div className="bg-muted/50 rounded-lg p-1">
+            <TabsList className="grid w-full grid-cols-3 gap-1 bg-transparent lg:grid-cols-7">
+              <TabsTrigger value="profile" className="gap-2">
+                <User className="h-4 w-4" />
+                <span>Perfil</span>
+              </TabsTrigger>
+              <TabsTrigger value="users" className="gap-2">
+                <User className="h-4 w-4" />
+                <span>Usuários</span>
+              </TabsTrigger>
+              <TabsTrigger value="financial" className="gap-2">
+                <DollarSign className="h-4 w-4" />
+                <span>Financeiro</span>
+              </TabsTrigger>
+              <TabsTrigger value="notifications" className="gap-2">
+                <Bell className="h-4 w-4" />
+                <span>Notificações</span>
+              </TabsTrigger>
+              <TabsTrigger value="ai" className="gap-2">
+                <Sparkles className="h-4 w-4" />
+                <span>IA</span>
+              </TabsTrigger>
+              <TabsTrigger value="security" className="gap-2">
+                <Shield className="h-4 w-4" />
+                <span>Segurança</span>
+              </TabsTrigger>
+            </TabsList>
+          </div>
         </div>
 
         {/* Perfil */}

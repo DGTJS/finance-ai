@@ -38,12 +38,12 @@ const Navbar = () => {
     { href: "/transactions", label: "Transações", icon: FaReceipt },
     { href: "/subscription", label: "Assinatura", icon: FaCreditCard },
     { href: "/goals", label: "Metas", icon: FaBullseye },
-    { href: "/entrepreneur", label: "Freelancer", icon: FaUser }, // Adicionado
+    { href: "/entrepreneur", label: "Freelancer", icon: FaUser },
     {
-      href: "/financial-profile",
+      href: "/profile-finance",
       label: "Perfil Financeiro",
       icon: FaCreditCard,
-    }, // Adicionado
+    },
     { href: "/economy", label: "Economia", icon: FaDollarSign },
     { href: "/settings", label: "Configurações", icon: FaCog },
   ];
@@ -53,8 +53,34 @@ const Navbar = () => {
       {/* Desktop Navbar */}
       <nav className="bg-card fixed top-0 right-0 left-0 z-50 border-b lg:left-64">
         <div className="flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4">
-          {/* Logo e Título da página */}
-          <div className="flex min-w-0 flex-1 items-center gap-3">
+          {/* Mobile Menu Button - Esquerda */}
+          <div className="flex items-center gap-3 md:hidden">
+            <Button
+              variant="ghost"
+              size="sm"
+              className="relative z-[110]"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              {mobileMenuOpen ? (
+                <FaTimes className="h-6 w-6" />
+              ) : (
+                <FaBars className="h-6 w-6" />
+              )}
+            </Button>
+            <Link href="/" className="shrink-0">
+              <Image
+                src="/logo.png"
+                width={120}
+                height={27}
+                alt="Finance AI"
+                className="h-6 w-full *:w-auto sm:h-10"
+                priority
+              />
+            </Link>
+          </div>
+
+          {/* Logo e Título da página - Desktop */}
+          <div className="hidden min-w-0 flex-1 items-center gap-3 md:flex">
             <Link href="/" className="shrink-0">
               <Image
                 src="/logo.png"
@@ -121,6 +147,8 @@ const Navbar = () => {
                         <Image
                           src={session.user.image}
                           alt={session.user.name || "Usuário"}
+                          width={40}
+                          height={40}
                           className="h-full w-full object-cover object-center"
                         />
                       </div>
@@ -173,30 +201,78 @@ const Navbar = () => {
               </PopoverContent>
             </Popover>
           </div>
-
-          {/* Mobile Menu Button */}
-          <Button
-            variant="ghost"
-            size="sm"
-            className="relative z-[110] md:hidden"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          >
-            {mobileMenuOpen ? (
-              <FaTimes className="h-6 w-6" />
-            ) : (
-              <FaBars className="h-6 w-6" />
-            )}
-          </Button>
         </div>
       </nav>
 
-      {/* Mobile Menu - Separado da navbar */}
+      {/* Overlay para fechar menu */}
       {mobileMenuOpen && (
-        <div className="bg-background fixed top-16 right-0 left-0 z-[100] max-h-[calc(100vh-4rem)] overflow-y-auto border-t border-b shadow-lg md:hidden">
-          <div className="container mx-auto px-4 py-4">
-            {/* Navigation Links Mobile */}
-            <div className="space-y-1">
-              {navLinks.map((link) => {
+        <div
+          className="animate-in fade-in fixed inset-0 z-[90] bg-black/50 backdrop-blur-sm md:hidden"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Mobile Menu - Drawer Lateral */}
+      <div
+        className={`bg-background fixed top-0 left-0 z-[100] h-full w-80 max-w-[85vw] overflow-y-auto border-r shadow-2xl transition-transform duration-300 ease-in-out md:hidden ${
+          mobileMenuOpen
+            ? "translate-x-0 opacity-100"
+            : "pointer-events-none -translate-x-full opacity-0"
+        }`}
+      >
+        <div className="flex h-full flex-col">
+          {/* Header do Menu Lateral */}
+          <div className="flex items-center justify-between border-b p-4">
+            <h2 className="text-lg font-bold">Menu</h2>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setMobileMenuOpen(false)}
+              className="h-8 w-8 p-0"
+            >
+              <FaTimes className="h-5 w-5" />
+            </Button>
+          </div>
+
+          {/* Conteúdo do Menu */}
+          <div className="flex-1 overflow-y-auto px-4 py-6">
+            {/* Informações do Usuário */}
+            <div className="mb-6 border-b pb-6">
+              <div className="mb-2 flex items-center gap-3">
+                {session?.user?.image ? (
+                  <div className="border-primary/20 h-12 w-12 overflow-hidden rounded-full border-2">
+                    <Image
+                      src={session.user.image}
+                      alt={session.user.name || "Usuário"}
+                      width={48}
+                      height={48}
+                      className="h-full w-full object-cover object-center"
+                    />
+                  </div>
+                ) : (
+                  <div className="border-primary/20 flex h-12 w-12 items-center justify-center rounded-full border-2 bg-gradient-to-br from-green-500 to-green-600 text-base font-bold text-white">
+                    {(session?.user?.name || session?.user?.email || "U")
+                      .charAt(0)
+                      .toUpperCase()}
+                  </div>
+                )}
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-base font-semibold">
+                    {session?.user?.name || "Usuário"}
+                  </p>
+                  <p className="text-muted-foreground truncate text-sm">
+                    {session?.user?.email}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Navigation Links Mobile - Agrupados */}
+            <div className="mb-6 space-y-2">
+              <p className="text-muted-foreground mb-2 px-3 text-xs font-semibold tracking-wider uppercase">
+                Principal
+              </p>
+              {navLinks.slice(0, 4).map((link) => {
                 const Icon = link.icon;
                 const isActive = pathname === link.href;
                 return (
@@ -204,31 +280,71 @@ const Navbar = () => {
                     key={link.href}
                     href={link.href}
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`flex items-center gap-3 rounded-lg px-3 py-3 transition-colors ${
+                    className={`flex items-center gap-3 rounded-xl px-4 py-3.5 transition-all ${
                       isActive
-                        ? "bg-primary/10 text-primary font-semibold"
-                        : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                        ? "bg-primary text-primary-foreground font-semibold shadow-md"
+                        : "text-foreground hover:bg-muted active:bg-muted/80"
                     }`}
                   >
-                    <Icon className="h-5 w-5" />
-                    <span>{link.label}</span>
+                    <Icon
+                      className={`h-5 w-5 shrink-0 ${isActive ? "" : "text-muted-foreground"}`}
+                    />
+                    <span className="text-base">{link.label}</span>
+                    {isActive && (
+                      <div className="bg-primary-foreground/50 ml-auto h-2 w-2 rounded-full" />
+                    )}
                   </Link>
                 );
               })}
             </div>
 
-            {/* Logout Button Mobile */}
+            <div className="mb-6 space-y-2">
+              <p className="text-muted-foreground mb-2 px-3 text-xs font-semibold tracking-wider uppercase">
+                Outros
+              </p>
+              {navLinks.slice(4).map((link) => {
+                const Icon = link.icon;
+                const isActive = pathname === link.href;
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    onClick={() => setMobileMenuOpen(false)}
+                    className={`flex items-center gap-3 rounded-xl px-4 py-3.5 transition-all ${
+                      isActive
+                        ? "bg-primary text-primary-foreground font-semibold shadow-md"
+                        : "text-foreground hover:bg-muted active:bg-muted/80"
+                    }`}
+                  >
+                    <Icon
+                      className={`h-5 w-5 shrink-0 ${isActive ? "" : "text-muted-foreground"}`}
+                    />
+                    <span className="text-base">{link.label}</span>
+                    {isActive && (
+                      <div className="bg-primary-foreground/50 ml-auto h-2 w-2 rounded-full" />
+                    )}
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Footer com Logout */}
+          <div className="border-t p-4">
             <Button
               variant="outline"
-              className="mt-4 w-full gap-2"
-              onClick={handleSignOut}
+              className="border-destructive/20 text-destructive hover:bg-destructive h-12 w-full gap-2 text-base hover:text-white"
+              onClick={() => {
+                setMobileMenuOpen(false);
+                handleSignOut();
+              }}
             >
-              <FaSignOutAlt className="h-4 w-4" />
+              <FaSignOutAlt className="h-5 w-5" />
               Sair da conta
             </Button>
           </div>
         </div>
-      )}
+      </div>
     </>
   );
 };
