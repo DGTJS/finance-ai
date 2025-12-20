@@ -896,3 +896,4 @@ A página Freelancer é uma ferramenta completa e intuitiva para trabalhadores a
 **Última atualização**: 15/12/2025
 
 
+

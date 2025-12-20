@@ -5,3 +5,4 @@ ALTER TABLE `Transaction` MODIFY `paymentMethod` ENUM('CREDIT_CARD', 'DEBIT_CARD
 
 
 
+

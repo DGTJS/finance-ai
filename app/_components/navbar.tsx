@@ -54,7 +54,7 @@ const Navbar = () => {
       <nav className="bg-card fixed top-0 right-0 left-0 z-50 border-b lg:left-64">
         <div className="flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4">
           {/* Mobile Menu Button - Esquerda */}
-          <div className="flex items-center gap-3 md:hidden">
+          <div className="flex items-center gap-3 lg:hidden">
             <Button
               variant="ghost"
               size="sm"
@@ -80,7 +80,7 @@ const Navbar = () => {
           </div>
 
           {/* Logo e Título da página - Desktop */}
-          <div className="hidden min-w-0 flex-1 items-center gap-3 md:flex">
+          <div className="hidden min-w-0 flex-1 items-center gap-3 lg:flex">
             <Link href="/" className="shrink-0">
               <Image
                 src="/logo.png"
@@ -96,7 +96,7 @@ const Navbar = () => {
           {/* Busca e Ações */}
           <div className="flex items-center gap-2 sm:gap-4">
             {/* Barra de Busca */}
-            <div className="bg-muted hidden min-w-[200px] items-center gap-2 rounded-lg border px-3 py-2 md:flex lg:min-w-[300px]">
+            <div className="bg-muted hidden min-w-[200px] items-center gap-2 rounded-lg border px-3 py-2 lg:flex lg:min-w-[300px]">
               <FaSearch className="text-muted-foreground h-4 w-4 shrink-0" />
               <input
                 type="text"
@@ -175,14 +175,6 @@ const Navbar = () => {
                     onClick={() => setUserMenuOpen(false)}
                     className="hover:bg-muted flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors"
                   >
-                    <FaUser className="h-4 w-4" />
-                    <span>Meu Perfil</span>
-                  </Link>
-                  <Link
-                    href="/settings"
-                    onClick={() => setUserMenuOpen(false)}
-                    className="hover:bg-muted flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors"
-                  >
                     <FaCog className="h-4 w-4" />
                     <span>Configurações</span>
                   </Link>
@@ -207,14 +199,14 @@ const Navbar = () => {
       {/* Overlay para fechar menu */}
       {mobileMenuOpen && (
         <div
-          className="animate-in fade-in fixed inset-0 z-[90] bg-black/50 backdrop-blur-sm md:hidden"
+          className="animate-in fade-in fixed inset-0 z-[90] bg-black/50 backdrop-blur-sm lg:hidden"
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
 
       {/* Mobile Menu - Drawer Lateral */}
       <div
-        className={`bg-background fixed top-0 left-0 z-[100] h-full w-80 max-w-[85vw] overflow-y-auto border-r shadow-2xl transition-transform duration-300 ease-in-out md:hidden ${
+        className={`bg-background fixed top-0 left-0 z-[100] h-full w-80 max-w-[85vw] overflow-y-auto border-r shadow-2xl transition-transform duration-300 ease-in-out lg:hidden ${
           mobileMenuOpen
             ? "translate-x-0 opacity-100"
             : "pointer-events-none -translate-x-full opacity-0"
