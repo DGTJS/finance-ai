@@ -38,6 +38,12 @@ import { SaldoSalarioFamiliar } from "./components/SaldoSalarioFamiliar";
 import { SaldoBeneficiosFamiliar } from "./components/SaldoBeneficiosFamiliar";
 import { BeneficiosPieChart } from "./components/BeneficiosPieChart";
 import {
+  MobileSaldoCard,
+  MobileIncomeCard,
+  MobileExpenseCard,
+  MobileVencimentosCard,
+} from "./components/MobileCards";
+import {
   BalanceCardSkeleton,
   MainInsightCardSkeleton,
   CategoryPieCardSkeleton,
@@ -142,7 +148,7 @@ export default function DashboardPage() {
       <div className="bg-background min-h-screen">
         <div className="container mx-auto space-y-4 p-3 sm:space-y-6 sm:p-4 md:p-6">
           {/* ===== HEADER COM BOTÕES DE DASHBOARD E REFRESH ===== */}
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2">
               <Button
                 variant="outline"
@@ -167,7 +173,7 @@ export default function DashboardPage() {
               disabled={isRefreshing || isLoading}
               variant="outline"
               size="sm"
-              className="gap-2"
+              className="ml-auto gap-2"
             >
               <RefreshCw
                 className={`h-4 w-4 ${isRefreshing || isLoading ? "animate-spin" : ""}`}
@@ -185,7 +191,7 @@ export default function DashboardPage() {
     <div className="bg-background min-h-screen">
       <div className="container mx-auto space-y-4 p-3 sm:space-y-6 sm:p-4 md:p-6">
         {/* ===== HEADER COM BOTÕES DE DASHBOARD E REFRESH ===== */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center justify-between gap-3">
           <div className="flex items-center gap-2">
             <Button
               variant={dashboardView === "financeiro" ? "default" : "outline"}
@@ -215,13 +221,52 @@ export default function DashboardPage() {
             disabled={isRefreshing || isLoading}
             variant="outline"
             size="sm"
-            className="gap-2"
+            className="ml-auto gap-2"
           >
             <RefreshCw
               className={`h-4 w-4 ${isRefreshing || isLoading ? "animate-spin" : ""}`}
             />
             Atualizar
           </Button>
+        </div>
+
+        {/* ===== PRIMEIRA SEÇÃO MOBILE: CARDS COM VISUAL MOBILE ===== */}
+        {/* Mobile: Cards com design mobile otimizado */}
+        <div className="space-y-3 lg:hidden">
+          {/* Grid de 3 colunas: Saldo, Receitas, Despesas */}
+          <div className="grid grid-cols-3 gap-2 sm:gap-3">
+            {/* Visão Geral */}
+            {isLoading ? (
+              <BalanceCardSkeleton />
+            ) : data ? (
+              <MobileSaldoCard
+                currentBalance={data.currentBalance}
+                projectedBalance={data.projectedBalance}
+                changePercent={data.monthlyOverview.changePercent}
+              />
+            ) : null}
+
+            {/* Receitas do Mês */}
+            {isLoading ? (
+              <BalanceCardSkeleton />
+            ) : data ? (
+              <MobileIncomeCard income={data.income} />
+            ) : null}
+
+            {/* Despesas do Mês */}
+            {isLoading ? (
+              <BalanceCardSkeleton />
+            ) : data ? (
+              <MobileExpenseCard expenses={data.expenses} />
+            ) : null}
+          </div>
+
+          {/* Próximos Vencimentos - Linha completa */}
+          {isLoading ? (
+            <BalanceCardSkeleton />
+          ) : data?.upcomingPayments && data.upcomingPayments.length > 0 ? (
+            <MobileVencimentosCard payments={data.upcomingPayments} />
+          ) : null}
         </div>
 
         {/* ===== PRIMEIRA SEÇÃO: GRID 2 COLUNAS ===== */}
@@ -235,7 +280,7 @@ export default function DashboardPage() {
           ) : null}
 
           {/* Grid interno com Benefícios e Categorias */}
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          <div className="grid grid-cols-2 gap-4">
             {/* Benefícios (Usado vs Disponível) */}
             {isLoading ? (
               <CategoryPieCardSkeleton />
@@ -289,8 +334,8 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* ===== BLOCO 1: VISÃO PRINCIPAL (GRID 4) ===== */}
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-3 md:gap-4 lg:grid-cols-2 xl:grid-cols-4 xl:gap-6">
+        {/* ===== BLOCO 1: VISÃO PRINCIPAL (GRID 4) - DESKTOP ===== */}
+        <div className="hidden lg:grid lg:grid-cols-2 lg:gap-6 xl:grid-cols-4 xl:gap-6">
           {/* Visão Geral */}
           {isLoading ? (
             <BalanceCardSkeleton />

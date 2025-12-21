@@ -466,14 +466,14 @@ export default function EntrepreneurClient({
         )}
 
         {/* Botões de Ação */}
-        <div className="flex flex-col gap-2 sm:flex-row">
+        <div className="flex flex-row gap-2">
           <Button
             variant="outline"
             size="lg"
             onClick={() => {
               setIsGoalFormOpen(true);
             }}
-            className="gap-2"
+            className="flex-1 gap-2"
           >
             <Target className="h-5 w-5" />
             {goal ? "Editar Meta" : "Definir Meta"}
@@ -484,40 +484,56 @@ export default function EntrepreneurClient({
               setSelectedPeriod(null);
               setIsFormOpen(true);
             }}
-            className="gap-2"
+            className="flex-1 gap-2"
           >
             <Plus className="h-5 w-5" />
             Registrar trabalho de hoje
           </Button>
         </div>
 
-        {/* 1. Hero Section - Meta em Primeiro Lugar */}
-        {goal && goalValue > 0 ? (
-          <MonthlyGoalHero
-            goalType={goalType}
-            goal={goalValue}
-            currentAmount={goalAnalysis?.currentAmount || 0}
-            remainingAmount={goalAnalysis?.remainingAmount || 0}
-            aiInsight={monthlyGoalInsight}
+        {/* Quanto Vale Sua Hora - Primeiro no mobile */}
+        <div className="block sm:hidden">
+          <HourlyValueCard
+            averageHourlyRate={averageHourlyRate}
+            bestDay={bestDayForCard}
+            bestTimeRange={bestTimeRange}
           />
-        ) : (
-          <div className="bg-muted/30 rounded-2xl border-2 border-dashed p-12 text-center">
-            <p className="text-muted-foreground">
-              Configure sua meta mensal para ver seu progresso e receber
-              recomendações personalizadas.
-            </p>
-          </div>
-        )}
+        </div>
 
-        {/* 2. Card Resumo Inteligente de Hoje */}
-        <TodayIntelligenceCard
-          todayWeekday={todayWeekday}
-          todayAverage={todayAverage}
-          overallAverage={overallAverage}
-          status={getTodayStatus()}
-          projection={projection}
-          aiInsight={todayInsight}
-        />
+        {/* Grid: Meta (60% mobile / 75% desktop) + Resumo Inteligente de Hoje (40% mobile / 25% desktop) */}
+        <div className="grid grid-cols-5 gap-2 sm:gap-4 md:grid-cols-4 md:gap-6">
+          {/* 1. Hero Section - Meta em Primeiro Lugar */}
+          <div className="col-span-3 md:col-span-3">
+            {goal && goalValue > 0 ? (
+              <MonthlyGoalHero
+                goalType={goalType}
+                goal={goalValue}
+                currentAmount={goalAnalysis?.currentAmount || 0}
+                remainingAmount={goalAnalysis?.remainingAmount || 0}
+                aiInsight={monthlyGoalInsight}
+              />
+            ) : (
+              <div className="bg-muted/30 rounded-2xl border-2 border-dashed p-12 text-center">
+                <p className="text-muted-foreground">
+                  Configure sua meta mensal para ver seu progresso e receber
+                  recomendações personalizadas.
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* 2. Card Resumo Inteligente de Hoje */}
+          <div className="col-span-2 md:col-span-1">
+            <TodayIntelligenceCard
+              todayWeekday={todayWeekday}
+              todayAverage={todayAverage}
+              overallAverage={overallAverage}
+              status={getTodayStatus()}
+              projection={projection}
+              aiInsight={todayInsight}
+            />
+          </div>
+        </div>
 
         {/* Grid: Calendário + Quanto Vale Sua Hora */}
         <div className="grid gap-6 lg:grid-cols-3">
@@ -540,8 +556,8 @@ export default function EntrepreneurClient({
             )}
           </div>
 
-          {/* 4. Quanto Vale Sua Hora */}
-          <div>
+          {/* 4. Quanto Vale Sua Hora - Desktop */}
+          <div className="hidden sm:block">
             <HourlyValueCard
               averageHourlyRate={averageHourlyRate}
               bestDay={bestDayForCard}

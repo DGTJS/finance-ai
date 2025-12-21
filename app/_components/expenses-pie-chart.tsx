@@ -88,10 +88,10 @@ export default function ExpensesPieChart({ expenses }: ExpensesPieChartProps) {
         </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-1 flex-col p-3">
-        {/* Layout horizontal: gráfico pequeno + top categorias */}
-        <div className="flex min-h-0 flex-1 gap-3">
+        {/* Layout vertical: gráfico primeiro, depois informações */}
+        <div className="flex min-h-0 flex-1 flex-col gap-3">
           {/* Gráfico compacto */}
-          <div className="h-24 w-24 flex-shrink-0">
+          <div className="mx-auto h-24 w-24 flex-shrink-0">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -125,63 +125,55 @@ export default function ExpensesPieChart({ expenses }: ExpensesPieChartProps) {
             </ResponsiveContainer>
           </div>
 
-          {/* Top 3 categorias */}
-          <div className="flex min-w-0 flex-1 flex-col justify-center gap-2">
-            {/* Valor total */}
-            <div>
-              <p className="text-muted-foreground mb-0.5 text-[10px]">
-                Total gasto
-              </p>
-              <p className="text-base font-bold">
-                {formatCurrency(totalAmount)}
-              </p>
-            </div>
+          {/* Valor total */}
+          <div>
+            <p className="text-muted-foreground mb-0.5 text-[10px]">
+              Total gasto
+            </p>
+            <p className="text-base font-bold">{formatCurrency(totalAmount)}</p>
+          </div>
 
-            {/* Top categorias */}
-            {topCategories.map((entry, index) => {
-              const Icon = TRANSACTION_CATEGORY_ICONS[entry.category];
-              return (
+          {/* Top categorias */}
+          {topCategories.map((entry, index) => {
+            const Icon = TRANSACTION_CATEGORY_ICONS[entry.category];
+            return (
+              <div
+                key={index}
+                className="flex items-center gap-2"
+                onMouseEnter={() => {
+                  const chartIndex = chartData.findIndex(
+                    (item) => item.category === entry.category,
+                  );
+                  setActiveIndex(chartIndex);
+                }}
+                onMouseLeave={() => setActiveIndex(undefined)}
+              >
                 <div
-                  key={index}
-                  className="flex items-center gap-2"
-                  onMouseEnter={() => {
-                    const chartIndex = chartData.findIndex(
-                      (item) => item.category === entry.category,
-                    );
-                    setActiveIndex(chartIndex);
+                  className="flex h-5 w-5 shrink-0 items-center justify-center rounded"
+                  style={{
+                    backgroundColor: entry.fill,
+                    opacity: 0.9,
                   }}
-                  onMouseLeave={() => setActiveIndex(undefined)}
                 >
-                  <div
-                    className="flex h-5 w-5 shrink-0 items-center justify-center rounded"
-                    style={{
-                      backgroundColor: entry.fill,
-                      opacity: 0.9,
-                    }}
-                  >
-                    <Icon className="h-3 w-3 text-white" strokeWidth={2.5} />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-muted-foreground truncate text-[10px]">
-                      {entry.name}
-                    </p>
-                    <p
-                      className="truncate text-sm font-semibold"
-                      style={{ color: entry.fill }}
-                    >
-                      {formatCurrency(entry.value)}
-                    </p>
-                  </div>
+                  <Icon className="h-3 w-3 text-white" strokeWidth={2.5} />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <p className="text-muted-foreground truncate text-[10px]">
+                    {entry.name}
+                  </p>
                   <p
-                    className="text-xs font-bold"
+                    className="truncate text-sm font-semibold"
                     style={{ color: entry.fill }}
                   >
-                    {entry.percentage.toFixed(0)}%
+                    {formatCurrency(entry.value)}
                   </p>
                 </div>
-              );
-            })}
-          </div>
+                <p className="text-xs font-bold" style={{ color: entry.fill }}>
+                  {entry.percentage.toFixed(0)}%
+                </p>
+              </div>
+            );
+          })}
         </div>
       </CardContent>
     </Card>

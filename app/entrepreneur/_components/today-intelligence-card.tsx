@@ -65,29 +65,44 @@ export default function TodayIntelligenceCard({
   const StatusIcon = statusConfig.icon;
   const percentageDiff =
     overallAverage.hourlyRate > 0
-      ? ((todayAverage.hourlyRate - overallAverage.hourlyRate) / overallAverage.hourlyRate) * 100
+      ? ((todayAverage.hourlyRate - overallAverage.hourlyRate) /
+          overallAverage.hourlyRate) *
+        100
       : 0;
 
   return (
     <Card className="border-2 shadow-lg">
-      <CardContent className="p-6">
+      <CardContent className="p-3 sm:p-4 md:p-6">
         {/* Header */}
-        <div className="mb-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-primary" />
-            <h3 className="text-lg font-bold">Resumo Inteligente de Hoje</h3>
+        <div className="mb-2 flex flex-col gap-1.5 sm:mb-3 sm:flex-row sm:items-center sm:justify-between md:mb-4">
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <Sparkles className="text-primary h-3.5 w-3.5 sm:h-4 sm:w-4 md:h-5 md:w-5" />
+            <h3 className="text-xs font-bold sm:text-sm md:text-lg">
+              Resumo Inteligente de Hoje
+            </h3>
           </div>
-          <Badge variant={statusConfig.badge as any}>{statusConfig.label}</Badge>
+          <Badge
+            variant={statusConfig.badge as any}
+            className="px-1.5 py-0.5 text-[9px] sm:px-2 sm:py-1 sm:text-[10px] md:text-xs"
+          >
+            {statusConfig.label}
+          </Badge>
         </div>
 
         {/* Status do Dia */}
-        <div className={`mb-4 rounded-lg border-2 ${statusConfig.bgColor} p-4`}>
-          <div className="flex items-center gap-3">
-            <StatusIcon className={`h-5 w-5 ${statusConfig.color}`} />
-            <div className="flex-1">
-              <p className="font-semibold">{statusConfig.label}</p>
+        <div
+          className={`mb-2 rounded-lg border-2 ${statusConfig.bgColor} p-2 sm:mb-3 sm:p-3 md:mb-4 md:p-4`}
+        >
+          <div className="flex items-center gap-2 sm:gap-3">
+            <StatusIcon
+              className={`h-3.5 w-3.5 flex-shrink-0 sm:h-4 sm:w-4 md:h-5 md:w-5 ${statusConfig.color}`}
+            />
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-semibold sm:text-sm md:text-base">
+                {statusConfig.label}
+              </p>
               {todayAverage.hours > 0 && (
-                <p className="text-sm text-muted-foreground">
+                <p className="text-muted-foreground text-[9px] sm:text-[10px] md:text-sm">
                   {todayWeekday}s rendem em média{" "}
                   {percentageDiff > 0 ? (
                     <span className="font-semibold text-green-600">
@@ -109,18 +124,28 @@ export default function TodayIntelligenceCard({
 
         {/* Média Histórica */}
         {todayAverage.hours > 0 && (
-          <div className="mb-4 rounded-lg border bg-muted/30 p-4">
-            <div className="mb-2 text-xs text-muted-foreground">Média histórica para {todayWeekday}s</div>
-            <div className="grid grid-cols-2 gap-4">
+          <div className="bg-muted/30 mb-2 rounded-lg border p-2 sm:mb-3 sm:p-3 md:mb-4 md:p-4">
+            <div className="text-muted-foreground mb-1 text-[9px] sm:mb-1.5 sm:text-[10px] md:mb-2 md:text-xs">
+              Média histórica para {todayWeekday}s
+            </div>
+            <div className="grid grid-cols-2 gap-2 sm:gap-3 md:gap-4">
               <div>
-                <div className="text-sm text-muted-foreground">Ganho médio</div>
-                <div className="text-lg font-bold">
-                  {formatCurrency(todayAverage.amount / Math.max(1, todayAverage.hours))}
+                <div className="text-muted-foreground text-[9px] sm:text-[10px] md:text-sm">
+                  Ganho médio
+                </div>
+                <div className="text-xs font-bold sm:text-sm md:text-lg">
+                  {formatCurrency(
+                    todayAverage.amount / Math.max(1, todayAverage.hours),
+                  )}
                 </div>
               </div>
               <div>
-                <div className="text-sm text-muted-foreground">Por hora</div>
-                <div className="text-lg font-bold">{formatCurrency(todayAverage.hourlyRate)}</div>
+                <div className="text-muted-foreground text-[9px] sm:text-[10px] md:text-sm">
+                  Por hora
+                </div>
+                <div className="text-xs font-bold sm:text-sm md:text-lg">
+                  {formatCurrency(todayAverage.hourlyRate)}
+                </div>
               </div>
             </div>
           </div>
@@ -128,24 +153,26 @@ export default function TodayIntelligenceCard({
 
         {/* Projeção */}
         {projection && (
-          <div className="mb-4 rounded-lg border bg-primary/5 p-4">
-            <div className="mb-2 text-xs font-medium text-muted-foreground">
+          <div className="bg-primary/5 mb-2 rounded-lg border p-2 sm:mb-3 sm:p-3 md:mb-4 md:p-4">
+            <div className="text-muted-foreground mb-1 text-[9px] font-medium sm:mb-1.5 sm:text-[10px] md:mb-2 md:text-xs">
               Projeção se trabalhar {formatHours(projection.hours)} hoje
             </div>
-            <div className="text-lg font-bold">
-              Entre {formatCurrency(projection.minAmount)} e {formatCurrency(projection.maxAmount)}
+            <div className="text-xs font-bold sm:text-sm md:text-lg">
+              Entre {formatCurrency(projection.minAmount)} e{" "}
+              {formatCurrency(projection.maxAmount)}
             </div>
           </div>
         )}
 
         {/* Insight da IA */}
         {aiInsight && (
-          <div className="rounded-lg border-l-4 border-primary bg-primary/5 p-3">
-            <p className="text-sm leading-relaxed text-foreground">{aiInsight}</p>
+          <div className="border-primary bg-primary/5 rounded-lg border-l-2 p-2 sm:border-l-4 sm:p-2.5 md:p-3">
+            <p className="text-foreground text-[9px] leading-relaxed sm:text-[10px] md:text-sm">
+              {aiInsight}
+            </p>
           </div>
         )}
       </CardContent>
     </Card>
   );
 }
-
