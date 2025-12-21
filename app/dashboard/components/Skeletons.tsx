@@ -1,6 +1,6 @@
 /**
  * Skeletons - Componentes de loading para os cards
- * 
+ *
  * Usado durante o carregamento inicial dos dados
  */
 
@@ -162,8 +162,26 @@ export function UserStatsCardSkeleton() {
   );
 }
 
-
-
-
-
-
+export function CompactCardSkeleton() {
+  return (
+    <Card className="flex h-full flex-col border shadow-sm">
+      <CardHeader className="flex-shrink-0 border-b p-3 pb-2.5">
+        <div className="flex items-center gap-2">
+          <Skeleton className="h-7 w-7 rounded-lg" />
+          <Skeleton className="h-4 w-24" />
+        </div>
+      </CardHeader>
+      <CardContent className="flex flex-1 flex-col p-3">
+        <div className="flex flex-1 gap-3">
+          <Skeleton className="h-24 w-24 flex-shrink-0 rounded-full" />
+          <div className="flex-1 space-y-2">
+            <Skeleton className="h-4 w-16" />
+            <Skeleton className="h-6 w-32" />
+            <Skeleton className="h-3 w-20" />
+            <Skeleton className="h-4 w-24" />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}

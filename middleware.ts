@@ -6,7 +6,7 @@ export const runtime = "nodejs";
 
 export default auth((req) => {
   const { pathname } = req.nextUrl;
-  
+
   // Rotas que devem ser ignoradas pelo middleware
   const isAuthRoute = pathname.startsWith("/api/auth");
   if (isAuthRoute) {
@@ -14,12 +14,15 @@ export default auth((req) => {
   }
 
   // Páginas públicas que não precisam de autenticação
-  const publicRoutes = ["/login"];
+  const publicRoutes = ["/login", "/landing"];
   const isPublicRoute = publicRoutes.includes(pathname);
 
   // Debug: log para verificar o estado da autenticação
   if (process.env.NODE_ENV === "development") {
-    console.log(`[Middleware] ${pathname} - Auth:`, req.auth ? "✅ Autenticado" : "❌ Não autenticado");
+    console.log(
+      `[Middleware] ${pathname} - Auth:`,
+      req.auth ? "✅ Autenticado" : "❌ Não autenticado",
+    );
   }
 
   // Se não está autenticado e não está em uma rota pública, redireciona para login

@@ -1,0 +1,328 @@
+warning: in the working copy of 'app/dashboard/page.tsx', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/app/dashboard/page.tsx b/app/dashboard/page.tsx[m
+[1mindex ae56f2d..e8d9d71 100644[m
+[1m--- a/app/dashboard/page.tsx[m
+[1m+++ b/app/dashboard/page.tsx[m
+[36m@@ -1,18 +1,6 @@[m
+ /**[m
+  * Dashboard Principal - Página principal do dashboard financeiro[m
+[31m- *[m
+[31m- * NOVA ESTRUTURA (Refatorada):[m
+[31m- * - SaldoOverview: Saldo atual e previsto[m
+[31m- * - IncomeBreakdownCard: Breakdown de receitas (salário, benefícios, variáveis)[m
+[31m- * - ExpenseBreakdownCard: Breakdown de despesas (fixas, variáveis)[m
+[31m- * - DailyBalanceChart: Gráfico de evolução diária do saldo[m
+[31m- * - CategoryPieCard: Gastos por categoria (despesas variáveis)[m
+[31m- * - ScheduledPaymentsCard: Assinaturas próximas[m
+[31m- * - GoalsCard: Metas em andamento[m
+[31m- * - UserStatsCard: Estatísticas por usuário (se aplicável)[m
+[31m- * - MainInsightCard: Insights financeiros[m
+[31m- *[m
+[31m- * Layout responsivo focado em clareza financeira e tomada de decisão[m
+[32m+[m[32m * Layout organizado e hierárquico[m
+  */[m
+ [m
+ "use client";[m
+[36m@@ -54,7 +42,6 @@[m [mexport default function DashboardPage() {[m
+   const [mounted, setMounted] = useState(false);[m
+   const [isRefreshing, setIsRefreshing] = useState(false);[m
+   const [dashboardView, setDashboardView] = useState<"financeiro" | "freelancer">(() => {[m
+[31m-    // Verificar se há parâmetro na URL[m
+     const view = searchParams.get("view");[m
+     return view === "freelancer" ? "freelancer" : "financeiro";[m
+   });[m
+[36m@@ -64,7 +51,6 @@[m [mexport default function DashboardPage() {[m
+ [m
+   useEffect(() => {[m
+     setMounted(true);[m
+[31m-    // Atualizar view se o parâmetro da URL mudar[m
+     const view = searchParams.get("view");[m
+     if (view === "freelancer") {[m
+       setDashboardView("freelancer");[m
+[36m@@ -105,7 +91,7 @@[m [mexport default function DashboardPage() {[m
+ [m
+   if (!mounted) {[m
+     return ([m
+[31m-      <div className="container mx-auto space-y-4 p-3 sm:space-y-6 sm:p-4 md:p-6">[m
+[32m+[m[32m      <div className="container mx-auto space-y-6 p-4 md:p-6">[m
+         <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">[m
+           <BalanceCardSkeleton />[m
+           <BalanceCardSkeleton />[m
+[36m@@ -138,35 +124,28 @@[m [mexport default function DashboardPage() {[m
+   if (dashboardView === "freelancer") {[m
+     return ([m
+       <div className="bg-background min-h-screen">[m
+[31m-        <div className="container mx-auto space-y-4 p-3 sm:space-y-6 sm:p-4 md:p-6">[m
+[31m-          {/* ===== HEADER COM BOTÕES DE DASHBOARD E REFRESH ===== */}[m
+[31m-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">[m
+[31m-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">[m
+[31m-              <div>[m
+[31m-                <h1 className="text-xl font-bold sm:text-2xl">Dashboard Freelancer</h1>[m
+[31m-                <p className="text-muted-foreground text-xs sm:text-sm">[m
+[31m-                  Gerencie seus períodos de trabalho e ganhos[m
+[31m-                </p>[m
+[31m-              </div>[m
+[31m-              <div className="flex gap-2">[m
+[31m-                <Button[m
+[31m-                  variant="outline"[m
+[31m-                  size="sm"[m
+[31m-                  onClick={() => setDashboardView("financeiro")}[m
+[31m-                  className="gap-2"[m
+[31m-                >[m
+[31m-                  <span>💰</span>[m
+[31m-                  Financeiro[m
+[31m-                </Button>[m
+[31m-                <Button[m
+[31m-                  variant="default"[m
+[31m-                  size="sm"[m
+[31m-                  className="gap-2 bg-primary text-primary-foreground"[m
+[31m-                >[m
+[31m-                  <span>💼</span>[m
+[31m-                  Freelancer[m
+[31m-                </Button>[m
+[31m-              </div>[m
+[32m+[m[32m        <div className="container mx-auto space-y-6 p-4 md:p-6">[m
+[32m+[m[32m          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">[m
+[32m+[m[32m            <div>[m
+[32m+[m[32m              <h1 className="text-2xl font-bold">Dashboard Freelancer</h1>[m
+[32m+[m[32m              <p className="text-muted-foreground text-sm mt-1">[m
+[32m+[m[32m                Gerencie seus períodos de trabalho e ganhos[m
+[32m+[m[32m              </p>[m
+[32m+[m[32m            </div>[m
+[32m+[m[32m            <div className="flex gap-2">[m
+[32m+[m[32m              <Button[m
+[32m+[m[32m                variant="outline"[m
+[32m+[m[32m                size="sm"[m
+[32m+[m[32m                onClick={() => setDashboardView("financeiro")}[m
+[32m+[m[32m                className="gap-2"[m
+[32m+[m[32m              >[m
+[32m+[m[32m                <span>💰</span>[m
+[32m+[m[32m                Financeiro[m
+[32m+[m[32m              </Button>[m
+[32m+[m[32m              <Button variant="default" size="sm" className="gap-2">[m
+[32m+[m[32m                <span>💼</span>[m
+[32m+[m[32m                Freelancer[m
+[32m+[m[32m              </Button>[m
+             </div>[m
+           </div>[m
+           <FreelancerDashboard />[m
+[36m@@ -177,16 +156,16 @@[m [mexport default function DashboardPage() {[m
+ [m
+   return ([m
+     <div className="bg-background min-h-screen">[m
+[31m-      <div className="container mx-auto space-y-4 p-3 sm:space-y-6 sm:p-4 md:p-6">[m
+[31m-        {/* ===== HEADER COM BOTÕES DE DASHBOARD E REFRESH ===== */}[m
+[31m-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">[m
+[31m-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">[m
+[31m-            <div>[m
+[31m-              <h1 className="text-xl font-bold sm:text-2xl">Dashboard</h1>[m
+[31m-              <p className="text-muted-foreground text-xs sm:text-sm">[m
+[31m-                Selecione a visualização desejada[m
+[31m-              </p>[m
+[31m-            </div>[m
+[32m+[m[32m      <div className="container mx-auto space-y-6 p-4 md:p-6 lg:space-y-8">[m
+[32m+[m[32m        {/* ===== HEADER ===== */}[m
+[32m+[m[32m        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">[m
+[32m+[m[32m          <div>[m
+[32m+[m[32m            <h1 className="text-2xl font-bold">Dashboard Financeiro</h1>[m
+[32m+[m[32m            <p className="text-muted-foreground text-sm mt-1">[m
+[32m+[m[32m              Visão geral da sua situação financeira[m
+[32m+[m[32m            </p>[m
+[32m+[m[32m          </div>[m
+[32m+[m[32m          <div className="flex items-center gap-3">[m
+             <div className="flex gap-2">[m
+               <Button[m
+                 variant={dashboardView === "financeiro" ? "default" : "outline"}[m
+[36m@@ -213,179 +192,178 @@[m [mexport default function DashboardPage() {[m
+                 Freelancer[m
+               </Button>[m
+             </div>[m
+[32m+[m[32m            <Button[m
+[32m+[m[32m              onClick={handleRefresh}[m
+[32m+[m[32m              disabled={isRefreshing || isLoading}[m
+[32m+[m[32m              variant="outline"[m
+[32m+[m[32m              size="sm"[m
+[32m+[m[32m              className="gap-2"[m
+[32m+[m[32m            >[m
+[32m+[m[32m              <RefreshCw[m
+[32m+[m[32m                className={`h-4 w-4 ${isRefreshing || isLoading ? "animate-spin" : ""}`}[m
+[32m+[m[32m              />[m
+[32m+[m[32m              Atualizar[m
+[32m+[m[32m            </Button>[m
+           </div>[m
+[31m-          <Button[m
+[31m-            onClick={handleRefresh}[m
+[31m-            disabled={isRefreshing || isLoading}[m
+[31m-            variant="outline"[m
+[31m-            size="sm"[m
+[31m-            className="gap-2 w-full sm:w-auto"[m
+[31m-          >[m
+[31m-            <RefreshCw[m
+[31m-              className={`h-4 w-4 ${isRefreshing || isLoading ? "animate-spin" : ""}`}[m
+[31m-            />[m
+[31m-            Atualizar[m
+[31m-          </Button>[m
+         </div>[m
+ [m
+[31m-        {/* ===== BLOCO 1: VISÃO PRINCIPAL (GRID 4) ===== */}[m
+[31m-        <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">[m
+[31m-          {/* Visão Geral */}[m
+[31m-          {isLoading ? ([m
+[31m-            <BalanceCardSkeleton />[m
+[31m-          ) : data ? ([m
+[31m-            <SaldoOverview[m
+[31m-              currentBalance={data.currentBalance}[m
+[31m-              projectedBalance={data.projectedBalance}[m
+[31m-              changePercent={data.monthlyOverview.changePercent}[m
+[31m-            />[m
+[31m-          ) : null}[m
+[31m-[m
+[31m-          {/* Receitas do Mês */}[m
+[31m-          {isLoading ? ([m
+[31m-            <BalanceCardSkeleton />[m
+[31m-          ) : data ? ([m
+[31m-            <IncomeBreakdownCard income={data.income} />[m
+[31m-          ) : null}[m
+[31m-[m
+[31m-          {/* Despesas do Mês */}[m
+[31m-          {isLoading ? ([m
+[31m-            <BalanceCardSkeleton />[m
+[31m-          ) : data ? ([m
+[31m-            <ExpenseBreakdownCard expenses={data.expenses} />[m
+[31m-          ) : null}[m
+[31m-[m
+[31m-          {/* Próximos Vencimentos */}[m
+[31m-          {isLoading ? ([m
+[31m-            <BalanceCardSkeleton />[m
+[31m-          ) : data?.upcomingPayments && data.upcomingPayments.length > 0 ? ([m
+[31m-            <ProximosVencimentos payments={data.upcomingPayments} />[m
+[31m-          ) : null}[m
+[31m-        </div>[m
+[31m-[m
+[31m-        {/* ===== BLOCO 3: SALÁRIO E BENEFÍCIOS ===== */}[m
+[31m-        {/* Mobile/Tablet: Grid 2 colunas (1/2 cada) */}[m
+[31m-        <div className="grid gap-3 grid-cols-2 lg:hidden">[m
+[31m-          {/* Saldo de Salário do Mês */}[m
+[31m-          {isLoading ? ([m
+[31m-            <BalanceCardSkeleton />[m
+[31m-          ) : data?.familySalaryBalance ? ([m
+[31m-            <SaldoSalarioFamiliar salaryBalance={data.familySalaryBalance} />[m
+[31m-          ) : null}[m
+[31m-[m
+[31m-          {/* Saldo de Benefícios do Mês */}[m
+[31m-          {isLoading ? ([m
+[31m-            <BalanceCardSkeleton />[m
+[31m-          ) : data?.familyBenefitsBalance ? ([m
+[31m-            <SaldoBeneficiosFamiliar benefitsBalance={data.familyBenefitsBalance} />[m
+[31m-          ) : null}[m
+[31m-        </div>[m
+[31m-[m
+[31m-        {/* Mobile/Tablet: Evolução do Saldo Diário (largura completa) */}[m
+[31m-        <div className="lg:hidden">[m
+[31m-          {isLoading ? ([m
+[31m-            <CategoryPieCardSkeleton />[m
+[31m-          ) : data ? ([m
+[31m-            <DailyBalanceChart dailyBalance={data.dailyBalanceSparkline} />[m
+[31m-          ) : null}[m
+[31m-        </div>[m
+[32m+[m[32m        {/* ===== SEÇÃO 1: VISÃO GERAL (4 Cards) ===== */}[m
+[32m+[m[32m        <section className="space-y-4">[m
+[32m+[m[32m          <h2 className="text-lg font-semibold text-muted-foreground">Visão Geral</h2>[m
+[32m+[m[32m          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4">[m
+[32m+[m[32m            {isLoading ? ([m
+[32m+[m[32m              <>[m
+[32m+[m[32m                <BalanceCardSkeleton />[m
+[32m+[m[32m                <BalanceCardSkeleton />[m
+[32m+[m[32m                <BalanceCardSkeleton />[m
+[32m+[m[32m                <BalanceCardSkeleton />[m
+[32m+[m[32m              </>[m
+[32m+[m[32m            ) : ([m
+[32m+[m[32m              <>[m
+[32m+[m[32m                {data && ([m
+[32m+[m[32m                  <>[m
+[32m+[m[32m                    <SaldoOverview[m
+[32m+[m[32m                      currentBalance={data.currentBalance}[m
+[32m+[m[32m                      projectedBalance={data.projectedBalance}[m
+[32m+[m[32m                      changePercent={data.monthlyOverview.changePercent}[m
+[32m+[m[32m                    />[m
+[32m+[m[32m                    <IncomeBreakdownCard income={data.income} />[m
+[32m+[m[32m                    <ExpenseBreakdownCard expenses={data.expenses} />[m
+[32m+[m[32m                    {data.upcomingPayments && data.upcomingPayments.length > 0 && ([m
+[32m+[m[32m                      <ProximosVencimentos payments={data.upcomingPayments} />[m
+[32m+[m[32m                    )}[m
+[32m+[m[32m                  </>[m
+[32m+[m[32m                )}[m
+[32m+[m[32m              </>[m
+[32m+[m[32m            )}[m
+[32m+[m[32m          </div>[m
+[32m+[m[32m        </section>[m
+ [m
+[31m-        {/* Desktop: Layout 4/2 (grid de 6) */}[m
+[31m-        <div className="hidden lg:grid lg:grid-cols-6 lg:items-start lg:gap-6">[m
+[31m-          {/* Evolução do Saldo Diário (4/6 da largura) */}[m
+[31m-          <div className="lg:col-span-4 h-full">[m
+[32m+[m[32m        {/* ===== SEÇÃO 2: ANÁLISE VISUAL (Gráfico + Cards Compactos) ===== */}[m
+[32m+[m[32m        <section className="space-y-4">[m
+[32m+[m[32m          <h2 className="text-lg font-semibold text-muted-foreground">Análise Visual</h2>[m
+[32m+[m[41m          [m
+[32m+[m[32m          {/* Mobile/Tablet: Stack vertical */}[m
+[32m+[m[32m          <div className="lg:hidden space-y-4">[m
+             {isLoading ? ([m
+               <CategoryPieCardSkeleton />[m
+             ) : data ? ([m
+               <DailyBalanceChart dailyBalance={data.dailyBalanceSparkline} />[m
+             ) : null}[m
+[31m-          </div>[m
+[31m-[m
+[31m-          {/* Cards de Salário e Benefícios (2/6 da largura, um embaixo do outro) */}[m
+[31m-          <div className="lg:col-span-2 space-y-6">[m
+[31m-            {/* Saldo de Salário do Mês */}[m
+[31m-            {isLoading ? ([m
+[31m-              <BalanceCardSkeleton />[m
+[31m-            ) : data?.familySalaryBalance ? ([m
+[31m-              <SaldoSalarioFamiliar salaryBalance={data.familySalaryBalance} />[m
+[31m-            ) : null}[m
+ [m
+[31m-            {/* Saldo de Benefícios do Mês */}[m
+[31m-            {isLoading ? ([m
+[31m-              <BalanceCardSkeleton />[m
+[31m-            ) : data?.familyBenefitsBalance ? ([m
+[31m-              <SaldoBeneficiosFamiliar benefitsBalance={data.familyBenefitsBalance} />[m
+[31m-            ) : null}[m
+[32m+[m[32m            <div className="grid gap-4 grid-cols-1 md:grid-cols-2">[m
+[32m+[m[32m              {isLoading ? ([m
+[32m+[m[32m                <>[m
+[32m+[m[32m                  <CategoryPieCardSkeleton />[m
+[32m+[m[32m                  <CategoryPieCardSkeleton />[m
+[32m+[m[32m                </>[m
+[32m+[m[32m              ) : ([m
+[32m+[m[32m                <>[m
+[32m+[m[32m                  {data?.familyBenefitsBalance && ([m
+[32m+[m[32m                    <BeneficiosPieChart benefitsBalance={data.familyBenefitsBalance} />[m
+[32m+[m[32m                  )}[m
+[32m+[m[32m                  {data && <CategoryPieCard categories={data.categories} />}[m
+[32m+[m[32m                </>[m
+[32m+[m[32m              )}[m
+[32m+[m[32m            </div>[m
+           </div>[m
+[31m-        </div>[m
+ [m
+[31m-        {/* ===== GRÁFICOS ===== */}[m
+[31m-        <div className="grid gap-3 grid-cols-2 sm:gap-4 lg:gap-6">[m
+[31m-          {/* Benefícios (Usado vs Disponível) */}[m
+[31m-          {isLoading ? ([m
+[31m-            <CategoryPieCardSkeleton />[m
+[31m-          ) : data?.familyBenefitsBalance ? ([m
+[31m-            <BeneficiosPieChart benefitsBalance={data.familyBenefitsBalance} />[m
+[31m-          ) : null}[m
+[31m-[m
+[31m-          {/* Gastos por Categoria */}[m
+[31m-          {isLoading ? ([m
+[31m-            <CategoryPieCardSkeleton />[m
+[31m-          ) : data ? ([m
+[31m-            <CategoryPieCard categories={data.categories} />[m
+[31m-          ) : null}[m
+[31m-        </div>[m
+[31m-[m
+[31m-        {/* ===== CONTEXTO E AÇÕES ===== */}[m
+[31m-        <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 lg:

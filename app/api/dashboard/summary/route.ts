@@ -174,13 +174,19 @@ export async function GET(request: NextRequest) {
               payment.label.toLowerCase().includes("salario")
             ) {
               // Incluir salário se o dia está no mês atual (entre 1 e último dia do mês)
-              if (payment.day >= 1 && payment.day <= currentMonthEnd.getDate()) {
+              if (
+                payment.day >= 1 &&
+                payment.day <= currentMonthEnd.getDate()
+              ) {
                 expectedSalaryFromProfiles += payment.value;
               }
             }
           });
         } catch (error) {
-          console.error("Erro ao processar multiplePayments para salário esperado:", error);
+          console.error(
+            "Erro ao processar multiplePayments para salário esperado:",
+            error,
+          );
         }
       } else if (profile.diaPagamento && profile.rendaFixa > 0) {
         const paymentDay = profile.diaPagamento;
@@ -281,8 +287,12 @@ export async function GET(request: NextRequest) {
     // ===== 5. CALCULAR BREAKDOWNS =====
     // Usar o maior entre salários recebidos e salários esperados dos perfis
     // Isso garante que salários esperados sejam incluídos mesmo se não foram transacionados ainda
-    const effectiveSalaryTotal = Math.max(salaryTotal, expectedSalaryFromProfiles);
-    const incomeTotal = effectiveSalaryTotal + benefitsTotal + variableIncomeTotal;
+    const effectiveSalaryTotal = Math.max(
+      salaryTotal,
+      expectedSalaryFromProfiles,
+    );
+    const incomeTotal =
+      effectiveSalaryTotal + benefitsTotal + variableIncomeTotal;
     const expensesTotal = fixedExpensesTotal + variableExpensesTotal;
     const netBalance = incomeTotal - expensesTotal - investmentsTotal;
 
@@ -308,11 +318,7 @@ export async function GET(request: NextRequest) {
 
     // ===== 6.1. CALCULAR GASTOS PREVISTOS DO PRÓXIMO MÊS =====
     // Período do próximo mês
-    const nextMonthStart = new Date(
-      now.getFullYear(),
-      now.getMonth() + 1,
-      1,
-    );
+    const nextMonthStart = new Date(now.getFullYear(), now.getMonth() + 1, 1);
     const nextMonthEnd = new Date(
       now.getFullYear(),
       now.getMonth() + 2,
@@ -336,7 +342,7 @@ export async function GET(request: NextRequest) {
       // Se não tem nextDueDate, calcular a próxima data baseada no dueDate
       const dueDate = new Date(sub.dueDate);
       const dayOfMonth = dueDate.getDate();
-      
+
       // Calcular a próxima data de vencimento (mesmo dia do mês seguinte)
       const nextDue = new Date(
         nextMonthStart.getFullYear(),
@@ -411,6 +417,91 @@ export async function GET(request: NextRequest) {
     const dailyBalanceSparkline: DailyBalance[] = [];
     let runningBalance = 0;
 
+    // Criar mapa de salários esperados por dia
+    const expectedSalariesByDay = new Map<number, number>();
+    financialProfiles.forEach((profile) => {
+      // Verificar múltiplos pagamentos
+      if (profile.multiplePayments && Array.isArray(profile.multiplePayments)) {
+        try {
+          const multiplePayments = profile.multiplePayments as Array<{
+            label: string;
+            day: number;
+            value: number;
+          }>;
+
+          multiplePayments.forEach((payment) => {
+            if (
+              payment.label.toLowerCase().includes("salário") ||
+              payment.label.toLowerCase().includes("salario")
+            ) {
+              const paymentDay = payment.day;
+              // Verificar se já foi recebido este mês
+              const hasReceived = currentMonthTransactions.some((t) => {
+                const txDate = t.date || t.createdAt;
+                const txDay = txDate.getDate();
+                return (
+                  txDay === paymentDay &&
+                  t.type === "DEPOSIT" &&
+                  t.category === "SALARY" &&
+                  Math.abs(Number(t.amount) - payment.value) < 0.01 &&
+                  t.userId === profile.userId
+                );
+              });
+
+              // Incluir salário se o dia já passou ou se já foi recebido
+              if (paymentDay <= currentDay || hasReceived) {
+                const current = expectedSalariesByDay.get(paymentDay) || 0;
+                expectedSalariesByDay.set(paymentDay, current + payment.value);
+              }
+            }
+          });
+        } catch (error) {
+          console.error("Erro ao processar multiplePayments:", error);
+        }
+      } else if (profile.diaPagamento && profile.rendaFixa > 0) {
+        const paymentDay = profile.diaPagamento;
+        const hasReceived = currentMonthTransactions.some((t) => {
+          const txDate = t.date || t.createdAt;
+          const txDay = txDate.getDate();
+          return (
+            txDay === paymentDay &&
+            t.type === "DEPOSIT" &&
+            t.category === "SALARY" &&
+            Math.abs(Number(t.amount) - profile.rendaFixa) < 0.01 &&
+            t.userId === profile.userId
+          );
+        });
+
+        // Incluir salário se o dia já passou ou se já foi recebido
+        if (paymentDay <= currentDay || hasReceived) {
+          const current = expectedSalariesByDay.get(paymentDay) || 0;
+          expectedSalariesByDay.set(paymentDay, current + profile.rendaFixa);
+        }
+      } else if (profile.rendaFixa > 0) {
+        // Sem dia de pagamento definido, verificar se há transações de salário
+        const salaryTransactions = currentMonthTransactions.filter(
+          (t) =>
+            t.type === "DEPOSIT" &&
+            t.category === "SALARY" &&
+            t.userId === profile.userId,
+        );
+        const receivedSalary = salaryTransactions.reduce(
+          (sum, t) => sum + Number(t.amount),
+          0,
+        );
+
+        // Se recebeu salário, incluir no primeiro dia do mês (já foi recebido)
+        if (receivedSalary > 0) {
+          const current = expectedSalariesByDay.get(1) || 0;
+          expectedSalariesByDay.set(1, current + receivedSalary);
+        } else {
+          // Se não recebeu, incluir no primeiro dia como esperado
+          const current = expectedSalariesByDay.get(1) || 0;
+          expectedSalariesByDay.set(1, current + profile.rendaFixa);
+        }
+      }
+    });
+
     // Processar cada dia do mês
     for (let day = 1; day <= Math.min(currentDay, daysInMonth); day++) {
       const dayStart = new Date(
@@ -440,6 +531,24 @@ export async function GET(request: NextRequest) {
         .filter((t) => t.type === "DEPOSIT")
         .reduce((sum, t) => sum + Number(t.amount), 0);
 
+      // Adicionar salários esperados do dia (se ainda não foram recebidos)
+      const expectedSalary = expectedSalariesByDay.get(day) || 0;
+      // Verificar se o salário esperado já foi recebido nas transações
+      const receivedSalary = dayTransactions
+        .filter(
+          (t) =>
+            t.type === "DEPOSIT" &&
+            t.category === "SALARY" &&
+            Math.abs(Number(t.amount) - expectedSalary) < 0.01,
+        )
+        .reduce((sum, t) => sum + Number(t.amount), 0);
+
+      // Se há salário esperado mas não foi recebido (ou foi parcialmente recebido), adicionar
+      const additionalSalary =
+        expectedSalary > 0 && receivedSalary < expectedSalary
+          ? expectedSalary - receivedSalary
+          : 0;
+
       const dayExpenses = dayTransactions
         .filter((t) => t.type === "EXPENSE")
         .reduce((sum, t) => sum + Number(t.amount), 0);
@@ -448,7 +557,8 @@ export async function GET(request: NextRequest) {
         .filter((t) => t.type === "INVESTMENT")
         .reduce((sum, t) => sum + Number(t.amount), 0);
 
-      runningBalance += dayIncome - dayExpenses - dayInvestments;
+      runningBalance +=
+        dayIncome + additionalSalary - dayExpenses - dayInvestments;
 
       dailyBalanceSparkline.push({
         date: dayStart.toISOString().split("T")[0],
@@ -522,7 +632,10 @@ export async function GET(request: NextRequest) {
     // Adicionar assinaturas (até 60 dias)
     subscriptions.forEach((sub) => {
       const dueDate = sub.nextDueDate || sub.dueDate;
-      if (dueDate >= now && dueDate <= new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000)) {
+      if (
+        dueDate >= now &&
+        dueDate <= new Date(now.getTime() + 60 * 24 * 60 * 60 * 1000)
+      ) {
         const daysUntil = Math.ceil(
           (dueDate.getTime() - now.getTime()) / (1000 * 60 * 60 * 24),
         );
@@ -670,12 +783,13 @@ export async function GET(request: NextRequest) {
     let totalBenefitsUsed = 0;
 
     financialProfiles.forEach((profile) => {
-      const beneficios = (profile.beneficios as Array<{
-        type: string;
-        value: number;
-        notes?: string;
-        category?: string;
-      }>) || [];
+      const beneficios =
+        (profile.beneficios as Array<{
+          type: string;
+          value: number;
+          notes?: string;
+          category?: string;
+        }>) || [];
 
       if (beneficios.length > 0) {
         const userBenefitsTotal = beneficios.reduce(

@@ -26,11 +26,38 @@ const Navbar = () => {
   const { data: session } = useSession();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [isSigningOut, setIsSigningOut] = useState(false);
 
   const handleSignOut = async () => {
-    // Usar window.location.origin para garantir que usa a porta correta
-    const callbackUrl = `${window.location.origin}/login`;
-    await signOut({ callbackUrl });
+    if (isSigningOut) return; // Prevenir múltiplos cliques
+
+    try {
+      setIsSigningOut(true);
+
+      // Fechar menus antes de fazer signOut
+      setUserMenuOpen(false);
+      setMobileMenuOpen(false);
+
+      // Usar window.location.origin para garantir que usa a porta correta
+      const callbackUrl = `${window.location.origin}/login`;
+
+      // Fazer signOut e redirecionar
+      await signOut({
+        callbackUrl,
+        redirect: true,
+      });
+
+      // Se o signOut não redirecionar automaticamente, forçar redirecionamento
+      setTimeout(() => {
+        window.location.href = "/login";
+      }, 500);
+    } catch (error) {
+      console.error("Erro ao fazer logout:", error);
+      // Em caso de erro, forçar redirecionamento
+      window.location.href = "/login";
+    } finally {
+      setIsSigningOut(false);
+    }
   };
 
   const navLinks = [
@@ -180,14 +207,13 @@ const Navbar = () => {
                   </Link>
                   <div className="bg-border my-1 h-px" />
                   <button
-                    onClick={() => {
-                      setUserMenuOpen(false);
-                      handleSignOut();
-                    }}
-                    className="text-destructive hover:bg-muted flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors"
+                    type="button"
+                    onClick={handleSignOut}
+                    disabled={isSigningOut}
+                    className="text-destructive hover:bg-muted flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     <FaSignOutAlt className="h-4 w-4" />
-                    <span>Sair</span>
+                    <span>{isSigningOut ? "Saindo..." : "Sair"}</span>
                   </button>
                 </div>
               </PopoverContent>
@@ -324,15 +350,14 @@ const Navbar = () => {
           {/* Footer com Logout */}
           <div className="border-t p-4">
             <Button
+              type="button"
               variant="outline"
-              className="border-destructive/20 text-destructive hover:bg-destructive h-12 w-full gap-2 text-base hover:text-white"
-              onClick={() => {
-                setMobileMenuOpen(false);
-                handleSignOut();
-              }}
+              disabled={isSigningOut}
+              className="border-destructive/20 text-destructive hover:bg-destructive h-12 w-full gap-2 text-base hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+              onClick={handleSignOut}
             >
               <FaSignOutAlt className="h-5 w-5" />
-              Sair da conta
+              {isSigningOut ? "Saindo..." : "Sair da conta"}
             </Button>
           </div>
         </div>

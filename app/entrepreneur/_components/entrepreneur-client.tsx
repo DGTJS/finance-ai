@@ -103,9 +103,15 @@ export default function EntrepreneurClient({
   const now = new Date();
   const currentMonth = now.getMonth();
   const currentYear = now.getFullYear();
-  const todayWeekday = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"][
-    now.getDay()
-  ];
+  const todayWeekday = [
+    "Domingo",
+    "Segunda",
+    "Terça",
+    "Quarta",
+    "Quinta",
+    "Sexta",
+    "Sábado",
+  ][now.getDay()];
 
   // Carregar meta
   useEffect(() => {
@@ -142,13 +148,20 @@ export default function EntrepreneurClient({
 
     // Calcular análise de meta
     if (goal) {
-      const goalType = (goal.goalType || "monthly") as "daily" | "weekly" | "monthly" | "custom";
+      const goalType = (goal.goalType || "monthly") as
+        | "daily"
+        | "weekly"
+        | "monthly"
+        | "custom";
       let goalValue = 0;
-      
+
       if (goalType === "daily" && goal.dailyGoal) goalValue = goal.dailyGoal;
-      else if (goalType === "weekly" && goal.weeklyGoal) goalValue = goal.weeklyGoal;
-      else if (goalType === "monthly" && goal.monthlyGoal) goalValue = goal.monthlyGoal;
-      else if (goalType === "custom" && goal.customGoal) goalValue = goal.customGoal;
+      else if (goalType === "weekly" && goal.weeklyGoal)
+        goalValue = goal.weeklyGoal;
+      else if (goalType === "monthly" && goal.monthlyGoal)
+        goalValue = goal.monthlyGoal;
+      else if (goalType === "custom" && goal.customGoal)
+        goalValue = goal.customGoal;
       else if (goal.monthlyGoal) goalValue = goal.monthlyGoal; // Fallback
 
       if (goalValue > 0) {
@@ -173,16 +186,35 @@ export default function EntrepreneurClient({
 
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-    const endOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59);
-    const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const endOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+    const endOfMonth = new Date(
+      now.getFullYear(),
+      now.getMonth() + 1,
+      0,
+      23,
+      59,
+      59,
+    );
+    const startOfToday = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+    );
+    const endOfToday = new Date(
+      now.getFullYear(),
+      now.getMonth(),
+      now.getDate(),
+      23,
+      59,
+      59,
+    );
 
-    const [periodsResult, statsResult, todayStatsResult, projectsResult] = await Promise.all([
-      getWorkPeriods(startOfMonth, endOfMonth),
-      getWorkPeriodStats(startOfMonth, endOfMonth),
-      getWorkPeriodStats(startOfToday, endOfToday),
-      getProjects(),
-    ]);
+    const [periodsResult, statsResult, todayStatsResult, projectsResult] =
+      await Promise.all([
+        getWorkPeriods(startOfMonth, endOfMonth),
+        getWorkPeriodStats(startOfMonth, endOfMonth),
+        getWorkPeriodStats(startOfToday, endOfToday),
+        getProjects(),
+      ]);
 
     if (periodsResult.success) {
       setPeriods(periodsResult.data || []);
@@ -215,7 +247,11 @@ export default function EntrepreneurClient({
   // Calcular insights
   const getGoalValue = () => {
     if (!goal) return 0;
-    const goalType = (goal.goalType || "monthly") as "daily" | "weekly" | "monthly" | "custom";
+    const goalType = (goal.goalType || "monthly") as
+      | "daily"
+      | "weekly"
+      | "monthly"
+      | "custom";
     if (goalType === "daily" && goal.dailyGoal) return goal.dailyGoal;
     if (goalType === "weekly" && goal.weeklyGoal) return goal.weeklyGoal;
     if (goalType === "monthly" && goal.monthlyGoal) return goal.monthlyGoal;
@@ -224,17 +260,24 @@ export default function EntrepreneurClient({
   };
 
   const goalValue = getGoalValue();
-  const goalType = goal ? ((goal.goalType || "monthly") as "daily" | "weekly" | "monthly" | "custom") : "monthly";
+  const goalType = goal
+    ? ((goal.goalType || "monthly") as
+        | "daily"
+        | "weekly"
+        | "monthly"
+        | "custom")
+    : "monthly";
 
-  const monthlyGoalInsight = goal && goalAnalysis && goalValue > 0
-    ? generateMonthlyGoalInsight(
-        goalAnalysis.currentAmount,
-        goalValue,
-        goalAnalysis.workDaysRemaining,
-        goalAnalysis.hoursPerDayNeeded,
-        goalAnalysis.currentAverageHourlyRate,
-      )
-    : undefined;
+  const monthlyGoalInsight =
+    goal && goalAnalysis && goalValue > 0
+      ? generateMonthlyGoalInsight(
+          goalAnalysis.currentAmount,
+          goalValue,
+          goalAnalysis.workDaysRemaining,
+          goalAnalysis.hoursPerDayNeeded,
+          goalAnalysis.currentAverageHourlyRate,
+        )
+      : undefined;
 
   // Calcular dados para Today Intelligence
   const todayWeekdayStats = weekdayStats.find(
@@ -249,28 +292,33 @@ export default function EntrepreneurClient({
     : { amount: 0, hours: 0, hourlyRate: 0 };
 
   const overallAverage = {
-    hourlyRate: stats.totalHours > 0 ? stats.totalNetProfit / stats.totalHours : 0,
+    hourlyRate:
+      stats.totalHours > 0 ? stats.totalNetProfit / stats.totalHours : 0,
   };
 
   // Determinar status do dia
   const getTodayStatus = (): "good" | "neutral" | "bad" => {
     if (todayAverage.hours === 0) return "neutral";
-    const diff = overallAverage.hourlyRate > 0
-      ? ((todayAverage.hourlyRate - overallAverage.hourlyRate) / overallAverage.hourlyRate) * 100
-      : 0;
+    const diff =
+      overallAverage.hourlyRate > 0
+        ? ((todayAverage.hourlyRate - overallAverage.hourlyRate) /
+            overallAverage.hourlyRate) *
+          100
+        : 0;
     if (diff > 10) return "good";
     if (diff < -10) return "bad";
     return "neutral";
   };
 
   // Projeção para hoje
-  const projection = todayAverage.hourlyRate > 0
-    ? {
-        hours: 4,
-        minAmount: todayAverage.hourlyRate * 3,
-        maxAmount: todayAverage.hourlyRate * 5,
-      }
-    : undefined;
+  const projection =
+    todayAverage.hourlyRate > 0
+      ? {
+          hours: 4,
+          minAmount: todayAverage.hourlyRate * 3,
+          maxAmount: todayAverage.hourlyRate * 5,
+        }
+      : undefined;
 
   const todayInsight = generateTodayInsight(
     todayWeekday,
@@ -286,13 +334,16 @@ export default function EntrepreneurClient({
   const bestTimeRangeInfo = identifyBestTimeRange(periods);
 
   // Calcular melhor dia e horário para HourlyValueCard
-  const bestDay = weekdayStats.length > 0
-    ? weekdayStats.reduce(
-        (best, current) =>
-          current.averageNetProfitPerHour > best.averageNetProfitPerHour ? current : best,
-        weekdayStats[0],
-      )
-    : undefined;
+  const bestDay =
+    weekdayStats.length > 0
+      ? weekdayStats.reduce(
+          (best, current) =>
+            current.averageNetProfitPerHour > best.averageNetProfitPerHour
+              ? current
+              : best,
+          weekdayStats[0],
+        )
+      : undefined;
 
   const bestDayForCard = bestDay
     ? {
@@ -302,13 +353,16 @@ export default function EntrepreneurClient({
     : undefined;
 
   // Calcular melhor faixa de horário (simplificado)
-  const timeRanges: Record<string, { total: number; hours: number; startHour: number; endHour: number }> = {};
+  const timeRanges: Record<
+    string,
+    { total: number; hours: number; startHour: number; endHour: number }
+  > = {};
   periods.forEach((period) => {
     const startHour = new Date(period.startTime).getHours();
     let range = "";
     let startHourNum = 0;
     let endHourNum = 0;
-    
+
     if (startHour >= 18 && startHour < 24) {
       range = "19h-22h";
       startHourNum = 19;
@@ -328,7 +382,12 @@ export default function EntrepreneurClient({
     }
 
     if (!timeRanges[range]) {
-      timeRanges[range] = { total: 0, hours: 0, startHour: startHourNum, endHour: endHourNum };
+      timeRanges[range] = {
+        total: 0,
+        hours: 0,
+        startHour: startHourNum,
+        endHour: endHourNum,
+      };
     }
     timeRanges[range].total += Number(period.netProfit);
     timeRanges[range].hours += period.hours;
@@ -346,7 +405,7 @@ export default function EntrepreneurClient({
       startDate.setUTCHours(data.startHour, 0, 0, 0);
       const endDate = new Date(baseDate);
       endDate.setUTCHours(data.endHour, 0, 0, 0);
-      
+
       bestTimeRange = {
         start: startDate,
         end: endDate,
@@ -356,12 +415,13 @@ export default function EntrepreneurClient({
   });
 
   // Mensagem contextual para CTA
-  const contextualMessage = goal && goalAnalysis
-    ? `Registrar hoje pode te aproximar ${(
-        (todayAverage.hourlyRate * 4) /
-        goalAnalysis.remainingAmount
-      ).toFixed(0)}% da sua meta mensal.`
-    : "Registre seus períodos de trabalho para ver insights personalizados.";
+  const contextualMessage =
+    goal && goalAnalysis
+      ? `Registrar hoje pode te aproximar ${(
+          (todayAverage.hourlyRate * 4) /
+          goalAnalysis.remainingAmount
+        ).toFixed(0)}% da sua meta mensal.`
+      : "Registre seus períodos de trabalho para ver insights personalizados.";
 
   // Calcular média por hora (lucro líquido)
   const averageHourlyRate =
@@ -375,7 +435,9 @@ export default function EntrepreneurClient({
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
               <div>
-                <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Dashboard</h1>
+                <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+                  Dashboard
+                </h1>
                 <p className="text-muted-foreground text-sm sm:text-base">
                   Selecione a visualização desejada
                 </p>
@@ -393,7 +455,7 @@ export default function EntrepreneurClient({
                 <Button
                   variant="default"
                   size="sm"
-                  className="gap-2 bg-primary text-primary-foreground"
+                  className="bg-primary text-primary-foreground gap-2"
                 >
                   <span>💼</span>
                   Freelancer
@@ -439,10 +501,10 @@ export default function EntrepreneurClient({
             aiInsight={monthlyGoalInsight}
           />
         ) : (
-          <div className="rounded-2xl border-2 border-dashed bg-muted/30 p-12 text-center">
+          <div className="bg-muted/30 rounded-2xl border-2 border-dashed p-12 text-center">
             <p className="text-muted-foreground">
-              Configure sua meta mensal para ver seu progresso e receber recomendações
-              personalizadas.
+              Configure sua meta mensal para ver seu progresso e receber
+              recomendações personalizadas.
             </p>
           </div>
         )}
@@ -471,7 +533,8 @@ export default function EntrepreneurClient({
             ) : (
               <div className="rounded-lg border-2 border-dashed p-12 text-center">
                 <p className="text-muted-foreground">
-                  Registre seus períodos de trabalho para ver o calendário de ganhos.
+                  Registre seus períodos de trabalho para ver o calendário de
+                  ganhos.
                 </p>
               </div>
             )}
@@ -491,7 +554,7 @@ export default function EntrepreneurClient({
         <div>
           <div className="mb-4">
             <h2 className="text-xl font-bold">Histórico de Serviços</h2>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-muted-foreground text-sm">
               Seus períodos de trabalho registrados
             </p>
           </div>

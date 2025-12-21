@@ -1,10 +1,10 @@
 /**
  * MainInsightCard - Card principal de insight da IA
- * 
+ *
  * Props:
  * - insight: Objeto com severidade, mensagem e ações
  * - onActionClick: Callback quando clica em uma ação
- * 
+ *
  * Funcionalidades:
  * - Exibe insight com cores baseadas na severidade
  * - Botões de ação rápida
@@ -13,7 +13,12 @@
 
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/app/_components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/app/_components/ui/card";
 import { Button } from "@/app/_components/ui/button";
 import { AlertTriangle, Info, CheckCircle, Sparkles } from "lucide-react";
 import type { Insight } from "@/src/types/dashboard";
@@ -50,7 +55,9 @@ export function MainInsightCard({
       setSelectedAction(null);
     },
     onError: (error) => {
-      toast.error(error instanceof Error ? error.message : "Erro ao executar ação");
+      toast.error(
+        error instanceof Error ? error.message : "Erro ao executar ação",
+      );
     },
   });
 
@@ -105,25 +112,27 @@ export function MainInsightCard({
         className={`border-2 ${config.borderColor} ${config.bgColor}`}
       >
         <CardHeader className="pb-3">
-          <div className="flex items-center gap-2">
-            <div className={`rounded-full p-2 ${config.bgColor}`}>
-              <Icon className={`h-5 w-5 ${config.color}`} />
+          <div className="flex items-start gap-2 sm:items-center">
+            <div className={`shrink-0 rounded-full p-2 ${config.bgColor}`}>
+              <Icon className={`h-4 w-4 sm:h-5 sm:w-5 ${config.color}`} />
             </div>
-            <div className="flex-1">
-              <CardTitle className="text-base font-semibold flex items-center gap-2">
-                Insight da IA
-                <Sparkles className="h-4 w-4 text-primary" />
+            <div className="min-w-0 flex-1">
+              <CardTitle className="flex flex-wrap items-center gap-2 text-sm font-semibold sm:text-base">
+                <span>Insight da IA</span>
+                <Sparkles className="text-primary h-3 w-3 shrink-0 sm:h-4 sm:w-4" />
               </CardTitle>
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-muted-foreground mt-1 text-xs">
                 Análise inteligente dos seus dados
               </p>
             </div>
           </div>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {/* Mensagem */}
-            <p className="text-sm leading-relaxed">{insight.message}</p>
+            <p className="text-xs leading-relaxed break-words sm:text-sm">
+              {insight.message}
+            </p>
 
             {/* Ações */}
             {insight.actions.length > 0 && (
@@ -186,4 +195,3 @@ export function MainInsightCard({
     </>
   );
 }
-

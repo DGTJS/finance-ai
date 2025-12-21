@@ -18,6 +18,8 @@ export default function AuthWrapper({ children }: AuthWrapperProps) {
   const pathname = usePathname();
   const router = useRouter();
   const isLoginPage = pathname === "/login";
+  const isLandingPage = pathname === "/landing";
+  const isPublicPage = isLoginPage || isLandingPage;
 
   useEffect(() => {
     setMounted(true);
@@ -26,9 +28,9 @@ export default function AuthWrapper({ children }: AuthWrapperProps) {
   // Enquanto não montou, não renderizar nada (evitar flash)
   if (!mounted) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
+      <div className="bg-background flex min-h-screen items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+          <div className="border-primary h-8 w-8 animate-spin rounded-full border-4 border-t-transparent"></div>
           <div className="text-muted-foreground text-sm">Carregando...</div>
         </div>
       </div>
@@ -38,10 +40,12 @@ export default function AuthWrapper({ children }: AuthWrapperProps) {
   // Enquanto está carregando a sessão, mostrar loading
   if (status === "loading") {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
+      <div className="bg-background flex min-h-screen items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-          <div className="text-muted-foreground text-sm">Verificando autenticação...</div>
+          <div className="border-primary h-8 w-8 animate-spin rounded-full border-4 border-t-transparent"></div>
+          <div className="text-muted-foreground text-sm">
+            Verificando autenticação...
+          </div>
         </div>
       </div>
     );
@@ -49,29 +53,29 @@ export default function AuthWrapper({ children }: AuthWrapperProps) {
 
   // Se não estiver autenticado
   if (!session) {
-    // Se não está na página de login, redirecionar (o middleware já faz isso, mas garantir)
-    if (!isLoginPage) {
-      router.push("/login");
-      return (
-        <div className="flex min-h-screen items-center justify-center bg-background">
-          <div className="flex flex-col items-center gap-3">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-            <div className="text-muted-foreground text-sm">Redirecionando...</div>
-          </div>
-        </div>
-      );
+    // Se está em uma página pública, mostrar apenas o conteúdo
+    if (isPublicPage) {
+      return <>{children}</>;
     }
-    // Se está na página de login, mostrar apenas o conteúdo
-    return <>{children}</>;
+    // Se não está em página pública, redirecionar para landing
+    router.push("/landing");
+    return (
+      <div className="bg-background flex min-h-screen items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <div className="border-primary h-8 w-8 animate-spin rounded-full border-4 border-t-transparent"></div>
+          <div className="text-muted-foreground text-sm">Redirecionando...</div>
+        </div>
+      </div>
+    );
   }
 
-  // Se está autenticado e na página de login, redirecionar para home
-  if (session && isLoginPage) {
-    router.push("/");
+  // Se está autenticado e em página pública, redirecionar para dashboard
+  if (session && (isLoginPage || isLandingPage)) {
+    router.push("/dashboard");
     return (
-      <div className="flex min-h-screen items-center justify-center bg-background">
+      <div className="bg-background flex min-h-screen items-center justify-center">
         <div className="flex flex-col items-center gap-3">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
+          <div className="border-primary h-8 w-8 animate-spin rounded-full border-4 border-t-transparent"></div>
           <div className="text-muted-foreground text-sm">Redirecionando...</div>
         </div>
       </div>
@@ -83,10 +87,9 @@ export default function AuthWrapper({ children }: AuthWrapperProps) {
     <>
       <Navbar />
       <Sidebar />
-      <main className="pt-16 lg:pl-64 bg-background">{children}</main>
+      <main className="bg-background pt-16 lg:pl-64">{children}</main>
       <AssistantButton />
       <AddTransactionFab />
     </>
   );
 }
-

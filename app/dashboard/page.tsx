@@ -53,7 +53,9 @@ export default function DashboardPage() {
   const searchParams = useSearchParams();
   const [mounted, setMounted] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [dashboardView, setDashboardView] = useState<"financeiro" | "freelancer">(() => {
+  const [dashboardView, setDashboardView] = useState<
+    "financeiro" | "freelancer"
+  >(() => {
     // Verificar se há parâmetro na URL
     const view = searchParams.get("view");
     return view === "freelancer" ? "freelancer" : "financeiro";
@@ -106,7 +108,7 @@ export default function DashboardPage() {
   if (!mounted) {
     return (
       <div className="container mx-auto space-y-4 p-3 sm:space-y-6 sm:p-4 md:p-6">
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <BalanceCardSkeleton />
           <BalanceCardSkeleton />
           <BalanceCardSkeleton />
@@ -141,33 +143,37 @@ export default function DashboardPage() {
         <div className="container mx-auto space-y-4 p-3 sm:space-y-6 sm:p-4 md:p-6">
           {/* ===== HEADER COM BOTÕES DE DASHBOARD E REFRESH ===== */}
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-              <div>
-                <h1 className="text-xl font-bold sm:text-2xl">Dashboard Freelancer</h1>
-                <p className="text-muted-foreground text-xs sm:text-sm">
-                  Gerencie seus períodos de trabalho e ganhos
-                </p>
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setDashboardView("financeiro")}
-                  className="gap-2"
-                >
-                  <span>💰</span>
-                  Financeiro
-                </Button>
-                <Button
-                  variant="default"
-                  size="sm"
-                  className="gap-2 bg-primary text-primary-foreground"
-                >
-                  <span>💼</span>
-                  Freelancer
-                </Button>
-              </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setDashboardView("financeiro")}
+                className="gap-2"
+              >
+                <span>💰</span>
+                Financeiro
+              </Button>
+              <Button
+                variant="default"
+                size="sm"
+                className="bg-primary text-primary-foreground gap-2"
+              >
+                <span>💼</span>
+                Freelancer
+              </Button>
             </div>
+            <Button
+              onClick={handleRefresh}
+              disabled={isRefreshing || isLoading}
+              variant="outline"
+              size="sm"
+              className="gap-2"
+            >
+              <RefreshCw
+                className={`h-4 w-4 ${isRefreshing || isLoading ? "animate-spin" : ""}`}
+              />
+              Atualizar
+            </Button>
           </div>
           <FreelancerDashboard />
         </div>
@@ -180,46 +186,36 @@ export default function DashboardPage() {
       <div className="container mx-auto space-y-4 p-3 sm:space-y-6 sm:p-4 md:p-6">
         {/* ===== HEADER COM BOTÕES DE DASHBOARD E REFRESH ===== */}
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-4">
-            <div>
-              <h1 className="text-xl font-bold sm:text-2xl">Dashboard</h1>
-              <p className="text-muted-foreground text-xs sm:text-sm">
-                Selecione a visualização desejada
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                variant={dashboardView === "financeiro" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setDashboardView("financeiro")}
-                className={cn(
-                  "gap-2",
-                  dashboardView === "financeiro" && "bg-primary text-primary-foreground"
-                )}
-              >
-                <span>💰</span>
-                Financeiro
-              </Button>
-              <Button
-                variant={dashboardView === "freelancer" ? "default" : "outline"}
-                size="sm"
-                onClick={() => setDashboardView("freelancer")}
-                className={cn(
-                  "gap-2",
-                  dashboardView === "freelancer" && "bg-primary text-primary-foreground"
-                )}
-              >
-                <span>💼</span>
-                Freelancer
-              </Button>
-            </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant={dashboardView === "financeiro" ? "default" : "outline"}
+              size="sm"
+              onClick={() => setDashboardView("financeiro")}
+              className={cn(
+                "gap-2",
+                dashboardView === "financeiro" &&
+                  "bg-primary text-primary-foreground",
+              )}
+            >
+              <span>💰</span>
+              Financeiro
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setDashboardView("freelancer")}
+              className="gap-2"
+            >
+              <span>💼</span>
+              Freelancer
+            </Button>
           </div>
           <Button
             onClick={handleRefresh}
             disabled={isRefreshing || isLoading}
             variant="outline"
             size="sm"
-            className="gap-2 w-full sm:w-auto"
+            className="gap-2"
           >
             <RefreshCw
               className={`h-4 w-4 ${isRefreshing || isLoading ? "animate-spin" : ""}`}
@@ -228,8 +224,73 @@ export default function DashboardPage() {
           </Button>
         </div>
 
+        {/* ===== PRIMEIRA SEÇÃO: GRID 2 COLUNAS ===== */}
+        {/* Mobile/Tablet: Stack vertical */}
+        <div className="space-y-4 lg:hidden">
+          {/* Evolução do Saldo Diário */}
+          {isLoading ? (
+            <CategoryPieCardSkeleton />
+          ) : data ? (
+            <DailyBalanceChart dailyBalance={data.dailyBalanceSparkline} />
+          ) : null}
+
+          {/* Grid interno com Benefícios e Categorias */}
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {/* Benefícios (Usado vs Disponível) */}
+            {isLoading ? (
+              <CategoryPieCardSkeleton />
+            ) : data?.familyBenefitsBalance ? (
+              <BeneficiosPieChart
+                benefitsBalance={data.familyBenefitsBalance}
+              />
+            ) : null}
+
+            {/* Gastos por Categoria */}
+            {isLoading ? (
+              <CategoryPieCardSkeleton />
+            ) : data ? (
+              <CategoryPieCard categories={data.categories} />
+            ) : null}
+          </div>
+        </div>
+
+        {/* Desktop: Grid 2 colunas - Grid 1: Evolução do Saldo (70%), Grid 2: Grid interno com Benefícios e Categorias (30%) */}
+        <div className="hidden lg:grid lg:grid-cols-[7fr_3fr] lg:gap-6">
+          {/* Grid 1: Evolução do Saldo Diário (70%) */}
+          <div>
+            {isLoading ? (
+              <CategoryPieCardSkeleton />
+            ) : data ? (
+              <DailyBalanceChart dailyBalance={data.dailyBalanceSparkline} />
+            ) : null}
+          </div>
+
+          {/* Grid 2: Grid interno com 2 divs uma embaixo da outra (Benefícios e Categorias) (30%) */}
+          <div className="flex flex-col gap-3">
+            {/* Grid 2-1: Benefícios (Usado vs Disponível) */}
+            <div>
+              {isLoading ? (
+                <CategoryPieCardSkeleton />
+              ) : data?.familyBenefitsBalance ? (
+                <BeneficiosPieChart
+                  benefitsBalance={data.familyBenefitsBalance}
+                />
+              ) : null}
+            </div>
+
+            {/* Grid 2-2: Gastos por Categoria */}
+            <div>
+              {isLoading ? (
+                <CategoryPieCardSkeleton />
+              ) : data ? (
+                <CategoryPieCard categories={data.categories} />
+              ) : null}
+            </div>
+          </div>
+        </div>
+
         {/* ===== BLOCO 1: VISÃO PRINCIPAL (GRID 4) ===== */}
-        <div className="grid gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 lg:gap-6">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-3 md:gap-4 lg:grid-cols-2 xl:grid-cols-4 xl:gap-6">
           {/* Visão Geral */}
           {isLoading ? (
             <BalanceCardSkeleton />
@@ -265,7 +326,7 @@ export default function DashboardPage() {
 
         {/* ===== BLOCO 3: SALÁRIO E BENEFÍCIOS ===== */}
         {/* Mobile/Tablet: Grid 2 colunas (1/2 cada) */}
-        <div className="grid gap-3 grid-cols-2 lg:hidden">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-3 lg:hidden">
           {/* Saldo de Salário do Mês */}
           {isLoading ? (
             <BalanceCardSkeleton />
@@ -277,97 +338,57 @@ export default function DashboardPage() {
           {isLoading ? (
             <BalanceCardSkeleton />
           ) : data?.familyBenefitsBalance ? (
-            <SaldoBeneficiosFamiliar benefitsBalance={data.familyBenefitsBalance} />
+            <SaldoBeneficiosFamiliar
+              benefitsBalance={data.familyBenefitsBalance}
+            />
           ) : null}
         </div>
 
-        {/* Mobile/Tablet: Evolução do Saldo Diário (largura completa) */}
-        <div className="lg:hidden">
+        {/* Desktop: Cards de Salário e Benefícios (abaixo do grid principal) */}
+        <div className="hidden lg:mt-6 lg:grid lg:grid-cols-2 lg:gap-6">
+          {/* Saldo de Salário do Mês */}
           {isLoading ? (
-            <CategoryPieCardSkeleton />
-          ) : data ? (
-            <DailyBalanceChart dailyBalance={data.dailyBalanceSparkline} />
+            <BalanceCardSkeleton />
+          ) : data?.familySalaryBalance ? (
+            <SaldoSalarioFamiliar salaryBalance={data.familySalaryBalance} />
           ) : null}
-        </div>
 
-        {/* Desktop: Layout 4/2 (grid de 6) */}
-        <div className="hidden lg:grid lg:grid-cols-6 lg:items-start lg:gap-6">
-          {/* Evolução do Saldo Diário (4/6 da largura) */}
-          <div className="lg:col-span-4 h-full">
-            {isLoading ? (
-              <CategoryPieCardSkeleton />
-            ) : data ? (
-              <DailyBalanceChart dailyBalance={data.dailyBalanceSparkline} />
-            ) : null}
-          </div>
-
-          {/* Cards de Salário e Benefícios (2/6 da largura, um embaixo do outro) */}
-          <div className="lg:col-span-2 space-y-6">
-            {/* Saldo de Salário do Mês */}
-            {isLoading ? (
-              <BalanceCardSkeleton />
-            ) : data?.familySalaryBalance ? (
-              <SaldoSalarioFamiliar salaryBalance={data.familySalaryBalance} />
-            ) : null}
-
-            {/* Saldo de Benefícios do Mês */}
-            {isLoading ? (
-              <BalanceCardSkeleton />
-            ) : data?.familyBenefitsBalance ? (
-              <SaldoBeneficiosFamiliar benefitsBalance={data.familyBenefitsBalance} />
-            ) : null}
-          </div>
-        </div>
-
-        {/* ===== GRÁFICOS ===== */}
-        <div className="grid gap-3 grid-cols-2 sm:gap-4 lg:gap-6">
-          {/* Benefícios (Usado vs Disponível) */}
+          {/* Saldo de Benefícios do Mês */}
           {isLoading ? (
-            <CategoryPieCardSkeleton />
+            <BalanceCardSkeleton />
           ) : data?.familyBenefitsBalance ? (
-            <BeneficiosPieChart benefitsBalance={data.familyBenefitsBalance} />
-          ) : null}
-
-          {/* Gastos por Categoria */}
-          {isLoading ? (
-            <CategoryPieCardSkeleton />
-          ) : data ? (
-            <CategoryPieCard categories={data.categories} />
+            <SaldoBeneficiosFamiliar
+              benefitsBalance={data.familyBenefitsBalance}
+            />
           ) : null}
         </div>
 
         {/* ===== CONTEXTO E AÇÕES ===== */}
-        <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 lg:gap-6">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-4 xl:grid-cols-3 xl:gap-6">
           {/* Insights Financeiros */}
-          <div className="lg:col-span-1">
-            {isLoading ? (
-              <MainInsightCardSkeleton />
-            ) : data?.insight ? (
-              <MainInsightCard insight={data.insight} />
-            ) : null}
-          </div>
+          {isLoading ? (
+            <MainInsightCardSkeleton />
+          ) : data?.insight ? (
+            <MainInsightCard insight={data.insight} />
+          ) : null}
 
           {/* Assinaturas Próximas */}
-          <div className="lg:col-span-1">
-            {isLoading ? (
-              <BalanceCardSkeleton />
-            ) : data ? (
-              <ScheduledPaymentsCard payments={data.scheduledPayments} />
-            ) : null}
-          </div>
+          {isLoading ? (
+            <BalanceCardSkeleton />
+          ) : data ? (
+            <ScheduledPaymentsCard payments={data.scheduledPayments} />
+          ) : null}
 
           {/* Metas */}
-          <div className="lg:col-span-1">
-            {isLoading ? (
-              <GoalsCardSkeleton />
-            ) : data ? (
-              <GoalsCard goals={data.goals} onAddAmount={handleAddGoalAmount} />
-            ) : null}
-          </div>
+          {isLoading ? (
+            <GoalsCardSkeleton />
+          ) : data ? (
+            <GoalsCard goals={data.goals} onAddAmount={handleAddGoalAmount} />
+          ) : null}
         </div>
 
         {/* ===== DADOS ADICIONAIS ===== */}
-        <div className="grid gap-4 grid-cols-1 lg:grid-cols-2 lg:gap-6">
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-6">
           {/* Transações Recentes */}
           {isLoading ? (
             <BalanceCardSkeleton />
