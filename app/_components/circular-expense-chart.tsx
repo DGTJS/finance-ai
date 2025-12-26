@@ -54,14 +54,19 @@ export default function CircularExpenseChart({
   const router = useRouter();
 
   // Debug: verificar quantas categorias estão chegando
-  if (typeof window !== 'undefined') {
-    console.log("🔵 CircularExpenseChart - Categorias recebidas:", categories.length);
-    console.table(categories.map(c => ({
-      nome: c.name,
-      emoji: c.emoji,
-      valor: c.value.toFixed(2),
-      cor: c.color
-    })));
+  if (typeof window !== "undefined") {
+    console.log(
+      "🔵 CircularExpenseChart - Categorias recebidas:",
+      categories.length,
+    );
+    console.table(
+      categories.map((c) => ({
+        nome: c.name,
+        emoji: c.emoji,
+        valor: c.value.toFixed(2),
+        cor: c.color,
+      })),
+    );
   }
 
   const { total, arcs, centerX, centerY, radius, strokeWidth } = useMemo(() => {
@@ -86,7 +91,7 @@ export default function CircularExpenseChart({
     const gapDegrees = 3; // Espaço entre arcos em graus (aumentado para melhor separação)
 
     // Filtrar apenas categorias com valor > 0
-    const categoriesWithValues = categories.filter(c => c.value > 0);
+    const categoriesWithValues = categories.filter((c) => c.value > 0);
     const totalGapAngle = categoriesWithValues.length * gapDegrees;
 
     // Calcular total
@@ -94,33 +99,36 @@ export default function CircularExpenseChart({
 
     // Calcular arcos
     let currentAngle = -90; // Começar do topo (-90 graus)
-    
+
     // Ângulo total disponível para distribuir entre as categorias
     const totalAngleToDistribute = 360 - totalGapAngle;
-    
+
     // Definir ângulo mínimo para garantir visibilidade (4 graus para categorias muito pequenas)
     const minAngle = 4;
-    
+
     // Calcular ângulos proporcionalmente
-    const angles = categoriesWithValues.map(category => {
+    const angles = categoriesWithValues.map((category) => {
       const percentage = total > 0 ? category.value / total : 0;
       return totalAngleToDistribute * percentage;
     });
-    
+
     // Verificar se alguma categoria tem ângulo muito pequeno
-    const hasVerySmallAngles = angles.some(angle => angle < minAngle);
-    
+    const hasVerySmallAngles = angles.some((angle) => angle < minAngle);
+
     // Se houver categorias muito pequenas, redistribuir o espaço
     if (hasVerySmallAngles && categoriesWithValues.length > 1) {
-      const verySmallCount = angles.filter(angle => angle < minAngle).length;
+      const verySmallCount = angles.filter((angle) => angle < minAngle).length;
       const totalMinAngle = verySmallCount * minAngle;
       const remainingAngle = totalAngleToDistribute - totalMinAngle;
-      
+
       // Redistribuir o espaço restante proporcionalmente entre as categorias maiores
-      const largeCategoriesTotal = categoriesWithValues.reduce((sum, cat, idx) => {
-        return sum + (angles[idx] >= minAngle ? cat.value : 0);
-      }, 0);
-      
+      const largeCategoriesTotal = categoriesWithValues.reduce(
+        (sum, cat, idx) => {
+          return sum + (angles[idx] >= minAngle ? cat.value : 0);
+        },
+        0,
+      );
+
       // Recalcular ângulos
       categoriesWithValues.forEach((category, idx) => {
         if (angles[idx] < minAngle) {
@@ -136,7 +144,7 @@ export default function CircularExpenseChart({
       .map((category, idx) => {
         const angle = angles[idx];
         const percentage = total > 0 ? category.value / total : 0;
-        
+
         const startAngle = currentAngle;
         const endAngle = currentAngle + angle;
 
@@ -189,21 +197,26 @@ export default function CircularExpenseChart({
       .filter((arc): arc is NonNullable<typeof arc> => arc !== null);
 
     // Debug: verificar quantos arcos foram gerados
-    if (typeof window !== 'undefined') {
+    if (typeof window !== "undefined") {
       console.log("🟢 CircularExpenseChart - Arcos gerados:", arcs.length);
-      console.log("📊 Total de categorias com valores:", categoriesWithValues.length);
+      console.log(
+        "📊 Total de categorias com valores:",
+        categoriesWithValues.length,
+      );
       console.log("💰 Total de gastos:", total.toFixed(2));
       if (arcs.length > 0) {
-        console.table(arcs.map(a => ({ 
-          nome: a.category.name, 
-          emoji: a.category.emoji,
-          valor: `R$ ${a.value.toFixed(2)}`,
-          cor: a.category.color,
-          angulo: `${a.angle.toFixed(2)}°`, 
-          porcentagem: `${(a.percentage * 100).toFixed(2)}%`,
-          posX: a.emojiPos.x.toFixed(1),
-          posY: a.emojiPos.y.toFixed(1)
-        })));
+        console.table(
+          arcs.map((a) => ({
+            nome: a.category.name,
+            emoji: a.category.emoji,
+            valor: `R$ ${a.value.toFixed(2)}`,
+            cor: a.category.color,
+            angulo: `${a.angle.toFixed(2)}°`,
+            porcentagem: `${(a.percentage * 100).toFixed(2)}%`,
+            posX: a.emojiPos.x.toFixed(1),
+            posY: a.emojiPos.y.toFixed(1),
+          })),
+        );
       } else {
         console.warn("⚠️ Nenhum arco foi gerado!");
         console.log("📋 Categorias recebidas:", categories);
@@ -234,7 +247,7 @@ export default function CircularExpenseChart({
   }
 
   // Debug: mostrar informação sobre categorias
-  if (typeof window !== 'undefined' && arcs.length === 0) {
+  if (typeof window !== "undefined" && arcs.length === 0) {
     console.error("Nenhum arco foi gerado das categorias:", categories);
   }
 
@@ -247,17 +260,27 @@ export default function CircularExpenseChart({
   };
 
   return (
-    <div className="flex min-h-[300px] w-full items-center justify-center p-2 sm:min-h-[350px] sm:p-4 md:min-h-[400px] md:p-6">
+    <div className="flex w-full items-center justify-center p-1 sm:p-2 md:p-4">
       <div
         className="relative w-full max-w-full"
-        style={{ aspectRatio: "1 / 1", maxWidth: "100%" }}
+        style={{
+          aspectRatio: "1 / 1",
+          maxWidth: "100%",
+          minHeight: "250px",
+          maxHeight: "400px",
+        }}
       >
         <svg
           width="100%"
           height="100%"
           viewBox="0 0 400 400"
-          className="h-auto w-full"
-          style={{ display: "block", maxWidth: "100%", height: "auto" }}
+          className="w-full"
+          style={{
+            display: "block",
+            maxWidth: "100%",
+            minHeight: "250px",
+            maxHeight: "400px",
+          }}
           preserveAspectRatio="xMidYMid meet"
         >
           {/* Arcos */}
@@ -269,19 +292,27 @@ export default function CircularExpenseChart({
                 arc.path === "M NaN NaN A NaN NaN 0 0 1 NaN NaN" ||
                 arc.path.includes("NaN")
               ) {
-                console.warn(`⚠️ Arco ${index} (${arc.category.name}) inválido - Path:`, arc.path);
+                console.warn(
+                  `⚠️ Arco ${index} (${arc.category.name}) inválido - Path:`,
+                  arc.path,
+                );
                 return null;
               }
 
               // Verificar se as posições do emoji são válidas
               if (isNaN(arc.emojiPos.x) || isNaN(arc.emojiPos.y)) {
-                console.warn(`⚠️ Posição do emoji inválida para categoria ${arc.category.name}:`, arc.emojiPos);
+                console.warn(
+                  `⚠️ Posição do emoji inválida para categoria ${arc.category.name}:`,
+                  arc.emojiPos,
+                );
                 return null;
               }
 
               // Renderizar arco e emoji
               return (
-                <g key={`arc-${index}-${arc.category.name}-${arc.category.emoji}`}>
+                <g
+                  key={`arc-${index}-${arc.category.name}-${arc.category.emoji}`}
+                >
                   {/* Arco da categoria */}
                   <path
                     d={arc.path}
@@ -290,9 +321,9 @@ export default function CircularExpenseChart({
                     strokeWidth={strokeWidth}
                     strokeLinecap="round"
                     className="transition-all hover:opacity-90"
-                    style={{ 
+                    style={{
                       opacity: 1,
-                      display: 'block'
+                      display: "block",
                     }}
                   />
                   {/* Círculo branco para o emoji */}
@@ -304,9 +335,9 @@ export default function CircularExpenseChart({
                     stroke={arc.category.color}
                     strokeWidth="2"
                     className="shadow-sm"
-                    style={{ 
+                    style={{
                       opacity: 1,
-                      display: 'block'
+                      display: "block",
                     }}
                   />
                   {/* Emoji da categoria */}
@@ -317,9 +348,9 @@ export default function CircularExpenseChart({
                     dominantBaseline="central"
                     fontSize="24"
                     className="pointer-events-none select-none"
-                    style={{ 
+                    style={{
                       opacity: 1,
-                      display: 'block'
+                      display: "block",
                     }}
                   >
                     {arc.category.emoji}
@@ -335,13 +366,15 @@ export default function CircularExpenseChart({
             <p className="text-muted-foreground text-sm font-medium">
               {showBalance ? "Saldo Total" : "Total"}
             </p>
-            <p className={`text-2xl font-bold sm:text-3xl ${
-              showBalance 
-                ? balance >= 0 
-                  ? "text-green-600 dark:text-green-400" 
-                  : "text-red-600 dark:text-red-400"
-                : "text-foreground"
-            }`}>
+            <p
+              className={`text-2xl font-bold sm:text-3xl ${
+                showBalance
+                  ? balance >= 0
+                    ? "text-green-600 dark:text-green-400"
+                    : "text-red-600 dark:text-red-400"
+                  : "text-foreground"
+              }`}
+            >
               {showBalance ? formatCurrency(balance) : formatCurrency(total)}
             </p>
             <Button

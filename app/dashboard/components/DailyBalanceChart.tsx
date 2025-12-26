@@ -6,7 +6,12 @@
 
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/app/_components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/app/_components/ui/card";
 import { formatCurrency } from "@/src/lib/utils";
 import type { DailyBalance } from "@/src/types/dashboard";
 import {
@@ -19,8 +24,14 @@ import {
   ReferenceLine,
   Area,
 } from "recharts";
-import { TrendingUp, TrendingDown, ArrowUpRight, ArrowDownRight, Calendar } from "lucide-react";
-import { useMemo, useState } from "react";
+import {
+  TrendingUp,
+  TrendingDown,
+  ArrowUpRight,
+  ArrowDownRight,
+  Calendar,
+} from "lucide-react";
+import { useMemo, useState, useEffect } from "react";
 import { Input } from "@/app/_components/ui/input";
 import { Label } from "@/app/_components/ui/label";
 import {
@@ -36,13 +47,29 @@ interface DailyBalanceChartProps {
   dailyBalance: DailyBalance[];
 }
 
-export function DailyBalanceChart({
-  dailyBalance,
-}: DailyBalanceChartProps) {
+export function DailyBalanceChart({ dailyBalance }: DailyBalanceChartProps) {
   const now = new Date();
   const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
-  
+
+  // Injetar estilos para garantir que o Recharts seja contido
+  useEffect(() => {
+    const styleId = "daily-balance-chart-container-fix";
+    if (!document.getElementById(styleId)) {
+      const style = document.createElement("style");
+      style.id = styleId;
+      style.textContent = `
+        .daily-balance-chart-wrapper .recharts-wrapper {
+          position: relative !important;
+        }
+        .daily-balance-chart-wrapper .recharts-surface {
+          position: relative !important;
+        }
+      `;
+      document.head.appendChild(style);
+    }
+  }, []);
+
   // Formatar datas para input type="date" (YYYY-MM-DD)
   const formatDateForInput = (date: Date) => {
     const year = date.getFullYear();
@@ -51,10 +78,14 @@ export function DailyBalanceChart({
     return `${year}-${month}-${day}`;
   };
 
-  const [selectionMode, setSelectionMode] = useState<"month" | "custom">("month");
+  const [selectionMode, setSelectionMode] = useState<"month" | "custom">(
+    "month",
+  );
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
-  const [startDate, setStartDate] = useState(formatDateForInput(firstDayOfMonth));
+  const [startDate, setStartDate] = useState(
+    formatDateForInput(firstDayOfMonth),
+  );
   const [endDate, setEndDate] = useState(formatDateForInput(lastDayOfMonth));
 
   // Calcular datas baseado no modo de seleção
@@ -92,8 +123,8 @@ export function DailyBalanceChart({
             month: "long",
             year: "numeric",
           }),
-      };
-    });
+        };
+      });
   }, [dailyBalance, dateRange]);
 
   // Calcular estatísticas
@@ -114,7 +145,7 @@ export function DailyBalanceChart({
     const inicio = chartData[0]?.balance || 0;
     const atual = chartData[chartData.length - 1]?.balance || 0;
     const variacao = atual - inicio;
-    
+
     // Calcular variação percentual
     let variacaoPercentual = 0;
     if (Math.abs(inicio) > 0.01) {
@@ -123,11 +154,11 @@ export function DailyBalanceChart({
       // Se início é ~0 e atual não é, considerar como variação significativa
       variacaoPercentual = atual > 0 ? 100 : -100;
     }
-    
+
     const balances = chartData.map((d) => d.balance);
     const maxBalance = Math.max(...balances);
     const minBalance = Math.min(...balances);
-    
+
     const hasVariation = Math.abs(variacaoPercentual) > 0.01;
 
     return {
@@ -147,14 +178,13 @@ export function DailyBalanceChart({
     return balance >= 0 ? "#10b981" : "#ef4444"; // green-500 : red-500
   };
 
-
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       const isPositive = data.balance >= 0;
       return (
-        <div className="rounded-lg border bg-card p-3 shadow-lg backdrop-blur-sm">
-          <p className="text-xs text-muted-foreground mb-1">{data.fullDate}</p>
+        <div className="bg-card rounded-lg border p-3 shadow-lg backdrop-blur-sm">
+          <p className="text-muted-foreground mb-1 text-xs">{data.fullDate}</p>
           <div className="flex items-baseline gap-2">
             <p
               className={`text-lg font-bold ${
@@ -176,18 +206,18 @@ export function DailyBalanceChart({
   const gradientId = "balanceGradient";
 
   return (
-    <Card className="flex flex-col border shadow-sm lg:h-full">
-      <CardHeader className="border-b flex-shrink-0 p-3 sm:p-4">
+    <Card className="flex w-full flex-col overflow-hidden border shadow-sm">
+      <CardHeader className="flex-shrink-0 border-b p-3 sm:p-4">
         <div className="flex flex-col gap-3">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <CardTitle className="flex items-center gap-2 text-sm sm:text-base lg:text-lg mb-1">
-                <div className="flex h-7 w-7 sm:h-8 sm:w-8 items-center justify-center rounded-lg bg-blue-100 dark:bg-blue-900/30">
-                  <TrendingUp className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-blue-600 dark:text-blue-400" />
+              <CardTitle className="mb-1 flex items-center gap-2 text-sm sm:text-base lg:text-lg">
+                <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-100 sm:h-8 sm:w-8 dark:bg-blue-900/30">
+                  <TrendingUp className="h-3.5 w-3.5 text-blue-600 sm:h-4 sm:w-4 dark:text-blue-400" />
                 </div>
                 <span>Saldo Diário</span>
               </CardTitle>
-              <p className="text-xs sm:text-sm text-muted-foreground">
+              <p className="text-muted-foreground text-xs sm:text-sm">
                 Acompanhe a evolução do seu saldo ao longo do tempo
               </p>
             </div>
@@ -196,8 +226,8 @@ export function DailyBalanceChart({
               <div
                 className={`flex items-center gap-1 rounded-full px-2.5 py-1 sm:px-3 sm:py-1.5 ${
                   stats.isPositive
-                    ? "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400"
-                    : "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"
+                    ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
+                    : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
                 }`}
               >
                 {stats.isPositive ? (
@@ -205,20 +235,20 @@ export function DailyBalanceChart({
                 ) : (
                   <ArrowDownRight className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
                 )}
-                <span className="text-[10px] sm:text-xs font-semibold">
+                <span className="text-[10px] font-semibold sm:text-xs">
                   {stats.variacaoPercentual > 0 ? "+" : ""}
                   {stats.variacaoPercentual.toFixed(1)}%
                 </span>
               </div>
             )}
           </div>
-          
+
           {/* Seletor de período */}
-          <div className="flex items-center gap-3 flex-wrap">
-            <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
-            
+          <div className="flex flex-wrap items-center gap-3">
+            <Calendar className="text-muted-foreground h-4 w-4 shrink-0" />
+
             {/* Toggle entre modo mês e personalizado */}
-            <div className="flex items-center gap-2 border rounded-md p-0.5">
+            <div className="flex items-center gap-2 rounded-md border p-0.5">
               <Button
                 variant={selectionMode === "month" ? "default" : "ghost"}
                 size="sm"
@@ -262,7 +292,10 @@ export function DailyBalanceChart({
                       { value: 11, label: "Novembro" },
                       { value: 12, label: "Dezembro" },
                     ].map((month) => (
-                      <SelectItem key={month.value} value={month.value.toString()}>
+                      <SelectItem
+                        key={month.value}
+                        value={month.value.toString()}
+                      >
                         {month.label}
                       </SelectItem>
                     ))}
@@ -276,7 +309,10 @@ export function DailyBalanceChart({
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {Array.from({ length: 5 }, (_, i) => now.getFullYear() - i).map((year) => (
+                    {Array.from(
+                      { length: 5 },
+                      (_, i) => now.getFullYear() - i,
+                    ).map((year) => (
                       <SelectItem key={year} value={year.toString()}>
                         {year}
                       </SelectItem>
@@ -286,9 +322,12 @@ export function DailyBalanceChart({
               </div>
             ) : (
               /* Modo Personalizado */
-              <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex flex-wrap items-center gap-2">
                 <div className="flex flex-col gap-1">
-                  <Label htmlFor="start-date" className="text-[10px] text-muted-foreground">
+                  <Label
+                    htmlFor="start-date"
+                    className="text-muted-foreground text-[10px]"
+                  >
                     De
                   </Label>
                   <Input
@@ -301,7 +340,10 @@ export function DailyBalanceChart({
                   />
                 </div>
                 <div className="flex flex-col gap-1">
-                  <Label htmlFor="end-date" className="text-[10px] text-muted-foreground">
+                  <Label
+                    htmlFor="end-date"
+                    className="text-muted-foreground text-[10px]"
+                  >
                     Até
                   </Label>
                   <Input
@@ -318,100 +360,143 @@ export function DailyBalanceChart({
           </div>
         </div>
       </CardHeader>
-      <CardContent className="flex flex-col flex-1 p-3 sm:p-4 md:p-6 min-h-0">
+      <CardContent className="flex flex-col p-3 sm:p-4 md:p-6">
         {chartData.length === 0 ? (
-          <div className="flex-1 flex items-center justify-center">
-            <div className="text-muted-foreground text-sm text-center">
+          <div className="flex min-h-[250px] flex-1 items-center justify-center">
+            <div className="text-muted-foreground text-center text-sm">
               Nenhum dado disponível para o período selecionado
             </div>
           </div>
         ) : (
           <>
             {/* Gráfico */}
-            <div className="w-full h-[250px] sm:h-[300px] md:h-[350px] lg:h-[400px] xl:flex-1 xl:min-h-[300px]">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart
-                  data={chartData}
-                  margin={{ top: 10, right: 10, left: 0, bottom: 10 }}
-                >
-                  <defs>
-                    <linearGradient id={gradientId} x1="0" y1="0" x2="0" y2="1">
-                      <stop
-                        offset="5%"
-                        stopColor={lineColor}
-                        stopOpacity={0.3}
-                      />
-                      <stop
-                        offset="95%"
-                        stopColor={lineColor}
-                        stopOpacity={0.05}
-                      />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid
-                    strokeDasharray="3 3"
-                    stroke="currentColor"
-                    className="opacity-20"
-                  />
-                  <XAxis
-                    dataKey="date"
-                    tick={{ fontSize: 11, fill: "currentColor", opacity: 0.7 }}
-                    tickFormatter={(value) => `Dia ${value}`}
-                    stroke="currentColor"
-                    className="opacity-50"
-                  />
-                  <YAxis
-                    tick={{ fontSize: 11, fill: "currentColor", opacity: 0.7 }}
-                    tickFormatter={(value) => {
-                      if (Math.abs(value) >= 1000) {
-                        return `R$ ${(value / 1000).toFixed(value % 1000 === 0 ? 0 : 1)}k`;
-                      }
-                      return `R$ ${value}`;
-                    }}
-                    stroke="currentColor"
-                    className="opacity-50"
-                  />
-                  <Tooltip content={<CustomTooltip />} />
-                  <ReferenceLine
-                    y={0}
-                    stroke="currentColor"
-                    strokeDasharray="2 2"
-                    className="opacity-30"
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="balance"
-                    stroke={lineColor}
-                    strokeWidth={2.5}
-                    fill={`url(#${gradientId})`}
-                    dot={{ fill: lineColor, r: 3, strokeWidth: 2, stroke: "#fff" }}
-                    activeDot={{
-                      r: 5,
-                      fill: lineColor,
-                      stroke: "#fff",
-                      strokeWidth: 2,
-                    }}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
+            <div
+              className="daily-balance-chart-wrapper bg-card relative w-full"
+              style={{
+                height: "250px",
+                minHeight: "250px",
+                position: "relative",
+                overflow: "hidden",
+                backgroundColor: "hsl(var(--card))",
+              }}
+            >
+              <div
+                style={{
+                  width: "100%",
+                  height: "250px",
+                  position: "relative",
+                  overflow: "hidden",
+                }}
+              >
+                <ResponsiveContainer width="100%" height={250}>
+                  <AreaChart
+                    data={chartData}
+                    margin={{ top: 10, right: 10, left: 0, bottom: 10 }}
+                  >
+                    <defs>
+                      <linearGradient
+                        id={gradientId}
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset="5%"
+                          stopColor={lineColor}
+                          stopOpacity={0.3}
+                        />
+                        <stop
+                          offset="95%"
+                          stopColor={lineColor}
+                          stopOpacity={0.05}
+                        />
+                      </linearGradient>
+                    </defs>
+
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke="currentColor"
+                      className="opacity-20"
+                    />
+
+                    <XAxis
+                      dataKey="date"
+                      tick={{
+                        fontSize: 11,
+                        fill: "currentColor",
+                        opacity: 0.7,
+                      }}
+                      tickFormatter={(value) => `Dia ${value}`}
+                      stroke="currentColor"
+                      className="opacity-50"
+                    />
+
+                    <YAxis
+                      tick={{
+                        fontSize: 11,
+                        fill: "currentColor",
+                        opacity: 0.7,
+                      }}
+                      tickFormatter={(value) => {
+                        if (Math.abs(value) >= 1000) {
+                          return `R$ ${(value / 1000).toFixed(value % 1000 === 0 ? 0 : 1)}k`;
+                        }
+                        return `R$ ${value}`;
+                      }}
+                      stroke="currentColor"
+                      className="opacity-50"
+                    />
+
+                    <Tooltip content={<CustomTooltip />} />
+
+                    <ReferenceLine
+                      y={0}
+                      stroke="currentColor"
+                      strokeDasharray="2 2"
+                      className="opacity-30"
+                    />
+
+                    <Area
+                      type="monotone"
+                      dataKey="balance"
+                      stroke={lineColor}
+                      strokeWidth={2.5}
+                      fill={`url(#${gradientId})`}
+                      dot={{
+                        fill: lineColor,
+                        r: 3,
+                        strokeWidth: 2,
+                        stroke: "#fff",
+                      }}
+                      activeDot={{
+                        r: 5,
+                        fill: lineColor,
+                        stroke: "#fff",
+                        strokeWidth: 2,
+                      }}
+                    />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
             </div>
 
             {/* Estatísticas */}
-            <div className="mt-4 flex-shrink-0 grid grid-cols-3 gap-3 sm:gap-4 pt-4 border-t">
+            <div className="mt-4 grid flex-shrink-0 grid-cols-3 gap-3 border-t pt-4 sm:gap-4">
               <div className="text-center">
-                <p className="text-[10px] sm:text-xs text-muted-foreground mb-1">
+                <p className="text-muted-foreground mb-1 text-[10px] sm:text-xs">
                   Início
                 </p>
-                <p className="text-sm sm:text-base font-bold">
+                <p className="text-sm font-bold sm:text-base">
                   {formatCurrency(stats.inicio)}
                 </p>
               </div>
               <div className="text-center">
-                <p className="text-[10px] sm:text-xs text-muted-foreground mb-1">
+                <p className="text-muted-foreground mb-1 text-[10px] sm:text-xs">
                   Atual
                 </p>
                 <p
-                  className={`text-sm sm:text-base font-bold ${
+                  className={`text-sm font-bold sm:text-base ${
                     stats.atual >= 0
                       ? "text-green-600 dark:text-green-400"
                       : "text-red-600 dark:text-red-400"
@@ -421,7 +506,7 @@ export function DailyBalanceChart({
                 </p>
               </div>
               <div className="text-center">
-                <p className="text-[10px] sm:text-xs text-muted-foreground mb-1">
+                <p className="text-muted-foreground mb-1 text-[10px] sm:text-xs">
                   Variação
                 </p>
                 <div className="flex items-center justify-center gap-1">
@@ -431,7 +516,7 @@ export function DailyBalanceChart({
                     <TrendingDown className="h-3.5 w-3.5 text-red-600 dark:text-red-400" />
                   )}
                   <p
-                    className={`text-sm sm:text-base font-bold ${
+                    className={`text-sm font-bold sm:text-base ${
                       stats.isPositive
                         ? "text-green-600 dark:text-green-400"
                         : "text-red-600 dark:text-red-400"

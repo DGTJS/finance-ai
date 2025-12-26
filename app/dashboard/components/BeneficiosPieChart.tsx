@@ -118,10 +118,10 @@ export function BeneficiosPieChart({
         </CardTitle>
       </CardHeader>
       <CardContent className="flex flex-1 flex-col p-3">
-        {/* Layout vertical: gráfico primeiro, depois informações */}
-        <div className="flex min-h-0 flex-1 flex-col gap-3">
+        {/* Layout: vertical no mobile, horizontal no desktop */}
+        <div className="flex min-h-0 flex-1 flex-col gap-3 md:flex-row md:items-center md:gap-3">
           {/* Gráfico compacto */}
-          <div className="mx-auto h-24 w-24 flex-shrink-0">
+          <div className="mx-auto h-24 w-24 flex-shrink-0 md:mx-0">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
                 <Pie
@@ -155,47 +155,52 @@ export function BeneficiosPieChart({
             </ResponsiveContainer>
           </div>
 
-          {/* Valor total */}
-          <div>
-            <p className="text-muted-foreground mb-0.5 text-[10px]">Total</p>
-            <p className="text-base font-bold">{formatCurrency(totalAmount)}</p>
-          </div>
-
-          {/* Status disponível */}
-          <div className="flex items-center gap-2">
-            <div
-              className="h-2 w-2 rounded-full"
-              style={{ backgroundColor: COLORS.available }}
-            />
-            <div className="min-w-0 flex-1">
-              <p className="text-muted-foreground text-[10px]">Disponível</p>
-              <p className="text-sm font-semibold text-green-600 dark:text-green-400">
-                {formatCurrency(benefitsBalance.available)}
+          {/* Informações principais */}
+          <div className="flex min-w-0 flex-1 flex-col justify-center gap-2 md:gap-3">
+            {/* Valor total */}
+            <div>
+              <p className="text-muted-foreground mb-0.5 text-[10px]">Total</p>
+              <p className="text-base font-bold">
+                {formatCurrency(totalAmount)}
               </p>
             </div>
-            <p className="text-xs font-bold text-green-600 dark:text-green-400">
-              {availablePercentage.toFixed(0)}%
-            </p>
-          </div>
 
-          {/* Status usado */}
-          {benefitsBalance.used > 0 && (
+            {/* Status disponível */}
             <div className="flex items-center gap-2">
               <div
                 className="h-2 w-2 rounded-full"
-                style={{ backgroundColor: COLORS.used }}
+                style={{ backgroundColor: COLORS.available }}
               />
               <div className="min-w-0 flex-1">
-                <p className="text-muted-foreground text-[10px]">Usado</p>
-                <p className="text-sm font-semibold text-red-600 dark:text-red-400">
-                  {formatCurrency(benefitsBalance.used)}
+                <p className="text-muted-foreground text-[10px]">Disponível</p>
+                <p className="text-sm font-semibold text-green-600 dark:text-green-400">
+                  {formatCurrency(benefitsBalance.available)}
                 </p>
               </div>
-              <p className="text-xs font-bold text-red-600 dark:text-red-400">
-                {(100 - availablePercentage).toFixed(0)}%
+              <p className="text-xs font-bold text-green-600 dark:text-green-400">
+                {availablePercentage.toFixed(0)}%
               </p>
             </div>
-          )}
+
+            {/* Status usado */}
+            {benefitsBalance.used > 0 && (
+              <div className="flex items-center gap-2">
+                <div
+                  className="h-2 w-2 rounded-full"
+                  style={{ backgroundColor: COLORS.used }}
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="text-muted-foreground text-[10px]">Usado</p>
+                  <p className="text-sm font-semibold text-red-600 dark:text-red-400">
+                    {formatCurrency(benefitsBalance.used)}
+                  </p>
+                </div>
+                <p className="text-xs font-bold text-red-600 dark:text-red-400">
+                  {(100 - availablePercentage).toFixed(0)}%
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </CardContent>
     </Card>

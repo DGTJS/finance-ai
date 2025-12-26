@@ -26,23 +26,18 @@ import { toast } from "sonner";
 import { SaldoOverview } from "./components/SaldoOverview";
 import { IncomeBreakdownCard } from "./components/IncomeBreakdownCard";
 import { ExpenseBreakdownCard } from "./components/ExpenseBreakdownCard";
+import { CompleteDashboardCard } from "./components/CompleteDashboardCard";
 import { DailyBalanceChart } from "./components/DailyBalanceChart";
 import { CategoryPieCard } from "./components/CategoryPieCard";
-import { ScheduledPaymentsCard } from "./components/ScheduledPaymentsCard";
-import { GoalsCard } from "./components/GoalsCard";
 import { UserStatsCard } from "./components/UserStatsCard";
-import { MainInsightCard } from "./components/MainInsightCard";
+import { ActionsInsightsCard } from "./components/ActionsInsightsCard";
 import { RecentExpensesCard } from "./components/RecentExpensesCard";
 import { ProximosVencimentos } from "./components/ProximosVencimentos";
 import { SaldoSalarioFamiliar } from "./components/SaldoSalarioFamiliar";
 import { SaldoBeneficiosFamiliar } from "./components/SaldoBeneficiosFamiliar";
+import { AnalyticsSummaryCard } from "./components/AnalyticsSummaryCard";
 import { BeneficiosPieChart } from "./components/BeneficiosPieChart";
-import {
-  MobileSaldoCard,
-  MobileIncomeCard,
-  MobileExpenseCard,
-  MobileVencimentosCard,
-} from "./components/MobileCards";
+import { MobileCompleteCard } from "./components/MobileCompleteCard";
 import {
   BalanceCardSkeleton,
   MainInsightCardSkeleton,
@@ -190,182 +185,58 @@ export default function DashboardPage() {
   return (
     <div className="bg-background min-h-screen">
       <div className="container mx-auto space-y-4 p-3 sm:space-y-6 sm:p-4 md:p-6">
-        {/* ===== HEADER COM BOTÕES DE DASHBOARD E REFRESH ===== */}
-        <div className="flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <Button
-              variant={dashboardView === "financeiro" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setDashboardView("financeiro")}
-              className={cn(
-                "gap-2",
-                dashboardView === "financeiro" &&
-                  "bg-primary text-primary-foreground",
-              )}
-            >
-              <span>💰</span>
-              Financeiro
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setDashboardView("freelancer")}
-              className="gap-2"
-            >
-              <span>💼</span>
-              Freelancer
-            </Button>
-          </div>
-          <Button
-            onClick={handleRefresh}
-            disabled={isRefreshing || isLoading}
-            variant="outline"
-            size="sm"
-            className="ml-auto gap-2"
-          >
-            <RefreshCw
-              className={`h-4 w-4 ${isRefreshing || isLoading ? "animate-spin" : ""}`}
-            />
-            Atualizar
-          </Button>
-        </div>
-
-        {/* ===== PRIMEIRA SEÇÃO MOBILE: CARDS COM VISUAL MOBILE ===== */}
-        {/* Mobile: Cards com design mobile otimizado */}
-        <div className="space-y-3 lg:hidden">
-          {/* Grid de 3 colunas: Saldo, Receitas, Despesas */}
-          <div className="grid grid-cols-3 gap-2 sm:gap-3">
-            {/* Visão Geral */}
-            {isLoading ? (
-              <BalanceCardSkeleton />
-            ) : data ? (
-              <MobileSaldoCard
-                currentBalance={data.currentBalance}
-                projectedBalance={data.projectedBalance}
-                changePercent={data.monthlyOverview.changePercent}
-              />
-            ) : null}
-
-            {/* Receitas do Mês */}
-            {isLoading ? (
-              <BalanceCardSkeleton />
-            ) : data ? (
-              <MobileIncomeCard income={data.income} />
-            ) : null}
-
-            {/* Despesas do Mês */}
-            {isLoading ? (
-              <BalanceCardSkeleton />
-            ) : data ? (
-              <MobileExpenseCard expenses={data.expenses} />
-            ) : null}
-          </div>
-
-          {/* Próximos Vencimentos - Linha completa */}
-          {isLoading ? (
-            <BalanceCardSkeleton />
-          ) : data?.upcomingPayments && data.upcomingPayments.length > 0 ? (
-            <MobileVencimentosCard payments={data.upcomingPayments} />
-          ) : null}
-        </div>
-
-        {/* ===== PRIMEIRA SEÇÃO: GRID 2 COLUNAS ===== */}
-        {/* Mobile/Tablet: Stack vertical */}
-        <div className="space-y-4 lg:hidden">
-          {/* Evolução do Saldo Diário */}
-          {isLoading ? (
-            <CategoryPieCardSkeleton />
-          ) : data ? (
-            <DailyBalanceChart dailyBalance={data.dailyBalanceSparkline} />
-          ) : null}
-
-          {/* Grid interno com Benefícios e Categorias */}
-          <div className="grid grid-cols-2 gap-4">
-            {/* Benefícios (Usado vs Disponível) */}
-            {isLoading ? (
-              <CategoryPieCardSkeleton />
-            ) : data?.familyBenefitsBalance ? (
-              <BeneficiosPieChart
-                benefitsBalance={data.familyBenefitsBalance}
-              />
-            ) : null}
-
-            {/* Gastos por Categoria */}
-            {isLoading ? (
-              <CategoryPieCardSkeleton />
-            ) : data ? (
-              <CategoryPieCard categories={data.categories} />
-            ) : null}
-          </div>
-        </div>
-
-        {/* Desktop: Grid 2 colunas - Grid 1: Evolução do Saldo (70%), Grid 2: Grid interno com Benefícios e Categorias (30%) */}
-        <div className="hidden lg:grid lg:grid-cols-[7fr_3fr] lg:gap-6">
-          {/* Grid 1: Evolução do Saldo Diário (70%) */}
-          <div>
-            {isLoading ? (
-              <CategoryPieCardSkeleton />
-            ) : data ? (
-              <DailyBalanceChart dailyBalance={data.dailyBalanceSparkline} />
-            ) : null}
-          </div>
-
-          {/* Grid 2: Grid interno com 2 divs uma embaixo da outra (Benefícios e Categorias) (30%) */}
-          <div className="flex flex-col gap-3">
-            {/* Grid 2-1: Benefícios (Usado vs Disponível) */}
-            <div>
-              {isLoading ? (
-                <CategoryPieCardSkeleton />
-              ) : data?.familyBenefitsBalance ? (
-                <BeneficiosPieChart
-                  benefitsBalance={data.familyBenefitsBalance}
-                />
-              ) : null}
-            </div>
-
-            {/* Grid 2-2: Gastos por Categoria */}
-            <div>
-              {isLoading ? (
-                <CategoryPieCardSkeleton />
-              ) : data ? (
-                <CategoryPieCard categories={data.categories} />
-              ) : null}
-            </div>
-          </div>
-        </div>
-
-        {/* ===== BLOCO 1: VISÃO PRINCIPAL (GRID 4) - DESKTOP ===== */}
-        <div className="hidden lg:grid lg:grid-cols-2 lg:gap-6 xl:grid-cols-4 xl:gap-6">
-          {/* Visão Geral */}
+        {/* ===== MOBILE: CARD COMPLETO MINIMALISTA ===== */}
+        <div className="lg:hidden">
           {isLoading ? (
             <BalanceCardSkeleton />
           ) : data ? (
-            <SaldoOverview
+            <MobileCompleteCard
               currentBalance={data.currentBalance}
               projectedBalance={data.projectedBalance}
               changePercent={data.monthlyOverview.changePercent}
+              income={data.income}
+              expenses={data.expenses}
+              dailyBalance={data.dailyBalanceSparkline}
+              recentTransactions={data.recentTransactions}
+              upcomingPayments={data.upcomingPayments}
+              familySalaryBalance={data.familySalaryBalance}
+              familyBenefitsBalance={data.familyBenefitsBalance}
+              categories={data.categories}
+              insight={data.insight}
+              scheduledPayments={data.scheduledPayments}
+              goals={data.goals}
+              userStats={data.userStats}
+              dashboardView={dashboardView}
+              onViewChange={setDashboardView}
+              onRefresh={handleRefresh}
+              onAddGoalAmount={handleAddGoalAmount}
+              isRefreshing={isRefreshing || isLoading}
             />
           ) : null}
+        </div>
 
-          {/* Receitas do Mês */}
+        {/* ===== DESKTOP: CARD COMPLETO COM TODAS AS INFORMAÇÕES ===== */}
+        <div className="hidden lg:block">
           {isLoading ? (
             <BalanceCardSkeleton />
           ) : data ? (
-            <IncomeBreakdownCard income={data.income} />
-          ) : null}
-
-          {/* Despesas do Mês */}
-          {isLoading ? (
-            <BalanceCardSkeleton />
-          ) : data ? (
-            <ExpenseBreakdownCard expenses={data.expenses} />
-          ) : null}
-
-          {/* Próximos Vencimentos */}
-          {isLoading ? (
-            <BalanceCardSkeleton />
-          ) : data?.upcomingPayments && data.upcomingPayments.length > 0 ? (
-            <ProximosVencimentos payments={data.upcomingPayments} />
+            <CompleteDashboardCard
+              currentBalance={data.currentBalance}
+              projectedBalance={data.projectedBalance}
+              changePercent={data.monthlyOverview.changePercent}
+              income={data.income}
+              expenses={data.expenses}
+              dailyBalance={data.dailyBalanceSparkline}
+              recentTransactions={data.recentTransactions}
+              upcomingPayments={data.upcomingPayments}
+              familySalaryBalance={data.familySalaryBalance}
+              familyBenefitsBalance={data.familyBenefitsBalance}
+              categories={data.categories}
+              dashboardView={dashboardView}
+              onViewChange={setDashboardView}
+              onRefresh={handleRefresh}
+              isRefreshing={isRefreshing || isLoading}
+            />
           ) : null}
         </div>
 
@@ -389,68 +260,31 @@ export default function DashboardPage() {
           ) : null}
         </div>
 
-        {/* Desktop: Cards de Salário e Benefícios (abaixo do grid principal) */}
-        <div className="hidden lg:mt-6 lg:grid lg:grid-cols-2 lg:gap-6">
-          {/* Saldo de Salário do Mês */}
+        {/* ===== CONTEXTO E AÇÕES ===== */}
+        <div className="hidden lg:block">
           {isLoading ? (
-            <BalanceCardSkeleton />
-          ) : data?.familySalaryBalance ? (
-            <SaldoSalarioFamiliar salaryBalance={data.familySalaryBalance} />
-          ) : null}
-
-          {/* Saldo de Benefícios do Mês */}
-          {isLoading ? (
-            <BalanceCardSkeleton />
-          ) : data?.familyBenefitsBalance ? (
-            <SaldoBeneficiosFamiliar
-              benefitsBalance={data.familyBenefitsBalance}
+            <MainInsightCardSkeleton />
+          ) : data?.insight ? (
+            <ActionsInsightsCard
+              insight={data.insight}
+              scheduledPayments={data.scheduledPayments}
+              goals={data.goals}
+              onAddGoalAmount={handleAddGoalAmount}
             />
           ) : null}
         </div>
 
-        {/* ===== CONTEXTO E AÇÕES ===== */}
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-4 xl:grid-cols-3 xl:gap-6">
-          {/* Insights Financeiros */}
-          {isLoading ? (
-            <MainInsightCardSkeleton />
-          ) : data?.insight ? (
-            <MainInsightCard insight={data.insight} />
-          ) : null}
-
-          {/* Assinaturas Próximas */}
-          {isLoading ? (
-            <BalanceCardSkeleton />
-          ) : data ? (
-            <ScheduledPaymentsCard payments={data.scheduledPayments} />
-          ) : null}
-
-          {/* Metas */}
-          {isLoading ? (
-            <GoalsCardSkeleton />
-          ) : data ? (
-            <GoalsCard goals={data.goals} onAddAmount={handleAddGoalAmount} />
-          ) : null}
-        </div>
-
         {/* ===== DADOS ADICIONAIS ===== */}
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-6">
-          {/* Transações Recentes */}
+        <div className="hidden lg:block">
           {isLoading ? (
-            <BalanceCardSkeleton />
+            <CategoryPieCardSkeleton />
           ) : data ? (
-            <RecentExpensesCard transactions={data.recentTransactions} />
+            <AnalyticsSummaryCard
+              benefitsBalance={data.familyBenefitsBalance}
+              categories={data.categories}
+              userStats={data.userStats}
+            />
           ) : null}
-
-          {/* Estatísticas por Usuário (se aplicável) */}
-          {data?.userStats && data.userStats.length > 0 && (
-            <>
-              {isLoading ? (
-                <BalanceCardSkeleton />
-              ) : (
-                <UserStatsCard userStats={data.userStats} />
-              )}
-            </>
-          )}
         </div>
       </div>
     </div>
