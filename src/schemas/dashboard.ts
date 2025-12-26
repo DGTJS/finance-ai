@@ -4,7 +4,11 @@
 
 import { z } from "zod";
 
-export const transactionTypeSchema = z.enum(["DEPOSIT", "EXPENSE", "INVESTMENT"]);
+export const transactionTypeSchema = z.enum([
+  "DEPOSIT",
+  "EXPENSE",
+  "INVESTMENT",
+]);
 
 export const transactionCategorySchema = z.enum([
   "HOUSING",
@@ -65,7 +69,16 @@ export const familySalaryBalanceSchema = z.object({
       userId: z.string(),
       name: z.string(),
       amount: z.number().min(0),
-    })
+      payments: z
+        .array(
+          z.object({
+            label: z.string(),
+            day: z.number().min(1).max(31),
+            value: z.number().min(0),
+          }),
+        )
+        .optional(),
+    }),
   ),
 });
 
@@ -77,7 +90,7 @@ export const familyBenefitsBalanceSchema = z.object({
       name: z.string(),
       benefits: z.array(userBenefitSchema),
       total: z.number().min(0),
-    })
+    }),
   ),
   used: z.number().min(0),
   available: z.number().min(0),
@@ -170,15 +183,15 @@ export const dashboardSummarySchema = z.object({
   // Visão principal
   currentBalance: z.number(),
   projectedBalance: z.number(),
-  
+
   // Breakdowns
   income: incomeBreakdownSchema,
   expenses: expenseBreakdownSchema,
   investments: z.number().min(0),
-  
+
   // Visão mensal
   monthlyOverview: monthlyOverviewSchema,
-  
+
   // Dados de contexto
   dailyBalanceSparkline: z.array(dailyBalanceSchema),
   categories: z.array(categoryDataSchema),
@@ -186,12 +199,12 @@ export const dashboardSummarySchema = z.object({
   scheduledPayments: z.array(scheduledPaymentSchema),
   goals: z.array(goalSchema),
   userStats: z.array(userStatSchema),
-  
+
   // Novos dados familiares
   upcomingPayments: z.array(upcomingPaymentSchema),
   familySalaryBalance: familySalaryBalanceSchema,
   familyBenefitsBalance: familyBenefitsBalanceSchema,
-  
+
   // Insights
   insight: insightSchema,
 });
@@ -207,4 +220,3 @@ export const addGoalAmountSchema = z.object({
   goalId: z.string(),
   amount: z.number().min(0.01, "Valor deve ser maior que zero"),
 });
-

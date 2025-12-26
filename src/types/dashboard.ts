@@ -62,6 +62,11 @@ export interface FamilySalaryBalance {
     userId: string;
     name: string;
     amount: number; // Salário do mês do usuário
+    payments?: Array<{
+      label: string;
+      day: number;
+      value: number;
+    }>;
   }>;
 }
 
@@ -174,15 +179,15 @@ export interface DashboardSummary {
   // Visão principal
   currentBalance: number; // Saldo atual
   projectedBalance: number; // Saldo previsto até fim do mês
-  
+
   // Breakdowns financeiros
   income: IncomeBreakdown;
   expenses: ExpenseBreakdown;
   investments: number;
-  
+
   // Visão mensal
   monthlyOverview: MonthlyOverview;
-  
+
   // Dados de contexto
   dailyBalanceSparkline: DailyBalance[]; // Evolução diária do saldo
   categories: CategoryData[]; // Gastos por categoria (apenas despesas)
@@ -190,12 +195,12 @@ export interface DashboardSummary {
   scheduledPayments: ScheduledPayment[]; // Assinaturas próximas
   goals: Goal[]; // Metas ativas
   userStats: UserStat[]; // Estatísticas por usuário (família)
-  
+
   // Novos dados familiares
   upcomingPayments: UpcomingPayment[]; // Próximos vencimentos (ordenados)
   familySalaryBalance: FamilySalaryBalance; // Saldo de salário familiar
   familyBenefitsBalance: FamilyBenefitsBalance; // Saldo de benefícios familiar
-  
+
   // Insights
   insight: Insight;
 }
@@ -205,4 +210,3 @@ export interface Projection {
   percent_comprometido: number;
   sugestao_para_meta: number;
 }
-

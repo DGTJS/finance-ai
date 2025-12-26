@@ -304,6 +304,7 @@ export function CompleteDashboardCard({
               upcomingPayments={upcomingPayments}
               scheduledPayments={scheduledPayments}
               transactions={recentTransactions}
+              familySalaryBalance={familySalaryBalance}
             />
           </div>
           <div className="flex h-full min-h-0 w-full [&>div]:border-0 [&>div]:shadow-none">

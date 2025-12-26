@@ -205,6 +205,7 @@ export function MobileCompleteCard({
             upcomingPayments={upcomingPayments}
             scheduledPayments={scheduledPayments}
             transactions={recentTransactions}
+            familySalaryBalance={familySalaryBalance}
           />
           <RecentExpensesCard transactions={recentTransactions} />
         </div>

@@ -57,6 +57,20 @@ interface DailyBalanceChartProps {
   dailyBalance: DailyBalance[];
   upcomingPayments?: UpcomingPayment[];
   scheduledPayments?: ScheduledPayment[];
+  transactions?: Transaction[];
+  familySalaryBalance?: {
+    total: number;
+    byUser: Array<{
+      userId: string;
+      name: string;
+      amount: number;
+      payments?: Array<{
+        label: string;
+        day: number;
+        value: number;
+      }>;
+    }>;
+  };
 }
 
 export function DailyBalanceChart({
@@ -64,6 +78,7 @@ export function DailyBalanceChart({
   upcomingPayments = [],
   scheduledPayments = [],
   transactions = [],
+  familySalaryBalance,
 }: DailyBalanceChartProps) {
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
@@ -102,7 +117,9 @@ export function DailyBalanceChart({
   const [selectionMode, setSelectionMode] = useState<"month" | "custom">(
     "month",
   );
-  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
+  const [selectedYear, setSelectedYear] = useState(
+    Math.max(2025, now.getFullYear()),
+  );
   const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
   const [startDate, setStartDate] = useState(
     formatDateForInput(firstDayOfMonth),
@@ -123,13 +140,189 @@ export function DailyBalanceChart({
     }
   }, [selectionMode, selectedYear, selectedMonth, startDate, endDate]);
 
-  // Calcular projeção futura baseada em assinaturas e transações agendadas
+  // Calcular salários esperados por dia baseado em familySalaryBalance
+  const expectedSalariesByDay = useMemo(() => {
+    const salariesMap = new Map<string, number>();
+
+    if (familySalaryBalance?.byUser) {
+      familySalaryBalance.byUser.forEach((user) => {
+        // Sempre processar payments, mesmo que seja array vazio
+        const payments = user.payments || [];
+
+        if (Array.isArray(payments) && payments.length > 0) {
+          payments.forEach((payment) => {
+            // Criar data para o dia de pagamento no mês atual e futuros (até 6 meses)
+            const now = new Date();
+            for (let monthOffset = 0; monthOffset <= 6; monthOffset++) {
+              const targetMonth = new Date(
+                now.getFullYear(),
+                now.getMonth() + monthOffset,
+                1,
+              );
+              const daysInMonth = new Date(
+                targetMonth.getFullYear(),
+                targetMonth.getMonth() + 1,
+                0,
+              ).getDate();
+
+              // Ajustar dia se exceder o último dia do mês
+              const paymentDay = Math.min(payment.day, daysInMonth);
+              const paymentDate = new Date(
+                targetMonth.getFullYear(),
+                targetMonth.getMonth(),
+                paymentDay,
+              );
+              const dateStr = paymentDate.toISOString().split("T")[0];
+
+              const current = salariesMap.get(dateStr) || 0;
+              salariesMap.set(dateStr, current + payment.value);
+            }
+          });
+        }
+      });
+    }
+
+    return salariesMap;
+  }, [familySalaryBalance]);
+
+  // Adicionar salários aos dados históricos também
+  const dailyBalanceWithSalaries = useMemo(() => {
+    const now = new Date();
+
+    // Criar mapa com saldos históricos de todos os meses no range
+    const historicalBalanceMap = new Map<string, number>();
+    dailyBalance.forEach((item) => {
+      historicalBalanceMap.set(item.date, item.balance);
+    });
+
+    // Criar mapa final que inclui todos os dias no range selecionado
+    const balanceMap = new Map<string, number>();
+
+    // Encontrar o último saldo histórico conhecido (último dia com dados da API)
+    let lastKnownBalance = 0;
+    const sortedHistoricalDates = Array.from(
+      historicalBalanceMap.keys(),
+    ).sort();
+    if (sortedHistoricalDates.length > 0) {
+      const lastDate = sortedHistoricalDates[sortedHistoricalDates.length - 1];
+      lastKnownBalance = historicalBalanceMap.get(lastDate) || 0;
+    }
+
+    // Processar cada mês que pode estar no range (mês atual e próximos 6 meses)
+    let accumulatedBalance = lastKnownBalance; // Começar com o último saldo conhecido
+
+    for (let monthOffset = 0; monthOffset <= 6; monthOffset++) {
+      const targetMonth = new Date(
+        now.getFullYear(),
+        now.getMonth() + monthOffset,
+        1,
+      );
+      const daysInMonth = new Date(
+        targetMonth.getFullYear(),
+        targetMonth.getMonth() + 1,
+        0,
+      ).getDate();
+
+      const firstDayOfMonth = new Date(
+        targetMonth.getFullYear(),
+        targetMonth.getMonth(),
+        1,
+      );
+      const firstDayStr = firstDayOfMonth.toISOString().split("T")[0];
+
+      // Para o mês atual, usar o saldo histórico se disponível
+      // Para meses futuros, usar o saldo acumulado do mês anterior
+      let runningBalance = accumulatedBalance;
+
+      // Se há saldo histórico no primeiro dia deste mês, usar ele (mês atual)
+      if (historicalBalanceMap.has(firstDayStr)) {
+        runningBalance = historicalBalanceMap.get(firstDayStr) || 0;
+      }
+
+      // Processar cada dia do mês
+      for (let day = 1; day <= daysInMonth; day++) {
+        const currentDate = new Date(
+          targetMonth.getFullYear(),
+          targetMonth.getMonth(),
+          day,
+        );
+        const dateStr = currentDate.toISOString().split("T")[0];
+        const isFuture = currentDate > now;
+
+        // Verificar se há saldo histórico para este dia (mês atual, dias passados)
+        const historicalBalance = historicalBalanceMap.get(dateStr);
+        const expectedSalary = expectedSalariesByDay.get(dateStr) || 0;
+
+        // Para dias históricos (mês atual, já passados), usar o saldo da API
+        if (historicalBalance !== undefined) {
+          runningBalance = historicalBalance;
+        } else if (isFuture) {
+          // Para dias futuros, adicionar salário esperado se houver
+          // Verificar se o salário já foi recebido (transações)
+          const hasReceivedSalary = transactions.some((t) => {
+            const txDate = new Date(t.date || t.createdAt);
+            return (
+              txDate.toISOString().split("T")[0] === dateStr &&
+              t.type === "DEPOSIT" &&
+              Math.abs(Number(t.amount) - expectedSalary) < 0.01
+            );
+          });
+
+          // Adicionar salário apenas se não foi recebido ainda
+          if (expectedSalary > 0 && !hasReceivedSalary) {
+            runningBalance += expectedSalary;
+          }
+
+          // Subtrair despesas agendadas para este dia (upcomingPayments e scheduledPayments)
+          const dayExpenses = [
+            ...(upcomingPayments || []),
+            ...(scheduledPayments || []),
+          ]
+            .filter((payment) => {
+              const paymentDate = new Date(payment.dueDate);
+              return paymentDate.toISOString().split("T")[0] === dateStr;
+            })
+            .reduce((sum, payment) => sum + Number(payment.amount || 0), 0);
+
+          runningBalance -= dayExpenses;
+        }
+
+        // Atualizar o saldo acumulado para o próximo dia
+        balanceMap.set(dateStr, runningBalance);
+      }
+
+      // Atualizar o saldo acumulado para o próximo mês
+      // Usar o último dia do mês atual como base para o próximo mês
+      const lastDayOfMonth = new Date(
+        targetMonth.getFullYear(),
+        targetMonth.getMonth() + 1,
+        0,
+      );
+      const lastDayStr = lastDayOfMonth.toISOString().split("T")[0];
+      const lastDayBalance = balanceMap.get(lastDayStr);
+      if (lastDayBalance !== undefined) {
+        accumulatedBalance = lastDayBalance;
+      }
+    }
+
+    return Array.from(balanceMap.entries())
+      .map(([date, balance]) => ({ date, balance }))
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }, [
+    dailyBalance,
+    expectedSalariesByDay,
+    transactions,
+    upcomingPayments,
+    scheduledPayments,
+  ]);
+
+  // Calcular projeção futura baseada em assinaturas, transações agendadas e salários
   const futureProjection = useMemo(() => {
     const projection: DailyBalance[] = [];
     const now = new Date();
     const lastBalance =
-      dailyBalance.length > 0
-        ? dailyBalance[dailyBalance.length - 1].balance
+      dailyBalanceWithSalaries.length > 0
+        ? dailyBalanceWithSalaries[dailyBalanceWithSalaries.length - 1].balance
         : 0;
 
     // Calcular até 3 meses no futuro
@@ -161,6 +354,13 @@ export function DailyBalanceChart({
         );
         const dateStr = currentDate.toISOString().split("T")[0];
 
+        // Calcular receitas do dia (salários esperados)
+        let dayIncome = 0;
+        const expectedSalary = expectedSalariesByDay.get(dateStr) || 0;
+        if (expectedSalary > 0) {
+          dayIncome += expectedSalary;
+        }
+
         // Calcular despesas do dia (assinaturas e transações agendadas)
         let dayExpenses = 0;
 
@@ -187,7 +387,7 @@ export function DailyBalanceChart({
           }
         });
 
-        runningBalance -= dayExpenses;
+        runningBalance += dayIncome - dayExpenses;
 
         projection.push({
           date: dateStr,
@@ -197,21 +397,32 @@ export function DailyBalanceChart({
     }
 
     return projection;
-  }, [dailyBalance, upcomingPayments, scheduledPayments]);
+  }, [
+    dailyBalanceWithSalaries,
+    upcomingPayments,
+    scheduledPayments,
+    expectedSalariesByDay,
+  ]);
 
   // Formatar dados para o gráfico (incluindo projeção futura)
   const chartData = useMemo(() => {
-    const historical = dailyBalance
+    const now = new Date();
+    const rangeStart = dateRange.start;
+    const rangeEnd = dateRange.end;
+
+    // Filtrar dados históricos com salários no range
+    const historical = dailyBalanceWithSalaries
       .filter((item) => {
         const itemDate = new Date(item.date);
-        return itemDate >= dateRange.start && itemDate <= dateRange.end;
+        return itemDate >= rangeStart && itemDate <= rangeEnd;
       })
       .map((item) => {
         const date = new Date(item.date);
+        const isFuture = date > now;
         return {
           date: date.getDate(), // Dia do mês
-          balance: item.balance,
-          projectedBalance: null,
+          balance: isFuture ? null : item.balance,
+          projectedBalance: isFuture ? item.balance : null,
           formattedDate: date.toLocaleDateString("pt-BR", {
             day: "2-digit",
             month: "short",
@@ -222,7 +433,7 @@ export function DailyBalanceChart({
             year: "numeric",
           }),
           dateStr: item.date,
-          isProjected: false,
+          isProjected: isFuture,
         };
       });
 
@@ -230,7 +441,7 @@ export function DailyBalanceChart({
     const future = futureProjection
       .filter((item) => {
         const itemDate = new Date(item.date);
-        return itemDate >= dateRange.start && itemDate <= dateRange.end;
+        return itemDate >= rangeStart && itemDate <= rangeEnd;
       })
       .map((item) => {
         const date = new Date(item.date);
@@ -265,6 +476,21 @@ export function DailyBalanceChart({
       if (!allDates.has(item.dateStr)) {
         allDates.add(item.dateStr);
         combined.push(item);
+      } else {
+        // Se já existe, atualizar com dados da projeção se necessário
+        const existingIndex = combined.findIndex(
+          (d) => d.dateStr === item.dateStr,
+        );
+        if (existingIndex >= 0) {
+          const existing = combined[existingIndex];
+          // Se o histórico não tem projectedBalance mas a projeção tem, usar a projeção
+          if (!existing.projectedBalance && item.projectedBalance) {
+            combined[existingIndex] = {
+              ...existing,
+              projectedBalance: item.projectedBalance,
+            };
+          }
+        }
       }
     });
 
@@ -276,7 +502,7 @@ export function DailyBalanceChart({
     });
 
     return combined;
-  }, [dailyBalance, futureProjection, dateRange]);
+  }, [dailyBalanceWithSalaries, futureProjection, dateRange]);
 
   // Calcular estatísticas
   const stats = useMemo(() => {
@@ -497,8 +723,8 @@ export function DailyBalanceChart({
                   </SelectTrigger>
                   <SelectContent>
                     {Array.from(
-                      { length: 5 },
-                      (_, i) => now.getFullYear() - i,
+                      { length: 10 },
+                      (_, i) => Math.max(2025, now.getFullYear()) + i,
                     ).map((year) => (
                       <SelectItem key={year} value={year.toString()}>
                         {year}
@@ -578,7 +804,7 @@ export function DailyBalanceChart({
                 <ResponsiveContainer width="100%" height={250}>
                   <AreaChart
                     data={chartData}
-                    margin={{ top: 10, right: 10, left: 0, bottom: 10 }}
+                    margin={{ top: 30, right: 10, left: 0, bottom: 10 }}
                   >
                     <defs>
                       <linearGradient
@@ -643,6 +869,39 @@ export function DailyBalanceChart({
                       strokeDasharray="2 2"
                       className="opacity-30"
                     />
+
+                    {/* Linhas de referência para dias de pagamento de salário */}
+                    {Array.from(expectedSalariesByDay.entries()).map(
+                      ([dateStr, salary]) => {
+                        const salaryDate = new Date(dateStr);
+                        const dayOfMonth = salaryDate.getDate();
+                        // Verificar se a data está no range selecionado
+                        if (
+                          salaryDate >= dateRange.start &&
+                          salaryDate <= dateRange.end
+                        ) {
+                          return (
+                            <ReferenceLine
+                              key={dateStr}
+                              x={dayOfMonth}
+                              stroke="#10b981"
+                              strokeWidth={2}
+                              strokeDasharray="3 3"
+                              className="opacity-60"
+                              label={{
+                                value: `💰 ${formatCurrency(salary)}`,
+                                position: "top",
+                                fill: "#10b981",
+                                fontSize: 10,
+                                fontWeight: "bold",
+                                offset: 15,
+                              }}
+                            />
+                          );
+                        }
+                        return null;
+                      },
+                    )}
 
                     {/* Área histórica (linha sólida) */}
                     <Area
@@ -865,6 +1124,55 @@ export function DailyBalanceChart({
                 }
                 return null;
               })()}
+              {/* Salários esperados para este dia */}
+              {(() => {
+                const expectedSalary =
+                  expectedSalariesByDay.get(selectedDate) || 0;
+
+                // Verificar se o salário já foi recebido nas transações
+                const receivedSalary = transactions
+                  .filter((t) => {
+                    const txDate = (t.date || t.createdAt)?.split("T")[0];
+                    return (
+                      txDate === selectedDate &&
+                      t.type === "DEPOSIT" &&
+                      Math.abs(Number(t.amount) - expectedSalary) < 0.01
+                    );
+                  })
+                  .reduce((sum, t) => sum + Number(t.amount), 0);
+
+                if (expectedSalary > 0) {
+                  const hasReceived = receivedSalary >= expectedSalary;
+                  const remainingSalary = expectedSalary - receivedSalary;
+
+                  return (
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-semibold">
+                        Salários Esperados
+                      </h4>
+                      <div className="flex items-center justify-between rounded-lg border bg-green-50 p-3 dark:bg-green-950/20">
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">
+                            Salário Total Esperado
+                          </p>
+                          <p className="text-muted-foreground text-xs">
+                            {hasReceived
+                              ? "✓ Já recebido"
+                              : remainingSalary > 0
+                                ? `Pendente: ${formatCurrency(remainingSalary)}`
+                                : "A receber"}
+                          </p>
+                        </div>
+                        <p className="font-semibold text-green-600 dark:text-green-400">
+                          +{formatCurrency(expectedSalary)}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+
               {/* Transações do dia */}
               {(() => {
                 const dayTransactions = transactions.filter((t) => {
@@ -937,8 +1245,15 @@ export function DailyBalanceChart({
                   return txDate === selectedDate;
                 });
 
-                // Se não houver transações nem pagamentos no dia, mostrar transações da última semana
-                if (dayPayments.length === 0 && dayTransactions.length === 0) {
+                const expectedSalary =
+                  expectedSalariesByDay.get(selectedDate) || 0;
+
+                // Se não houver transações, pagamentos nem salários esperados no dia, mostrar transações da última semana
+                if (
+                  dayPayments.length === 0 &&
+                  dayTransactions.length === 0 &&
+                  expectedSalary === 0
+                ) {
                   const selectedDateObj = new Date(selectedDate);
                   const oneWeekAgo = new Date(selectedDateObj);
                   oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
