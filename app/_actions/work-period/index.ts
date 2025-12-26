@@ -6,7 +6,9 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 const workPeriodSchema = z.object({
+  type: z.enum(["project", "platform", "none"]).optional(), // Apenas para controle do formulário, não salvo no DB
   projectId: z.string().optional().nullable(),
+  platform: z.string().optional().nullable(),
   date: z.date(),
   startTime: z.string(), // "HH:mm" format
   endTime: z.string(), // "HH:mm" format
@@ -29,23 +31,23 @@ async function getUserId() {
 function calculateHours(startTime: string, endTime: string): number {
   const [startHour, startMin] = startTime.split(":").map(Number);
   const [endHour, endMin] = endTime.split(":").map(Number);
-  
+
   const startMinutes = startHour * 60 + startMin;
   const endMinutes = endHour * 60 + endMin;
-  
+
   // Se o fim for antes do início, assumir que é no dia seguinte
   let diffMinutes = endMinutes - startMinutes;
   if (diffMinutes < 0) {
     diffMinutes += 24 * 60; // Adicionar 24 horas
   }
-  
+
   return diffMinutes / 60; // Converter para horas decimais
 }
 
 export async function createWorkPeriod(data: WorkPeriodInput) {
   try {
     const userId = await getUserId();
-    
+
     // Verificar se o modelo existe
     if (!db.workPeriod) {
       return {
@@ -53,12 +55,15 @@ export async function createWorkPeriod(data: WorkPeriodInput) {
         error: "Prisma Client não foi regenerado. Execute: npx prisma generate",
       };
     }
-    
+
     const validatedData = workPeriodSchema.parse(data);
 
     // Calcular horas trabalhadas
-    const hours = calculateHours(validatedData.startTime, validatedData.endTime);
-    
+    const hours = calculateHours(
+      validatedData.startTime,
+      validatedData.endTime,
+    );
+
     // Calcular lucro líquido
     const netProfit = validatedData.amount - validatedData.expenses;
 
@@ -66,17 +71,19 @@ export async function createWorkPeriod(data: WorkPeriodInput) {
     // A data já vem no horário brasileiro do cliente, precisamos garantir que seja salva corretamente
     const date = new Date(validatedData.date);
     date.setHours(0, 0, 0, 0);
-    
-    const [startHour, startMin] = validatedData.startTime.split(":").map(Number);
+
+    const [startHour, startMin] = validatedData.startTime
+      .split(":")
+      .map(Number);
     const [endHour, endMin] = validatedData.endTime.split(":").map(Number);
-    
+
     // Criar datas no horário brasileiro
     const startTime = new Date(date);
     startTime.setHours(startHour, startMin, 0, 0);
-    
+
     const endTime = new Date(date);
     endTime.setHours(endHour, endMin, 0, 0);
-    
+
     // Se o fim for antes do início, assumir que é no dia seguinte
     if (endTime < startTime) {
       endTime.setDate(endTime.getDate() + 1);
@@ -86,6 +93,7 @@ export async function createWorkPeriod(data: WorkPeriodInput) {
       data: {
         userId,
         projectId: validatedData.projectId || null,
+        platform: validatedData.platform || null,
         date,
         startTime,
         endTime,
@@ -111,10 +119,13 @@ export async function createWorkPeriod(data: WorkPeriodInput) {
   }
 }
 
-export async function updateWorkPeriod(id: string, data: Partial<WorkPeriodInput>) {
+export async function updateWorkPeriod(
+  id: string,
+  data: Partial<WorkPeriodInput>,
+) {
   try {
     const userId = await getUserId();
-    
+
     // Verificar se o modelo existe
     if (!db.workPeriod) {
       return {
@@ -122,7 +133,7 @@ export async function updateWorkPeriod(id: string, data: Partial<WorkPeriodInput
         error: "Prisma Client não foi regenerado. Execute: npx prisma generate",
       };
     }
-    
+
     const validatedData = workPeriodSchema.partial().parse(data);
 
     const existingPeriod = await db.workPeriod.findUnique({
@@ -142,24 +153,30 @@ export async function updateWorkPeriod(id: string, data: Partial<WorkPeriodInput
     let endTime = existingPeriod.endTime;
     let date = existingPeriod.date;
 
-    if (validatedData.startTime || validatedData.endTime || validatedData.date) {
-      const finalStartTime = validatedData.startTime || 
+    if (
+      validatedData.startTime ||
+      validatedData.endTime ||
+      validatedData.date
+    ) {
+      const finalStartTime =
+        validatedData.startTime ||
         `${existingPeriod.startTime.getHours().toString().padStart(2, "0")}:${existingPeriod.startTime.getMinutes().toString().padStart(2, "0")}`;
-      const finalEndTime = validatedData.endTime || 
+      const finalEndTime =
+        validatedData.endTime ||
         `${existingPeriod.endTime.getHours().toString().padStart(2, "0")}:${existingPeriod.endTime.getMinutes().toString().padStart(2, "0")}`;
-      
+
       hours = calculateHours(finalStartTime, finalEndTime);
-      
+
       date = validatedData.date || existingPeriod.date;
       const [startHour, startMin] = finalStartTime.split(":").map(Number);
       const [endHour, endMin] = finalEndTime.split(":").map(Number);
-      
+
       startTime = new Date(date);
       startTime.setHours(startHour, startMin, 0, 0);
-      
+
       endTime = new Date(date);
       endTime.setHours(endHour, endMin, 0, 0);
-      
+
       if (endTime < startTime) {
         endTime.setDate(endTime.getDate() + 1);
       }
@@ -173,7 +190,14 @@ export async function updateWorkPeriod(id: string, data: Partial<WorkPeriodInput
     const updatedPeriod = await db.workPeriod.update({
       where: { id },
       data: {
-        projectId: validatedData.projectId !== undefined ? validatedData.projectId : existingPeriod.projectId,
+        projectId:
+          validatedData.projectId !== undefined
+            ? validatedData.projectId
+            : existingPeriod.projectId,
+        platform:
+          validatedData.platform !== undefined
+            ? validatedData.platform
+            : (existingPeriod as any).platform || null,
         date,
         startTime,
         endTime,
@@ -181,7 +205,10 @@ export async function updateWorkPeriod(id: string, data: Partial<WorkPeriodInput
         amount,
         expenses,
         netProfit,
-        description: validatedData.description !== undefined ? validatedData.description : existingPeriod.description,
+        description:
+          validatedData.description !== undefined
+            ? validatedData.description
+            : existingPeriod.description,
       },
     });
 
@@ -191,7 +218,8 @@ export async function updateWorkPeriod(id: string, data: Partial<WorkPeriodInput
     console.error("Erro ao atualizar período:", error);
     return {
       success: false,
-      error: error instanceof Error ? error.message : "Erro ao atualizar período",
+      error:
+        error instanceof Error ? error.message : "Erro ao atualizar período",
     };
   }
 }
@@ -248,7 +276,7 @@ export async function getWorkPeriods(startDate?: Date, endDate?: Date) {
     }
 
     const where: any = { userId };
-    
+
     if (startDate || endDate) {
       where.date = {};
       if (startDate) {
@@ -310,7 +338,7 @@ export async function getWorkPeriodStats(startDate?: Date, endDate?: Date) {
     }
 
     const where: any = { userId };
-    
+
     if (startDate || endDate) {
       where.date = {};
       if (startDate) {
@@ -327,8 +355,14 @@ export async function getWorkPeriodStats(startDate?: Date, endDate?: Date) {
 
     const totalHours = periods.reduce((sum, p) => sum + p.hours, 0);
     const totalAmount = periods.reduce((sum, p) => sum + Number(p.amount), 0);
-    const totalExpenses = periods.reduce((sum, p) => sum + Number(p.expenses), 0);
-    const totalNetProfit = periods.reduce((sum, p) => sum + Number(p.netProfit), 0);
+    const totalExpenses = periods.reduce(
+      (sum, p) => sum + Number(p.expenses),
+      0,
+    );
+    const totalNetProfit = periods.reduce(
+      (sum, p) => sum + Number(p.netProfit),
+      0,
+    );
     const periodCount = periods.length;
 
     return {
@@ -358,4 +392,3 @@ export async function getWorkPeriodStats(startDate?: Date, endDate?: Date) {
     };
   }
 }
-

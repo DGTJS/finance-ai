@@ -345,6 +345,7 @@ model WorkPeriod {
   id          String   @id @default(cuid())
   userId      String
   projectId   String? // Opcional - pode trabalhar sem projeto
+  platform    String? // Opcional - plataforma online (Uber, 99, iFood, etc.)
   date        DateTime // Data do serviço
   startTime   DateTime // Horário de início
   endTime     DateTime // Horário de fim

@@ -40,10 +40,16 @@ import { formatHours } from "./utils";
 import ProjectForm from "./project-form";
 
 const workPeriodSchema = z.object({
+  type: z.enum(["project", "platform", "none"]).optional().default("none"),
   projectId: z.string().optional().nullable(),
+  platform: z.string().optional().nullable(),
   date: z.date({ required_error: "Data é obrigatória" }),
-  startTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Horário inválido (use HH:mm)"),
-  endTime: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Horário inválido (use HH:mm)"),
+  startTime: z
+    .string()
+    .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Horário inválido (use HH:mm)"),
+  endTime: z
+    .string()
+    .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Horário inválido (use HH:mm)"),
   amount: z.number().positive("Valor deve ser positivo"),
   expenses: z.number().min(0, "Despesas não podem ser negativas").default(0),
   description: z.string().optional().nullable(),
@@ -61,6 +67,7 @@ interface WorkPeriod {
   expenses: number;
   description: string | null;
   projectId: string | null;
+  platform: string | null;
 }
 
 interface Project {
@@ -99,7 +106,9 @@ export default function WorkPeriodForm({
   const form = useForm<WorkPeriodFormInput>({
     resolver: zodResolver(workPeriodSchema),
     defaultValues: {
+      type: "none",
       projectId: null,
+      platform: null,
       date: new Date(),
       startTime: "09:00",
       endTime: "17:00",
@@ -109,6 +118,8 @@ export default function WorkPeriodForm({
     },
   });
 
+  const selectedType = form.watch("type");
+
   // Calcular horas quando startTime ou endTime mudarem
   const startTime = form.watch("startTime");
   const endTime = form.watch("endTime");
@@ -117,15 +128,15 @@ export default function WorkPeriodForm({
     if (startTime && endTime) {
       const [startHour, startMin] = startTime.split(":").map(Number);
       const [endHour, endMin] = endTime.split(":").map(Number);
-      
+
       const startMinutes = startHour * 60 + startMin;
       const endMinutes = endHour * 60 + endMin;
-      
+
       let diffMinutes = endMinutes - startMinutes;
       if (diffMinutes < 0) {
         diffMinutes += 24 * 60;
       }
-      
+
       const hours = diffMinutes / 60;
       // Não atualizar o form, apenas mostrar visualmente
     }
@@ -140,23 +151,37 @@ export default function WorkPeriodForm({
           minute: "2-digit",
           timeZone: "America/Sao_Paulo",
         }).format(new Date(period.startTime));
-        
+
         const endTimeStr = new Intl.DateTimeFormat("pt-BR", {
           hour: "2-digit",
           minute: "2-digit",
           timeZone: "America/Sao_Paulo",
         }).format(new Date(period.endTime));
-        
+
         // Converter data para horário brasileiro (apenas data, sem hora)
         const dateBR = new Date(period.date);
         const dateStr = new Intl.DateTimeFormat("pt-BR", {
           timeZone: "America/Sao_Paulo",
         }).format(dateBR);
         const [day, month, year] = dateStr.split("/");
-        const dateObj = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-        
+        const dateObj = new Date(
+          parseInt(year),
+          parseInt(month) - 1,
+          parseInt(day),
+        );
+
+        // Determinar o tipo baseado nos dados existentes
+        let type: "project" | "platform" | "none" = "none";
+        if (period.projectId) {
+          type = "project";
+        } else if ((period as any).platform) {
+          type = "platform";
+        }
+
         form.reset({
+          type,
           projectId: period.projectId || null,
+          platform: (period as any).platform || null,
           date: dateObj,
           startTime: startTimeStr,
           endTime: endTimeStr,
@@ -171,8 +196,12 @@ export default function WorkPeriodForm({
           timeZone: "America/Sao_Paulo",
         }).format(now);
         const [day, month, year] = dateStr.split("/");
-        const todayBR = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-        
+        const todayBR = new Date(
+          parseInt(year),
+          parseInt(month) - 1,
+          parseInt(day),
+        );
+
         form.reset({
           projectId: null,
           date: todayBR,
@@ -189,15 +218,15 @@ export default function WorkPeriodForm({
   const calculateHours = (start: string, end: string): number => {
     const [startHour, startMin] = start.split(":").map(Number);
     const [endHour, endMin] = end.split(":").map(Number);
-    
+
     const startMinutes = startHour * 60 + startMin;
     const endMinutes = endHour * 60 + endMin;
-    
+
     let diffMinutes = endMinutes - startMinutes;
     if (diffMinutes < 0) {
       diffMinutes += 24 * 60;
     }
-    
+
     return diffMinutes / 60;
   };
 
@@ -206,7 +235,7 @@ export default function WorkPeriodForm({
 
     try {
       console.log("📝 Dados do formulário:", data);
-      
+
       let result;
 
       if (isEditing && period) {
@@ -219,7 +248,9 @@ export default function WorkPeriodForm({
 
       if (result.success) {
         toast.success(
-          isEditing ? "Período atualizado com sucesso!" : "Período criado com sucesso!",
+          isEditing
+            ? "Período atualizado com sucesso!"
+            : "Período criado com sucesso!",
         );
         onSuccess();
         onClose();
@@ -235,14 +266,17 @@ export default function WorkPeriodForm({
     }
   };
 
-  const calculatedHours = startTime && endTime ? calculateHours(startTime, endTime) : 0;
+  const calculatedHours =
+    startTime && endTime ? calculateHours(startTime, endTime) : 0;
   const netProfit = form.watch("amount") - form.watch("expenses");
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>{isEditing ? "Editar Período" : "Novo Período de Trabalho"}</DialogTitle>
+          <DialogTitle>
+            {isEditing ? "Editar Período" : "Novo Período de Trabalho"}
+          </DialogTitle>
           <DialogDescription>
             {isEditing
               ? "Atualize as informações do período de trabalho."
@@ -303,63 +337,138 @@ export default function WorkPeriodForm({
 
             {/* Duração Calculada */}
             {calculatedHours > 0 && (
-              <div className="rounded-lg border bg-muted p-3">
+              <div className="bg-muted rounded-lg border p-3">
                 <p className="text-sm font-medium">
                   Duração: {formatHours(calculatedHours)}
                 </p>
               </div>
             )}
 
-            {/* Projeto */}
+            {/* Tipo: Projeto ou Plataforma */}
             <FormField
               control={form.control}
-              name="projectId"
+              name="type"
               render={({ field }) => (
                 <FormItem>
-                  <div className="flex items-center justify-between">
-                    <FormLabel>Projeto/Cliente (Opcional)</FormLabel>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-auto p-1 text-xs"
-                      onClick={(e) => {
-                        e.preventDefault();
-                        setIsProjectFormOpen(true);
-                      }}
-                    >
-                      <Plus className="mr-1 h-3 w-3" />
-                      Novo
-                    </Button>
-                  </div>
+                  <FormLabel>Tipo</FormLabel>
                   <Select
-                    onValueChange={(value) => field.onChange(value === "none" ? null : value)}
+                    onValueChange={(value) => {
+                      field.onChange(value);
+                      // Limpar valores quando mudar o tipo
+                      if (value === "project") {
+                        form.setValue("platform", null);
+                      } else if (value === "platform") {
+                        form.setValue("projectId", null);
+                      } else {
+                        form.setValue("projectId", null);
+                        form.setValue("platform", null);
+                      }
+                    }}
                     value={field.value || "none"}
                   >
                     <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Selecione um projeto" />
+                      <SelectTrigger className="h-9">
+                        <SelectValue placeholder="Selecione o tipo" />
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      <SelectItem value="none">Sem projeto</SelectItem>
-                      {projects
-                        .filter((p) => p.status === "ACTIVE")
-                        .map((project) => (
-                          <SelectItem key={project.id} value={project.id}>
-                            {project.clientName}
-                            {project.projectName && ` - ${project.projectName}`}
-                          </SelectItem>
-                        ))}
+                      <SelectItem value="none">Nenhum</SelectItem>
+                      <SelectItem value="project">Projeto/Cliente</SelectItem>
+                      <SelectItem value="platform">
+                        Plataforma Online
+                      </SelectItem>
                     </SelectContent>
                   </Select>
-                  <FormDescription>
-                    Selecione um projeto existente ou crie um novo
-                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
             />
+
+            {/* Projeto - mostrado apenas se tipo for "project" */}
+            {selectedType === "project" && (
+              <FormField
+                control={form.control}
+                name="projectId"
+                render={({ field }) => (
+                  <FormItem>
+                    <div className="flex items-center justify-between">
+                      <FormLabel>Projeto/Cliente</FormLabel>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        className="h-6 px-2 text-xs"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          setIsProjectFormOpen(true);
+                        }}
+                      >
+                        <Plus className="h-3 w-3" />
+                      </Button>
+                    </div>
+                    <Select
+                      onValueChange={(value) =>
+                        field.onChange(value === "none" ? null : value)
+                      }
+                      value={field.value || "none"}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="h-9">
+                          <SelectValue placeholder="Selecione um projeto" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="none">Sem projeto</SelectItem>
+                        {projects
+                          .filter((p) => p.status === "ACTIVE")
+                          .map((project) => (
+                            <SelectItem key={project.id} value={project.id}>
+                              {project.clientName}
+                              {project.projectName &&
+                                ` - ${project.projectName}`}
+                            </SelectItem>
+                          ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
+
+            {/* Plataforma - mostrado apenas se tipo for "platform" */}
+            {selectedType === "platform" && (
+              <FormField
+                control={form.control}
+                name="platform"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Plataforma Online</FormLabel>
+                    <Select
+                      onValueChange={(value) =>
+                        field.onChange(value === "none" ? null : value)
+                      }
+                      value={field.value || "none"}
+                    >
+                      <FormControl>
+                        <SelectTrigger className="h-9">
+                          <SelectValue placeholder="Selecione uma plataforma" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="none">Sem plataforma</SelectItem>
+                        <SelectItem value="UBER">Uber</SelectItem>
+                        <SelectItem value="99">99</SelectItem>
+                        <SelectItem value="IFOOD">iFood</SelectItem>
+                        <SelectItem value="RAPPI">Rappi</SelectItem>
+                        <SelectItem value="OUTROS">Outros</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            )}
 
             {/* Valor Recebido */}
             <FormField
@@ -401,7 +510,8 @@ export default function WorkPeriodForm({
                     />
                   </FormControl>
                   <FormDescription>
-                    Despesas relacionadas a este período (materiais, transporte, etc.)
+                    Despesas relacionadas a este período (materiais, transporte,
+                    etc.)
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -409,9 +519,10 @@ export default function WorkPeriodForm({
             />
 
             {/* Lucro Calculado */}
-            <div className="rounded-lg border bg-green-50 dark:bg-green-950/20 p-3">
+            <div className="rounded-lg border bg-green-50 p-3 dark:bg-green-950/20">
               <p className="text-sm font-medium text-green-700 dark:text-green-400">
-                Lucro Líquido: {new Intl.NumberFormat("pt-BR", {
+                Lucro Líquido:{" "}
+                {new Intl.NumberFormat("pt-BR", {
                   style: "currency",
                   currency: "BRL",
                 }).format(netProfit)}
@@ -470,4 +581,3 @@ export default function WorkPeriodForm({
     </Dialog>
   );
 }
-
