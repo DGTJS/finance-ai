@@ -904,6 +904,7 @@ export async function GET(request: NextRequest) {
       .sort((a, b) => b.value - a.value);
 
     // Estatísticas por usuário
+    // Primeiro, inicializar com todos os usuários da família
     const userStatsMap = new Map<
       string,
       {
@@ -916,6 +917,31 @@ export async function GET(request: NextRequest) {
       }
     >();
 
+    // Inicializar com todos os usuários da família (mesmo sem transações)
+    if (user?.familyAccount?.users) {
+      user.familyAccount.users.forEach((familyUser) => {
+        userStatsMap.set(familyUser.id, {
+          userId: familyUser.id,
+          name: familyUser.name || familyUser.email || "Usuário",
+          avatarUrl: familyUser.image || null,
+          revenues: 0,
+          expenses: 0,
+          investments: 0,
+        });
+      });
+    } else {
+      // Se não há conta familiar, incluir apenas o usuário atual
+      userStatsMap.set(session.user.id, {
+        userId: session.user.id,
+        name: user?.name || session.user.email || "Usuário",
+        avatarUrl: user?.image || null,
+        revenues: 0,
+        expenses: 0,
+        investments: 0,
+      });
+    }
+
+    // Agora adicionar estatísticas das transações
     currentMonthTransactions.forEach((transaction) => {
       const creatorId = transaction.createdBy?.id || transaction.userId;
       const creatorName =
@@ -924,6 +950,7 @@ export async function GET(request: NextRequest) {
         "Usuário";
       const creatorImage = transaction.createdBy?.image || null;
 
+      // Se o usuário não estiver no mapa, adicionar
       if (!userStatsMap.has(creatorId)) {
         userStatsMap.set(creatorId, {
           userId: creatorId,
