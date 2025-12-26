@@ -601,7 +601,44 @@ POST /api/ai/chat
 
 ### Configuração da IA
 
-#### Com Hugging Face (Recomendado)
+O sistema suporta **3 níveis de IA**, tentando na seguinte ordem:
+
+#### 1. Ollama (Recomendado - Código Aberto, Roda Localmente) ⭐
+
+**Ollama** é totalmente open source e roda localmente na sua máquina, sem custos ou limites de API.
+
+**Instalação:**
+
+1. **Instale o Ollama:**
+   - Windows/Mac: Baixe em [ollama.ai](https://ollama.ai)
+   - Linux: `curl -fsSL https://ollama.ai/install.sh | sh`
+
+2. **Baixe um modelo:**
+   ```bash
+   ollama pull llama3.2
+   # ou
+   ollama pull mistral
+   ```
+
+3. **Inicie o servidor Ollama:**
+   ```bash
+   ollama serve
+   ```
+
+4. **Configure no `.env.local` (opcional):**
+   ```env
+   OLLAMA_API_URL="http://localhost:11434"
+   OLLAMA_MODEL="llama3.2"
+   ```
+
+**Vantagens:**
+- ✅ 100% código aberto
+- ✅ Roda localmente (sem internet necessária após download)
+- ✅ Sem limites de uso
+- ✅ Dados nunca saem da sua máquina
+- ✅ Gratuito para sempre
+
+#### 2. Hugging Face (Alternativa)
 
 1. Obtenha token em [huggingface.co](https://huggingface.co)
 2. Adicione ao `.env.local`:
@@ -610,13 +647,14 @@ POST /api/ai/chat
    ```
 3. Reinicie o servidor
 
-#### Sem Hugging Face (Fallback Local)
+#### 3. Fallback Local (Sempre Disponível)
 
 O sistema funciona automaticamente sem configuração! Usa análise baseada em regras:
 - ✅ Suporte a perguntas comuns
 - ✅ Análise de categorias
 - ✅ Cálculos de saldos
 - ✅ Resumos financeiros
+- ✅ Parse de transações com regex inteligente
 
 ### Segurança
 
@@ -627,12 +665,30 @@ O sistema funciona automaticamente sem configuração! Usa análise baseada em r
 
 ### Modelos Suportados
 
-- **Padrão:** Mistral-7B-Instruct-v0.2
-- **Alternativas:** Qualquer modelo do Hugging Face
+**Ollama (Recomendado):**
+- `llama3.2` (padrão) - Modelo rápido e eficiente
+- `mistral` - Alternativa poderosa
+- `llama3` - Versão mais completa
+- Qualquer modelo disponível no Ollama
 
-Para mudar o modelo, edite `app/_lib/ai.ts`:
+**Hugging Face:**
+- `mistralai/Mistral-7B-Instruct-v0.2` (padrão)
+- Qualquer modelo do Hugging Face
 
+Para mudar o modelo, configure variáveis de ambiente no `.env.local`:
+
+```env
+# Ollama
+OLLAMA_API_URL="http://localhost:11434"
+OLLAMA_MODEL="llama3.2"
+
+# Hugging Face
+HF_API_KEY="hf_seu_token"
+```
+
+Ou edite `app/_lib/ai.ts` diretamente:
 ```typescript
+const OLLAMA_MODEL = "mistral"; // Exemplo
 const HF_MODEL = "meta-llama/Llama-2-7b-chat-hf"; // Exemplo
 ```
 

@@ -1,15 +1,12 @@
-import type {
-  AIResponse,
-  AIOptions,
-  AIInsight,
-  ChatMessage,
-} from "@/types/ai";
+import type { AIResponse, AIOptions, AIInsight, ChatMessage } from "@/types/ai";
 import { db } from "./prisma";
 import { getUserHfApiKey } from "@/app/_actions/user-settings";
 import { TRANSACTION_CATEGORY_LABELS } from "@/app/_constants/transactions";
 
 const HF_API_URL = "https://api-inference.huggingface.co/models";
 const HF_MODEL = "mistralai/Mistral-7B-Instruct-v0.2"; // Modelo gratuito e bom
+const OLLAMA_API_URL = process.env.OLLAMA_API_URL || "http://localhost:11434";
+const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "llama3.2"; // Modelo padrão do Ollama
 const MAX_PROMPT_LENGTH = 2000;
 
 /**
@@ -24,6 +21,56 @@ function sanitizeInput(input: string): string {
 }
 
 /**
+ * Chama a API do Ollama (código aberto, roda localmente)
+ */
+async function callOllama(
+  prompt: string,
+  options: AIOptions = {},
+): Promise<AIResponse> {
+  try {
+    const response = await fetch(`${OLLAMA_API_URL}/api/generate`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: OLLAMA_MODEL,
+        prompt: prompt,
+        stream: false,
+        options: {
+          temperature: options.temperature || 0.7,
+          top_p: 0.95,
+          num_predict: options.maxTokens || 500,
+        },
+      }),
+    });
+
+    if (!response.ok) {
+      // Se Ollama não estiver rodando, retornar erro silencioso
+      return {
+        ok: false,
+        error: `Ollama não disponível: ${response.status}`,
+      };
+    }
+
+    const data = await response.json();
+    const text = data.response || JSON.stringify(data);
+
+    return {
+      ok: true,
+      text,
+      data,
+    };
+  } catch (error) {
+    // Ollama não está rodando ou não está configurado
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "Ollama não disponível",
+    };
+  }
+}
+
+/**
  * Chama a API do Hugging Face
  */
 async function callHuggingFace(
@@ -32,11 +79,11 @@ async function callHuggingFace(
 ): Promise<AIResponse> {
   // Primeiro tenta buscar a chave do usuário no banco de dados
   let apiKey: string | null = null;
-  
+
   if (options.userId) {
     apiKey = await getUserHfApiKey(options.userId);
   }
-  
+
   // Se não encontrou no banco, tenta usar a variável de ambiente (fallback global)
   if (!apiKey) {
     apiKey = process.env.HF_API_KEY || null;
@@ -144,13 +191,16 @@ async function localFallback(
         (a, b) => b[1] - a[1],
       )[0];
 
-      const categoryLabel = topCategory?.[0] 
-        ? (TRANSACTION_CATEGORY_LABELS[topCategory[0] as keyof typeof TRANSACTION_CATEGORY_LABELS] || topCategory[0])
+      const categoryLabel = topCategory?.[0]
+        ? TRANSACTION_CATEGORY_LABELS[
+            topCategory[0] as keyof typeof TRANSACTION_CATEGORY_LABELS
+          ] || topCategory[0]
         : "N/A";
 
       return {
         ok: true,
-        text: `Análise de Despesas:\n\n` +
+        text:
+          `Análise de Despesas:\n\n` +
           `💰 Total gasto: R$ ${total.toFixed(2)}\n` +
           `📊 Categoria com maior gasto: ${categoryLabel} (R$ ${topCategory?.[1]?.toFixed(2) || 0})\n` +
           `📝 Número de transações: ${transactions.length}\n\n` +
@@ -233,9 +283,13 @@ async function localFallback(
       if (profile) {
         const rendaTotal = profile.rendaFixa + profile.rendaVariavelMedia;
         const beneficiosTotal = Array.isArray(profile.beneficios)
-          ? profile.beneficios.reduce((sum: number, b: any) => sum + (b.value || 0), 0)
+          ? profile.beneficios.reduce(
+              (sum: number, b: any) => sum + (b.value || 0),
+              0,
+            )
           : 0;
-        profileInfo = `\n📋 Perfil Financeiro:\n` +
+        profileInfo =
+          `\n📋 Perfil Financeiro:\n` +
           `• Renda Total: R$ ${rendaTotal.toFixed(2)}\n` +
           `• Benefícios: R$ ${beneficiosTotal.toFixed(2)}\n`;
       }
@@ -254,10 +308,12 @@ async function localFallback(
           deposits: totalDeposits,
           investments: totalInvestments,
           balance,
-          profile: profile ? {
-            rendaTotal: profile.rendaFixa + profile.rendaVariavelMedia,
-            beneficios: profile.beneficios,
-          } : null,
+          profile: profile
+            ? {
+                rendaTotal: profile.rendaFixa + profile.rendaVariavelMedia,
+                beneficios: profile.beneficios,
+              }
+            : null,
         },
       };
     }
@@ -288,15 +344,24 @@ async function localFallback(
       }
 
       const rendaTotal = profile.rendaFixa + profile.rendaVariavelMedia;
-      const beneficios = Array.isArray(profile.beneficios) ? profile.beneficios : [];
-      const beneficiosTotal = beneficios.reduce((sum: number, b: any) => sum + (b.value || 0), 0);
+      const beneficios = Array.isArray(profile.beneficios)
+        ? profile.beneficios
+        : [];
+      const beneficiosTotal = beneficios.reduce(
+        (sum: number, b: any) => sum + (b.value || 0),
+        0,
+      );
 
       let beneficiosInfo = "";
       if (beneficios.length > 0) {
-        beneficiosInfo = "\n\n💼 Benefícios:\n" +
-          beneficios.map((b: any) => 
-            `• ${b.type === "VA" ? "Vale Alimentação" : b.type === "VR" ? "Vale Refeição" : b.type === "VT" ? "Vale Transporte" : "Outro"}: R$ ${(b.value || 0).toFixed(2)}`
-          ).join("\n");
+        beneficiosInfo =
+          "\n\n💼 Benefícios:\n" +
+          beneficios
+            .map(
+              (b: any) =>
+                `• ${b.type === "VA" ? "Vale Alimentação" : b.type === "VR" ? "Vale Refeição" : b.type === "VT" ? "Vale Transporte" : "Outro"}: R$ ${(b.value || 0).toFixed(2)}`,
+            )
+            .join("\n");
       }
 
       return {
@@ -360,14 +425,24 @@ async function localFallback(
       ]);
 
       const rendaTotal = profile.rendaFixa + profile.rendaVariavelMedia;
-      const beneficios = Array.isArray(profile.beneficios) ? profile.beneficios : [];
-      const beneficiosTotal = beneficios.reduce((sum: number, b: any) => sum + (b.value || 0), 0);
-      const assinaturasTotal = subscriptions.reduce((sum, s) => sum + s.amount, 0);
+      const beneficios = Array.isArray(profile.beneficios)
+        ? profile.beneficios
+        : [];
+      const beneficiosTotal = beneficios.reduce(
+        (sum: number, b: any) => sum + (b.value || 0),
+        0,
+      );
+      const assinaturasTotal = subscriptions.reduce(
+        (sum, s) => sum + s.amount,
+        0,
+      );
       const despesasTotal = expenses.reduce((sum, e) => sum + e.amount, 0);
-      const saldoPrevisto = rendaTotal + beneficiosTotal - assinaturasTotal - despesasTotal;
-      const percentComprometido = rendaTotal > 0 
-        ? ((assinaturasTotal + despesasTotal) / rendaTotal) * 100 
-        : 0;
+      const saldoPrevisto =
+        rendaTotal + beneficiosTotal - assinaturasTotal - despesasTotal;
+      const percentComprometido =
+        rendaTotal > 0
+          ? ((assinaturasTotal + despesasTotal) / rendaTotal) * 100
+          : 0;
 
       return {
         ok: true,
@@ -417,7 +492,7 @@ async function localFallback(
 }
 
 /**
- * Função principal - tenta HF primeiro, depois fallback
+ * Função principal - tenta Ollama primeiro, depois HF, depois fallback
  */
 export async function askAI(
   prompt: string,
@@ -433,9 +508,14 @@ export async function askAI(
     };
   }
 
-  // Tentar Hugging Face primeiro
-  const hfResponse = await callHuggingFace(sanitizedPrompt, options);
+  // Tentar Ollama primeiro (código aberto, roda localmente)
+  const ollamaResponse = await callOllama(sanitizedPrompt, options);
+  if (ollamaResponse.ok) {
+    return ollamaResponse;
+  }
 
+  // Tentar Hugging Face
+  const hfResponse = await callHuggingFace(sanitizedPrompt, options);
   if (hfResponse.ok) {
     return hfResponse;
   }
@@ -508,8 +588,11 @@ export async function generateInsights(
     )[0];
 
     if (topCategory && topCategory[1] > totalExpenses * 0.3) {
-      const categoryLabel = TRANSACTION_CATEGORY_LABELS[topCategory[0] as keyof typeof TRANSACTION_CATEGORY_LABELS] || topCategory[0];
-      
+      const categoryLabel =
+        TRANSACTION_CATEGORY_LABELS[
+          topCategory[0] as keyof typeof TRANSACTION_CATEGORY_LABELS
+        ] || topCategory[0];
+
       insights.push({
         id: "dominant-category",
         title: `Alto gasto em ${categoryLabel}`,
@@ -610,4 +693,3 @@ export async function chat(
     meta: response.data,
   };
 }
-

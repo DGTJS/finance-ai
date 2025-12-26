@@ -28,7 +28,9 @@ const Transactions = async () => {
   });
 
   // Se o usuário tem conta compartilhada, buscar transações de todos os usuários
-  const familyUserIds = user?.familyAccount?.users.map((u) => u.id) || [session.user.id];
+  const familyUserIds = user?.familyAccount?.users.map((u) => u.id) || [
+    session.user.id,
+  ];
 
   const transactions = await db.transaction.findMany({
     where: {
@@ -51,8 +53,38 @@ const Transactions = async () => {
     },
   });
 
-  // Calcular estatísticas
-  const totalIncome = transactions
+  // Buscar perfis financeiros de todos os usuários da família
+  const financialProfiles = await db.financialProfile.findMany({
+    where: { userId: { in: familyUserIds } },
+  });
+
+  // Calcular salários totais de todos os usuários
+  const totalSalary = financialProfiles.reduce((sum, profile) => {
+    return (
+      sum +
+      Number(profile.rendaFixa || 0) +
+      Number(profile.rendaVariavelMedia || 0)
+    );
+  }, 0);
+
+  // Calcular benefícios totais de todos os usuários
+  const totalBenefits = financialProfiles.reduce((sum, profile) => {
+    const beneficios =
+      (profile.beneficios as Array<{
+        type?: string;
+        value?: number;
+        notes?: string;
+        category?: string;
+      }>) || [];
+    const userBenefitsTotal = beneficios.reduce(
+      (benSum, b) => benSum + (Number(b.value) || 0),
+      0,
+    );
+    return sum + userBenefitsTotal;
+  }, 0);
+
+  // Calcular estatísticas das transações
+  const totalIncomeFromTransactions = transactions
     .filter((t) => t.type === "DEPOSIT")
     .reduce((sum, t) => sum + Number(t.amount), 0);
 
@@ -64,37 +96,39 @@ const Transactions = async () => {
     .filter((t) => t.type === "INVESTMENT")
     .reduce((sum, t) => sum + Number(t.amount), 0);
 
+  // Receitas totais = transações de depósito + salários + benefícios
+  const totalIncome = totalIncomeFromTransactions + totalSalary + totalBenefits;
+
+  // Saldo = receitas - despesas - investimentos
   const balance = totalIncome - totalExpenses - totalInvestments;
 
   // Buscar configurações do usuário
   const settingsResult = await getUserSettings();
   const userSettings = settingsResult.success ? settingsResult.data : null;
-  const categoryIcons = (userSettings?.categoryIcons as Record<string, string>) || null;
+  const categoryIcons =
+    (userSettings?.categoryIcons as Record<string, string>) || null;
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto space-y-4 p-4 sm:space-y-6 sm:p-6">
-        {/* Header */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Transações</h1>
-            <p className="text-muted-foreground text-sm sm:text-base">
-              Gerencie suas receitas, despesas e investimentos
-            </p>
-          </div>
+    <div className="bg-background min-h-screen">
+      <div className="container mx-auto space-y-4 p-3 sm:space-y-6 sm:p-4 md:p-6">
+        {/* Header Minimalista */}
+        <div className="border-b pb-4">
+          <h1 className="text-xl font-light tracking-tight sm:text-2xl md:text-3xl">
+            Transações
+          </h1>
+          <p className="text-muted-foreground mt-1 text-xs sm:text-sm">
+            Gerencie suas receitas, despesas e investimentos
+          </p>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Stats Cards Minimalistas */}
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 lg:gap-4 xl:grid-cols-5">
           {/* Total Receitas */}
-          <div className="rounded-lg border bg-card p-4 shadow-sm transition-all hover:shadow-md sm:p-6">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-medium text-muted-foreground sm:text-sm">
-                Receitas
-              </p>
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-500/10 sm:h-10 sm:w-10">
+          <div className="bg-muted/20 rounded-lg border-0 p-3 shadow-sm sm:p-4 md:p-6">
+            <div className="flex items-center gap-2">
+              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-green-500/10 sm:h-7 sm:w-7">
                 <svg
-                  className="h-5 w-5 text-green-500"
+                  className="h-3.5 w-3.5 text-green-600 sm:h-4 sm:w-4 dark:text-green-400"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -107,28 +141,31 @@ const Transactions = async () => {
                   />
                 </svg>
               </div>
+              <p className="text-muted-foreground text-[10px] font-medium tracking-wider uppercase sm:text-xs">
+                Receitas
+              </p>
             </div>
-            <p className="mt-2 text-xl font-bold text-green-500 sm:text-2xl">
+            <p className="mt-2 text-lg font-light tracking-tight text-green-600 sm:text-xl md:text-2xl dark:text-green-400">
               {new Intl.NumberFormat("pt-BR", {
                 style: "currency",
                 currency: "BRL",
               }).format(totalIncome)}
             </p>
-            <p className="mt-1 text-xs text-muted-foreground">
+            <p className="text-muted-foreground mt-1 text-[9px] sm:text-xs">
               {transactions.filter((t) => t.type === "DEPOSIT").length}{" "}
               transações
+              {totalSalary + totalBenefits > 0 && (
+                <span className="mt-0.5 block">+ Salários e Benefícios</span>
+              )}
             </p>
           </div>
 
           {/* Total Despesas */}
-          <div className="rounded-lg border bg-card p-4 shadow-sm transition-all hover:shadow-md sm:p-6">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-medium text-muted-foreground sm:text-sm">
-                Despesas
-              </p>
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-red-500/10 sm:h-10 sm:w-10">
+          <div className="bg-muted/20 rounded-lg border-0 p-3 shadow-sm sm:p-4 md:p-6">
+            <div className="flex items-center gap-2">
+              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-red-500/10 sm:h-7 sm:w-7">
                 <svg
-                  className="h-5 w-5 text-red-500"
+                  className="h-3.5 w-3.5 text-red-600 sm:h-4 sm:w-4 dark:text-red-400"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -141,28 +178,28 @@ const Transactions = async () => {
                   />
                 </svg>
               </div>
+              <p className="text-muted-foreground text-[10px] font-medium tracking-wider uppercase sm:text-xs">
+                Despesas
+              </p>
             </div>
-            <p className="mt-2 text-2xl font-bold text-red-500">
+            <p className="mt-2 text-lg font-light tracking-tight text-red-600 sm:text-xl md:text-2xl dark:text-red-400">
               {new Intl.NumberFormat("pt-BR", {
                 style: "currency",
                 currency: "BRL",
               }).format(totalExpenses)}
             </p>
-            <p className="mt-1 text-xs text-muted-foreground">
+            <p className="text-muted-foreground mt-1 text-[9px] sm:text-xs">
               {transactions.filter((t) => t.type === "EXPENSE").length}{" "}
               transações
             </p>
           </div>
 
           {/* Total Investimentos */}
-          <div className="rounded-lg border bg-card p-4 shadow-sm transition-all hover:shadow-md sm:p-6">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-medium text-muted-foreground sm:text-sm">
-                Investimentos
-              </p>
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/10 sm:h-10 sm:w-10">
+          <div className="bg-muted/20 rounded-lg border-0 p-3 shadow-sm sm:p-4 md:p-6">
+            <div className="flex items-center gap-2">
+              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500/10 sm:h-7 sm:w-7">
                 <svg
-                  className="h-5 w-5 text-blue-500"
+                  className="h-3.5 w-3.5 text-blue-600 sm:h-4 sm:w-4 dark:text-blue-400"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -175,30 +212,36 @@ const Transactions = async () => {
                   />
                 </svg>
               </div>
+              <p className="text-muted-foreground text-[10px] font-medium tracking-wider uppercase sm:text-xs">
+                Investimentos
+              </p>
             </div>
-            <p className="mt-2 text-2xl font-bold text-blue-500">
+            <p className="mt-2 text-lg font-light tracking-tight text-blue-600 sm:text-xl md:text-2xl dark:text-blue-400">
               {new Intl.NumberFormat("pt-BR", {
                 style: "currency",
                 currency: "BRL",
               }).format(totalInvestments)}
             </p>
-            <p className="mt-1 text-xs text-muted-foreground">
+            <p className="text-muted-foreground mt-1 text-[9px] sm:text-xs">
               {transactions.filter((t) => t.type === "INVESTMENT").length}{" "}
               transações
             </p>
           </div>
 
           {/* Saldo */}
-          <div className="rounded-lg border bg-card p-4 shadow-sm transition-all hover:shadow-md sm:p-6">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-medium text-muted-foreground sm:text-sm">Saldo</p>
+          <div className="bg-muted/20 rounded-lg border-0 p-3 shadow-sm sm:p-4 md:p-6">
+            <div className="flex items-center gap-2">
               <div
-                className={`flex h-8 w-8 items-center justify-center rounded-full sm:h-10 sm:w-10 ${
+                className={`flex h-6 w-6 items-center justify-center rounded-full sm:h-7 sm:w-7 ${
                   balance >= 0 ? "bg-green-500/10" : "bg-red-500/10"
                 }`}
               >
                 <svg
-                  className={`h-5 w-5 ${balance >= 0 ? "text-green-500" : "text-red-500"}`}
+                  className={`h-3.5 w-3.5 sm:h-4 sm:w-4 ${
+                    balance >= 0
+                      ? "text-green-600 dark:text-green-400"
+                      : "text-red-600 dark:text-red-400"
+                  }`}
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -211,10 +254,15 @@ const Transactions = async () => {
                   />
                 </svg>
               </div>
+              <p className="text-muted-foreground text-[10px] font-medium tracking-wider uppercase sm:text-xs">
+                Saldo
+              </p>
             </div>
             <p
-              className={`mt-2 text-2xl font-bold ${
-                balance >= 0 ? "text-green-500" : "text-red-500"
+              className={`mt-2 text-lg font-light tracking-tight sm:text-xl md:text-2xl ${
+                balance >= 0
+                  ? "text-green-600 dark:text-green-400"
+                  : "text-red-600 dark:text-red-400"
               }`}
             >
               {new Intl.NumberFormat("pt-BR", {
@@ -222,14 +270,50 @@ const Transactions = async () => {
                 currency: "BRL",
               }).format(balance)}
             </p>
-            <p className="mt-1 text-xs text-muted-foreground">
+            <p className="text-muted-foreground mt-1 text-[9px] sm:text-xs">
               {transactions.length} transações totais
+            </p>
+          </div>
+
+          {/* Saldo de Benefícios */}
+          <div className="bg-muted/20 rounded-lg border-0 p-3 shadow-sm sm:p-4 md:p-6">
+            <div className="flex items-center gap-2">
+              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-purple-500/10 sm:h-7 sm:w-7">
+                <svg
+                  className="h-3.5 w-3.5 text-purple-600 sm:h-4 sm:w-4 dark:text-purple-400"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"
+                  />
+                </svg>
+              </div>
+              <p className="text-muted-foreground text-[10px] font-medium tracking-wider uppercase sm:text-xs">
+                Benefícios
+              </p>
+            </div>
+            <p className="mt-2 text-lg font-light tracking-tight text-purple-600 sm:text-xl md:text-2xl dark:text-purple-400">
+              {new Intl.NumberFormat("pt-BR", {
+                style: "currency",
+                currency: "BRL",
+              }).format(totalBenefits)}
+            </p>
+            <p className="text-muted-foreground mt-1 text-[9px] sm:text-xs">
+              Total disponível
             </p>
           </div>
         </div>
 
         {/* Tabela de Transações */}
-        <TransactionsClient transactions={transactions} categoryIcons={categoryIcons} />
+        <TransactionsClient
+          transactions={transactions}
+          categoryIcons={categoryIcons}
+        />
       </div>
     </div>
   );
