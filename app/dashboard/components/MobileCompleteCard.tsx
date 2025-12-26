@@ -210,7 +210,7 @@ export function MobileCompleteCard({
         </div>
 
         {/* Seção 3: Benefícios e Categorias */}
-        <div className="mb-6 grid grid-cols-1 gap-4 border-b pb-6 sm:grid-cols-2">
+        <div className="mb-6 grid grid-cols-2 gap-4 border-b pb-6">
           {familyBenefitsBalance && (
             <BeneficiosPieChart benefitsBalance={familyBenefitsBalance} />
           )}

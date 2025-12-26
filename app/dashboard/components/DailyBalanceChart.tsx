@@ -14,6 +14,7 @@ import {
 } from "@/app/_components/ui/card";
 import { formatCurrency } from "@/src/lib/utils";
 import type { DailyBalance, Transaction } from "@/src/types/dashboard";
+import { TRANSACTION_CATEGORY_LABELS } from "@/app/_constants/transactions";
 import {
   AreaChart,
   XAxis,
@@ -32,7 +33,7 @@ import {
   Calendar,
   Eye,
 } from "lucide-react";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useRef } from "react";
 import { Input } from "@/app/_components/ui/input";
 import { Label } from "@/app/_components/ui/label";
 import {
@@ -67,6 +68,7 @@ export function DailyBalanceChart({
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   const [isDetailsOpen, setIsDetailsOpen] = useState(false);
   const [hoveredDate, setHoveredDate] = useState<string | null>(null);
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const now = new Date();
   const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
@@ -328,15 +330,37 @@ export function DailyBalanceChart({
   };
 
   const CustomTooltip = ({ active, payload }: any) => {
+    useEffect(() => {
+      // Limpar timeout anterior se existir
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+        hoverTimeoutRef.current = null;
+      }
+
+      if (active && payload && payload.length) {
+        const data = payload[0].payload;
+        // Atualizar data hovered quando o tooltip aparece
+        setHoveredDate(data.dateStr);
+      } else {
+        // Quando o tooltip desaparece, limpar a data após um delay
+        hoverTimeoutRef.current = setTimeout(() => {
+          setHoveredDate(null);
+        }, 100);
+      }
+
+      // Cleanup
+      return () => {
+        if (hoverTimeoutRef.current) {
+          clearTimeout(hoverTimeoutRef.current);
+          hoverTimeoutRef.current = null;
+        }
+      };
+    }, [active, payload]);
+
     if (active && payload && payload.length) {
       const data = payload[0].payload;
       const balance = data.balance ?? data.projectedBalance ?? 0;
       const isPositive = balance >= 0;
-
-      // Atualizar data hovered quando o tooltip aparece
-      if (data.dateStr !== hoveredDate) {
-        setHoveredDate(data.dateStr);
-      }
 
       return (
         <div className="bg-card rounded-lg border p-3 shadow-lg backdrop-blur-sm">
@@ -361,13 +385,6 @@ export function DailyBalanceChart({
           </div>
         </div>
       );
-    } else {
-      // Quando o tooltip desaparece, manter a data por um tempo
-      setTimeout(() => {
-        if (!active) {
-          setHoveredDate(null);
-        }
-      }, 100);
     }
     return null;
   };
@@ -877,7 +894,9 @@ export function DailyBalanceChart({
                               </p>
                               {transaction.category && (
                                 <p className="text-muted-foreground text-xs">
-                                  {transaction.category}
+                                  {TRANSACTION_CATEGORY_LABELS[
+                                    transaction.category as keyof typeof TRANSACTION_CATEGORY_LABELS
+                                  ] || transaction.category}
                                 </p>
                               )}
                             </div>
@@ -972,7 +991,9 @@ export function DailyBalanceChart({
                                 <div className="flex items-center gap-2">
                                   {transaction.category && (
                                     <p className="text-muted-foreground text-xs">
-                                      {transaction.category}
+                                      {TRANSACTION_CATEGORY_LABELS[
+                                        transaction.category as keyof typeof TRANSACTION_CATEGORY_LABELS
+                                      ] || transaction.category}
                                     </p>
                                   )}
                                   <span className="text-muted-foreground text-xs">
