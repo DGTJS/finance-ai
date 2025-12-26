@@ -13,7 +13,7 @@ import {
   CardTitle,
 } from "@/app/_components/ui/card";
 import { formatCurrency } from "@/src/lib/utils";
-import type { DailyBalance } from "@/src/types/dashboard";
+import type { DailyBalance, Transaction } from "@/src/types/dashboard";
 import {
   AreaChart,
   XAxis,
@@ -30,6 +30,7 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   Calendar,
+  Eye,
 } from "lucide-react";
 import { useMemo, useState, useEffect } from "react";
 import { Input } from "@/app/_components/ui/input";
@@ -42,12 +43,30 @@ import {
   SelectValue,
 } from "@/app/_components/ui/select";
 import { Button } from "@/app/_components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/app/_components/ui/dialog";
+import type { UpcomingPayment, ScheduledPayment } from "@/src/types/dashboard";
 
 interface DailyBalanceChartProps {
   dailyBalance: DailyBalance[];
+  upcomingPayments?: UpcomingPayment[];
+  scheduledPayments?: ScheduledPayment[];
 }
 
-export function DailyBalanceChart({ dailyBalance }: DailyBalanceChartProps) {
+export function DailyBalanceChart({
+  dailyBalance,
+  upcomingPayments = [],
+  scheduledPayments = [],
+  transactions = [],
+}: DailyBalanceChartProps) {
+  const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  const [isDetailsOpen, setIsDetailsOpen] = useState(false);
+  const [hoveredDate, setHoveredDate] = useState<string | null>(null);
   const now = new Date();
   const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
   const lastDayOfMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0);
@@ -102,9 +121,85 @@ export function DailyBalanceChart({ dailyBalance }: DailyBalanceChartProps) {
     }
   }, [selectionMode, selectedYear, selectedMonth, startDate, endDate]);
 
-  // Formatar dados para o gráfico
+  // Calcular projeção futura baseada em assinaturas e transações agendadas
+  const futureProjection = useMemo(() => {
+    const projection: DailyBalance[] = [];
+    const now = new Date();
+    const lastBalance =
+      dailyBalance.length > 0
+        ? dailyBalance[dailyBalance.length - 1].balance
+        : 0;
+
+    // Calcular até 3 meses no futuro
+    for (let monthOffset = 1; monthOffset <= 3; monthOffset++) {
+      const futureMonth = new Date(
+        now.getFullYear(),
+        now.getMonth() + monthOffset,
+        1,
+      );
+      const daysInMonth = new Date(
+        futureMonth.getFullYear(),
+        futureMonth.getMonth() + 1,
+        0,
+      ).getDate();
+
+      // Para cada mês futuro, começar com o último saldo do mês anterior
+      let runningBalance =
+        monthOffset === 1
+          ? lastBalance
+          : projection.length > 0
+            ? projection[projection.length - 1].balance
+            : lastBalance;
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const currentDate = new Date(
+          futureMonth.getFullYear(),
+          futureMonth.getMonth(),
+          day,
+        );
+        const dateStr = currentDate.toISOString().split("T")[0];
+
+        // Calcular despesas do dia (assinaturas e transações agendadas)
+        let dayExpenses = 0;
+
+        // Assinaturas que vencem neste dia
+        upcomingPayments.forEach((payment) => {
+          const paymentDate = new Date(payment.dueDate);
+          if (
+            paymentDate.getFullYear() === currentDate.getFullYear() &&
+            paymentDate.getMonth() === currentDate.getMonth() &&
+            paymentDate.getDate() === currentDate.getDate()
+          ) {
+            dayExpenses += payment.value;
+          }
+        });
+
+        scheduledPayments.forEach((payment) => {
+          const paymentDate = new Date(payment.dueDate);
+          if (
+            paymentDate.getFullYear() === currentDate.getFullYear() &&
+            paymentDate.getMonth() === currentDate.getMonth() &&
+            paymentDate.getDate() === currentDate.getDate()
+          ) {
+            dayExpenses += payment.value;
+          }
+        });
+
+        runningBalance -= dayExpenses;
+
+        projection.push({
+          date: dateStr,
+          balance: runningBalance,
+        });
+      }
+    }
+
+    return projection;
+  }, [dailyBalance, upcomingPayments, scheduledPayments]);
+
+  // Formatar dados para o gráfico (incluindo projeção futura)
   const chartData = useMemo(() => {
-    return dailyBalance
+    const historical = dailyBalance
       .filter((item) => {
         const itemDate = new Date(item.date);
         return itemDate >= dateRange.start && itemDate <= dateRange.end;
@@ -114,6 +209,7 @@ export function DailyBalanceChart({ dailyBalance }: DailyBalanceChartProps) {
         return {
           date: date.getDate(), // Dia do mês
           balance: item.balance,
+          projectedBalance: null,
           formattedDate: date.toLocaleDateString("pt-BR", {
             day: "2-digit",
             month: "short",
@@ -123,9 +219,62 @@ export function DailyBalanceChart({ dailyBalance }: DailyBalanceChartProps) {
             month: "long",
             year: "numeric",
           }),
+          dateStr: item.date,
+          isProjected: false,
         };
       });
-  }, [dailyBalance, dateRange]);
+
+    // Adicionar projeção futura se o período selecionado incluir meses futuros
+    const future = futureProjection
+      .filter((item) => {
+        const itemDate = new Date(item.date);
+        return itemDate >= dateRange.start && itemDate <= dateRange.end;
+      })
+      .map((item) => {
+        const date = new Date(item.date);
+        return {
+          date: date.getDate(),
+          balance: null,
+          projectedBalance: item.balance,
+          formattedDate: date.toLocaleDateString("pt-BR", {
+            day: "2-digit",
+            month: "short",
+          }),
+          fullDate: date.toLocaleDateString("pt-BR", {
+            day: "2-digit",
+            month: "long",
+            year: "numeric",
+          }),
+          dateStr: item.date,
+          isProjected: true,
+        };
+      });
+
+    // Combinar dados históricos e futuros, preenchendo gaps
+    const combined: any[] = [];
+    const allDates = new Set<string>();
+
+    historical.forEach((item) => {
+      allDates.add(item.dateStr);
+      combined.push(item);
+    });
+
+    future.forEach((item) => {
+      if (!allDates.has(item.dateStr)) {
+        allDates.add(item.dateStr);
+        combined.push(item);
+      }
+    });
+
+    // Ordenar por data
+    combined.sort((a, b) => {
+      const dateA = new Date(a.dateStr).getTime();
+      const dateB = new Date(b.dateStr).getTime();
+      return dateA - dateB;
+    });
+
+    return combined;
+  }, [dailyBalance, futureProjection, dateRange]);
 
   // Calcular estatísticas
   const stats = useMemo(() => {
@@ -181,10 +330,24 @@ export function DailyBalanceChart({ dailyBalance }: DailyBalanceChartProps) {
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
-      const isPositive = data.balance >= 0;
+      const balance = data.balance ?? data.projectedBalance ?? 0;
+      const isPositive = balance >= 0;
+
+      // Atualizar data hovered quando o tooltip aparece
+      if (data.dateStr !== hoveredDate) {
+        setHoveredDate(data.dateStr);
+      }
+
       return (
         <div className="bg-card rounded-lg border p-3 shadow-lg backdrop-blur-sm">
-          <p className="text-muted-foreground mb-1 text-xs">{data.fullDate}</p>
+          <p className="text-muted-foreground mb-1 text-xs">
+            {data.fullDate}
+            {data.isProjected && (
+              <span className="ml-2 rounded-full bg-blue-100 px-2 py-0.5 text-[9px] font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                Projeção
+              </span>
+            )}
+          </p>
           <div className="flex items-baseline gap-2">
             <p
               className={`text-lg font-bold ${
@@ -193,11 +356,18 @@ export function DailyBalanceChart({ dailyBalance }: DailyBalanceChartProps) {
                   : "text-red-600 dark:text-red-400"
               }`}
             >
-              {formatCurrency(data.balance)}
+              {formatCurrency(balance)}
             </p>
           </div>
         </div>
       );
+    } else {
+      // Quando o tooltip desaparece, manter a data por um tempo
+      setTimeout(() => {
+        if (!active) {
+          setHoveredDate(null);
+        }
+      }, 100);
     }
     return null;
   };
@@ -457,6 +627,7 @@ export function DailyBalanceChart({ dailyBalance }: DailyBalanceChartProps) {
                       className="opacity-30"
                     />
 
+                    {/* Área histórica (linha sólida) */}
                     <Area
                       type="monotone"
                       dataKey="balance"
@@ -465,21 +636,111 @@ export function DailyBalanceChart({ dailyBalance }: DailyBalanceChartProps) {
                       fill={`url(#${gradientId})`}
                       dot={{
                         fill: lineColor,
-                        r: 3,
+                        r: 4,
                         strokeWidth: 2,
                         stroke: "#fff",
+                        cursor: "pointer",
                       }}
-                      activeDot={{
-                        r: 5,
+                      activeDot={(props: any) => {
+                        const { cx, cy, payload } = props;
+                        return (
+                          <g>
+                            <circle
+                              cx={cx}
+                              cy={cy}
+                              r={7}
+                              fill={lineColor}
+                              stroke="#fff"
+                              strokeWidth={3}
+                              style={{ cursor: "pointer" }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (payload && payload.dateStr) {
+                                  setSelectedDate(payload.dateStr);
+                                  setIsDetailsOpen(true);
+                                }
+                              }}
+                              onMouseDown={(e) => {
+                                e.stopPropagation();
+                                if (payload && payload.dateStr) {
+                                  setSelectedDate(payload.dateStr);
+                                  setIsDetailsOpen(true);
+                                }
+                              }}
+                            />
+                          </g>
+                        );
+                      }}
+                    />
+                    {/* Área projetada (linha tracejada) */}
+                    <Area
+                      type="monotone"
+                      dataKey="projectedBalance"
+                      stroke={lineColor}
+                      strokeWidth={2.5}
+                      strokeDasharray="5 5"
+                      fill="transparent"
+                      dot={{
                         fill: lineColor,
-                        stroke: "#fff",
+                        r: 4,
                         strokeWidth: 2,
+                        stroke: "#fff",
+                        opacity: 0.6,
+                        cursor: "pointer",
+                      }}
+                      activeDot={(props: any) => {
+                        const { cx, cy, payload } = props;
+                        return (
+                          <g>
+                            <circle
+                              cx={cx}
+                              cy={cy}
+                              r={7}
+                              fill={lineColor}
+                              stroke="#fff"
+                              strokeWidth={3}
+                              style={{ cursor: "pointer", opacity: 0.8 }}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (payload && payload.dateStr) {
+                                  setSelectedDate(payload.dateStr);
+                                  setIsDetailsOpen(true);
+                                }
+                              }}
+                              onMouseDown={(e) => {
+                                e.stopPropagation();
+                                if (payload && payload.dateStr) {
+                                  setSelectedDate(payload.dateStr);
+                                  setIsDetailsOpen(true);
+                                }
+                              }}
+                            />
+                          </g>
+                        );
                       }}
                     />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
             </div>
+
+            {/* Botão de ver detalhes */}
+            {hoveredDate && (
+              <div className="mt-3 flex justify-center">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-8 text-xs"
+                  onClick={() => {
+                    setSelectedDate(hoveredDate);
+                    setIsDetailsOpen(true);
+                  }}
+                >
+                  <Eye className="mr-1.5 h-3 w-3" />
+                  Ver detalhes do dia
+                </Button>
+              </div>
+            )}
 
             {/* Estatísticas */}
             <div className="mt-4 grid flex-shrink-0 grid-cols-3 gap-3 border-t pt-4 sm:gap-4">
@@ -530,6 +791,269 @@ export function DailyBalanceChart({ dailyBalance }: DailyBalanceChartProps) {
           </>
         )}
       </CardContent>
+
+      {/* Dialog de detalhes do dia */}
+      <Dialog open={isDetailsOpen} onOpenChange={setIsDetailsOpen}>
+        <DialogContent className="max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              Detalhes do dia{" "}
+              {selectedDate
+                ? new Date(selectedDate).toLocaleDateString("pt-BR", {
+                    day: "2-digit",
+                    month: "long",
+                    year: "numeric",
+                  })
+                : ""}
+            </DialogTitle>
+            <DialogDescription>
+              Transações e pagamentos agendados para este dia
+            </DialogDescription>
+          </DialogHeader>
+          {selectedDate && (
+            <div className="space-y-4">
+              {/* Saldo do dia */}
+              {(() => {
+                const dayData = chartData.find(
+                  (d) => d.dateStr === selectedDate,
+                );
+                if (dayData) {
+                  const balance =
+                    dayData.balance ?? dayData.projectedBalance ?? 0;
+                  const isPositive = balance >= 0;
+
+                  return (
+                    <div className="bg-muted/30 rounded-lg border-2 p-4">
+                      <p className="text-muted-foreground mb-1 text-xs font-medium">
+                        Saldo do Dia
+                      </p>
+                      <div className="flex items-baseline gap-2">
+                        <p
+                          className={`text-2xl font-bold ${
+                            isPositive
+                              ? "text-green-600 dark:text-green-400"
+                              : "text-red-600 dark:text-red-400"
+                          }`}
+                        >
+                          {formatCurrency(balance)}
+                        </p>
+                        {dayData.isProjected && (
+                          <span className="rounded-full bg-blue-100 px-2 py-0.5 text-[9px] font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+                            Projeção
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+              {/* Transações do dia */}
+              {(() => {
+                const dayTransactions = transactions.filter((t) => {
+                  const txDate = (t.date || t.createdAt)?.split("T")[0];
+                  return txDate === selectedDate;
+                });
+
+                if (dayTransactions.length > 0) {
+                  return (
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-semibold">
+                        Transações do Dia
+                      </h4>
+                      {dayTransactions.map((transaction) => {
+                        const isIncome = transaction.type === "DEPOSIT";
+                        const isExpense = transaction.type === "EXPENSE";
+                        const isInvestment = transaction.type === "INVESTMENT";
+
+                        return (
+                          <div
+                            key={transaction.id}
+                            className="flex items-center justify-between rounded-lg border p-3"
+                          >
+                            <div className="flex-1">
+                              <p className="text-sm font-medium">
+                                {transaction.name}
+                              </p>
+                              {transaction.category && (
+                                <p className="text-muted-foreground text-xs">
+                                  {transaction.category}
+                                </p>
+                              )}
+                            </div>
+                            <p
+                              className={`font-semibold ${
+                                isIncome
+                                  ? "text-green-600 dark:text-green-400"
+                                  : isInvestment
+                                    ? "text-blue-600 dark:text-blue-400"
+                                    : "text-red-600 dark:text-red-400"
+                              }`}
+                            >
+                              {isIncome ? "+" : isInvestment ? "" : "-"}
+                              {formatCurrency(transaction.value)}
+                            </p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+
+              {/* Pagamentos agendados para este dia */}
+              {(() => {
+                const dayPayments = [
+                  ...upcomingPayments.filter(
+                    (p) => p.dueDate.split("T")[0] === selectedDate,
+                  ),
+                  ...scheduledPayments.filter(
+                    (p) => p.dueDate.split("T")[0] === selectedDate,
+                  ),
+                ];
+
+                const dayTransactions = transactions.filter((t) => {
+                  const txDate = (t.date || t.createdAt)?.split("T")[0];
+                  return txDate === selectedDate;
+                });
+
+                // Se não houver transações nem pagamentos no dia, mostrar transações da última semana
+                if (dayPayments.length === 0 && dayTransactions.length === 0) {
+                  const selectedDateObj = new Date(selectedDate);
+                  const oneWeekAgo = new Date(selectedDateObj);
+                  oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+                  const recentTransactions = transactions
+                    .filter((t) => {
+                      const txDate = t.date || t.createdAt;
+                      if (!txDate) return false;
+                      const txDateObj = new Date(txDate);
+                      return (
+                        txDateObj >= oneWeekAgo && txDateObj <= selectedDateObj
+                      );
+                    })
+                    .sort((a, b) => {
+                      const dateA = new Date(a.date || a.createdAt).getTime();
+                      const dateB = new Date(b.date || b.createdAt).getTime();
+                      return dateB - dateA; // Mais recentes primeiro
+                    })
+                    .slice(0, 10); // Limitar a 10 transações
+
+                  if (recentTransactions.length > 0) {
+                    return (
+                      <div className="space-y-2">
+                        <div className="mb-2">
+                          <p className="text-muted-foreground text-xs">
+                            Nenhuma transação ou pagamento agendado para este
+                            dia
+                          </p>
+                          <p className="text-muted-foreground mt-1 text-xs font-medium">
+                            Mostrando transações da última semana:
+                          </p>
+                        </div>
+                        {recentTransactions.map((transaction) => {
+                          const isIncome = transaction.type === "DEPOSIT";
+                          const isExpense = transaction.type === "EXPENSE";
+                          const isInvestment =
+                            transaction.type === "INVESTMENT";
+                          const txDate =
+                            transaction.date || transaction.createdAt;
+
+                          return (
+                            <div
+                              key={transaction.id}
+                              className="flex items-center justify-between rounded-lg border p-3"
+                            >
+                              <div className="flex-1">
+                                <p className="text-sm font-medium">
+                                  {transaction.name}
+                                </p>
+                                <div className="flex items-center gap-2">
+                                  {transaction.category && (
+                                    <p className="text-muted-foreground text-xs">
+                                      {transaction.category}
+                                    </p>
+                                  )}
+                                  <span className="text-muted-foreground text-xs">
+                                    •
+                                  </span>
+                                  <p className="text-muted-foreground text-xs">
+                                    {txDate
+                                      ? new Date(txDate).toLocaleDateString(
+                                          "pt-BR",
+                                          {
+                                            day: "2-digit",
+                                            month: "2-digit",
+                                          },
+                                        )
+                                      : ""}
+                                  </p>
+                                </div>
+                              </div>
+                              <p
+                                className={`font-semibold ${
+                                  isIncome
+                                    ? "text-green-600 dark:text-green-400"
+                                    : isInvestment
+                                      ? "text-blue-600 dark:text-blue-400"
+                                      : "text-red-600 dark:text-red-400"
+                                }`}
+                              >
+                                {isIncome ? "+" : isInvestment ? "" : "-"}
+                                {formatCurrency(transaction.value)}
+                              </p>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="text-muted-foreground rounded-lg border p-4 text-center text-sm">
+                      Nenhuma transação ou pagamento agendado para este dia
+                    </div>
+                  );
+                }
+
+                if (dayPayments.length > 0) {
+                  return (
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-semibold">
+                        Pagamentos Agendados
+                      </h4>
+                      {dayPayments.map((payment) => (
+                        <div
+                          key={payment.id}
+                          className="flex items-center justify-between rounded-lg border p-3"
+                        >
+                          <div>
+                            <p className="text-sm font-medium">
+                              {payment.name}
+                            </p>
+                            <p className="text-muted-foreground text-xs">
+                              {payment.dueDate
+                                ? new Date(payment.dueDate).toLocaleDateString(
+                                    "pt-BR",
+                                  )
+                                : ""}
+                            </p>
+                          </div>
+                          <p className="font-semibold text-red-600 dark:text-red-400">
+                            -{formatCurrency(payment.value)}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                }
+                return null;
+              })()}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

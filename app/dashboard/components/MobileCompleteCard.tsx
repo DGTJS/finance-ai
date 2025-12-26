@@ -200,7 +200,12 @@ export function MobileCompleteCard({
 
         {/* Seção 2: Gráfico e Transações */}
         <div className="mb-6 space-y-4 border-b pb-6">
-          <DailyBalanceChart dailyBalance={dailyBalance} />
+          <DailyBalanceChart
+            dailyBalance={dailyBalance}
+            upcomingPayments={upcomingPayments}
+            scheduledPayments={scheduledPayments}
+            transactions={recentTransactions}
+          />
           <RecentExpensesCard transactions={recentTransactions} />
         </div>
 

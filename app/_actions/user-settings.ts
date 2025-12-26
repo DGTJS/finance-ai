@@ -8,6 +8,7 @@ export interface UserSettingsData {
   userTitle?: string;
   hfApiKey?: string;
   closingDay?: number;
+  savingsGoal?: number;
   emailNotifications?: boolean;
   subscriptionAlerts?: boolean;
   transactionAlerts?: boolean;
@@ -78,7 +79,7 @@ export async function saveUserSettings(data: UserSettingsData) {
 
     revalidatePath("/settings");
     revalidatePath("/transactions");
-    
+
     return {
       success: true,
       data: settings,
@@ -149,7 +150,10 @@ export async function getUserSettingsByUserId(targetUserId: string) {
 /**
  * Atualiza as configurações de um usuário específico (apenas para admins/owners)
  */
-export async function updateUserSettingsByUserId(targetUserId: string, data: UserSettingsData) {
+export async function updateUserSettingsByUserId(
+  targetUserId: string,
+  data: UserSettingsData,
+) {
   const session = await auth();
 
   if (!session?.user?.id) {
@@ -176,7 +180,7 @@ export async function updateUserSettingsByUserId(targetUserId: string, data: Use
 
     revalidatePath("/settings");
     revalidatePath("/transactions");
-    
+
     return {
       success: true,
       data: settings,
@@ -189,8 +193,3 @@ export async function updateUserSettingsByUserId(targetUserId: string, data: Use
     };
   }
 }
-
-
-
-
-

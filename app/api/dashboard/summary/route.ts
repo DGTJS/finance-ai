@@ -278,7 +278,22 @@ export async function GET(request: NextRequest) {
     });
 
     // Adicionar assinaturas às despesas fixas
-    const subscriptionsTotal = subscriptions.reduce(
+    // FILTRAR APENAS ASSINATURAS DO MÊS ATUAL (já venceram ou vão vencer este mês)
+    const currentMonthSubscriptions = subscriptions.filter((sub) => {
+      if (!sub.recurring) return false;
+
+      // Se tem nextDueDate, verificar se está no mês atual ou já passou
+      if (sub.nextDueDate) {
+        const dueDate = new Date(sub.nextDueDate);
+        return dueDate <= currentMonthEnd; // Já venceu ou vai vencer este mês
+      }
+
+      // Se não tem nextDueDate, usar dueDate
+      const dueDate = new Date(sub.dueDate);
+      return dueDate <= currentMonthEnd; // Já venceu ou vai vencer este mês
+    });
+
+    const subscriptionsTotal = currentMonthSubscriptions.reduce(
       (sum, sub) => sum + Number(sub.amount),
       0,
     );

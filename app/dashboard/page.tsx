@@ -229,6 +229,7 @@ export default function DashboardPage() {
               dailyBalance={data.dailyBalanceSparkline}
               recentTransactions={data.recentTransactions}
               upcomingPayments={data.upcomingPayments}
+              scheduledPayments={data.scheduledPayments}
               familySalaryBalance={data.familySalaryBalance}
               familyBenefitsBalance={data.familyBenefitsBalance}
               categories={data.categories}

@@ -229,6 +229,7 @@ model UserSettings {
   userTitle          String? // Título personalizado exibido na sidebar (ex: "Gerente Financeiro")
   hfApiKey           String?  @db.Text // Chave da API Hugging Face
   closingDay         Int?     @default(5) // Dia de fechamento
+  savingsGoal        Float?   @default(0) // Meta de economia mensal
   emailNotifications Boolean  @default(true)
   subscriptionAlerts Boolean  @default(true)
   transactionAlerts  Boolean  @default(false)

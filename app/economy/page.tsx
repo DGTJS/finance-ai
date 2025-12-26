@@ -60,6 +60,11 @@ export default async function EconomyPage() {
     (inv) => new Date(inv.createdAt) >= sixMonthsAgo,
   );
 
+  // Buscar perfil financeiro para incluir renda esperada
+  const financialProfile = await db.financialProfile.findUnique({
+    where: { userId: session.user.id },
+  });
+
   // Calcular renda e despesas mensais (últimos 30 dias)
   const thirtyDaysAgo = new Date();
   thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
@@ -73,9 +78,29 @@ export default async function EconomyPage() {
     },
   });
 
-  const monthlyIncome = monthlyTransactions
+  // Renda de transações recebidas
+  const incomeFromTransactions = monthlyTransactions
     .filter((t) => t.type === "DEPOSIT")
     .reduce((sum, t) => sum + Number(t.amount), 0);
+
+  // Renda esperada do perfil financeiro (renda fixa + variável média)
+  const expectedIncome = financialProfile
+    ? Number(financialProfile.rendaFixa || 0) +
+      Number(financialProfile.rendaVariavelMedia || 0)
+    : 0;
+
+  // Benefícios do perfil financeiro
+  let benefitsTotal = 0;
+  if (financialProfile && Array.isArray(financialProfile.beneficios)) {
+    benefitsTotal = (
+      financialProfile.beneficios as Array<{ value?: number }>
+    ).reduce((sum, b) => sum + Number(b.value || 0), 0);
+  }
+
+  // Usar o maior valor entre transações recebidas e renda esperada
+  // Isso garante que mesmo sem transações registradas, a renda esperada apareça
+  const monthlyIncome =
+    Math.max(incomeFromTransactions, expectedIncome) + benefitsTotal;
 
   const monthlyExpenses = monthlyTransactions
     .filter((t) => t.type === "EXPENSE")
@@ -94,4 +119,3 @@ export default async function EconomyPage() {
     />
   );
 }
-
