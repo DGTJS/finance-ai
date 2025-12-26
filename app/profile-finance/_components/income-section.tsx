@@ -1,7 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/app/_components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/app/_components/ui/card";
 import { MoneyInput } from "@/app/_components/money-input";
 import { Label } from "@/app/_components/ui/label";
 
@@ -56,11 +62,12 @@ export function IncomeSection({
         </p>
       </div>
 
-      <div className="rounded-lg bg-primary/10 p-3">
+      <div className="bg-primary/10 rounded-lg p-3">
         <div className="flex items-center justify-between">
           <span className="text-sm font-medium">Renda Total Mensal:</span>
-          <span className="text-lg font-bold text-primary">
-            R$ {(rendaFixa + rendaVariavelMedia).toLocaleString("pt-BR", {
+          <span className="text-primary text-lg font-bold">
+            R${" "}
+            {(rendaFixa + rendaVariavelMedia).toLocaleString("pt-BR", {
               minimumFractionDigits: 2,
               maximumFractionDigits: 2,
             })}
@@ -70,9 +77,3 @@ export function IncomeSection({
     </div>
   );
 }
-
-
-
-
-
-

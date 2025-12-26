@@ -1,7 +1,7 @@
 /**
  * API Route: POST /api/insights/actions/:actionId
  * Executa uma ação rápida sugerida pela IA
- * 
+ *
  * Por enquanto, apenas retorna sucesso. Pode ser expandido para
  * criar limites, ajustar metas, etc.
  */
@@ -11,16 +11,13 @@ import { auth } from "@/auth";
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { actionId: string } }
+  { params }: { params: { actionId: string } },
 ) {
   try {
     const session = await auth();
 
     if (!session?.user?.id) {
-      return NextResponse.json(
-        { error: "Não autorizado" },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: "Não autorizado" }, { status: 401 });
     }
 
     const body = await request.json().catch(() => ({}));
@@ -50,13 +47,7 @@ export async function POST(
         error: "Erro ao executar ação",
         message: error instanceof Error ? error.message : "Erro desconhecido",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
-
-
-
-
-
-

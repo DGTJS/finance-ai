@@ -105,7 +105,11 @@ export function generateHeatmapInsights(
       (a, b) => a.averageNetProfitPerHour - b.averageNetProfitPerHour,
     );
     const worstDays = sorted.slice(0, 1);
-    if (worstDays.length > 0 && worstDays[0].averageNetProfitPerHour < sorted[sorted.length - 1].averageNetProfitPerHour * 0.7) {
+    if (
+      worstDays.length > 0 &&
+      worstDays[0].averageNetProfitPerHour <
+        sorted[sorted.length - 1].averageNetProfitPerHour * 0.7
+    ) {
       insights.push(`${worstDays[0].weekdayName}s têm baixa performance.`);
     }
   }
@@ -116,7 +120,9 @@ export function generateHeatmapInsights(
   if (workedDays > 0 && totalDays > 0) {
     const workRate = (workedDays / totalDays) * 100;
     if (workRate < 30) {
-      insights.push("Você trabalha poucos dias no mês. Considere aumentar a frequência.");
+      insights.push(
+        "Você trabalha poucos dias no mês. Considere aumentar a frequência.",
+      );
     } else if (workRate > 80) {
       insights.push("Você mantém uma frequência alta de trabalho. Ótimo!");
     }
@@ -128,13 +134,17 @@ export function generateHeatmapInsights(
 /**
  * Identifica melhor dia
  */
-export function identifyBestDay(weekdayStats: WeekdayStats[]): string | undefined {
+export function identifyBestDay(
+  weekdayStats: WeekdayStats[],
+): string | undefined {
   const daysWithData = weekdayStats.filter((s) => s.periodCount > 0);
   if (daysWithData.length === 0) return undefined;
 
   const best = daysWithData.reduce(
     (best, current) =>
-      current.averageNetProfitPerHour > best.averageNetProfitPerHour ? current : best,
+      current.averageNetProfitPerHour > best.averageNetProfitPerHour
+        ? current
+        : best,
     daysWithData[0],
   );
 
@@ -149,7 +159,10 @@ export function identifyBestTimeRange(periods: any[]): string | undefined {
   if (periods.length === 0) return undefined;
 
   // Agrupar por faixa de horário
-  const timeRanges: Record<string, { total: number; hours: number; count: number }> = {};
+  const timeRanges: Record<
+    string,
+    { total: number; hours: number; count: number }
+  > = {};
 
   periods.forEach((period) => {
     const startHour = new Date(period.startTime).getHours();
@@ -185,7 +198,3 @@ export function identifyBestTimeRange(periods: any[]): string | undefined {
 
   return undefined;
 }
-
-
-
-

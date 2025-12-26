@@ -89,7 +89,11 @@ export default function ProjectForm({
           clientName: project.clientName,
           projectName: project.projectName || "",
           hourlyRate: project.hourlyRate || null,
-          status: project.status as "ACTIVE" | "PAUSED" | "COMPLETED" | "CANCELLED",
+          status: project.status as
+            | "ACTIVE"
+            | "PAUSED"
+            | "COMPLETED"
+            | "CANCELLED",
           notes: project.notes || "",
         });
       } else {
@@ -118,7 +122,9 @@ export default function ProjectForm({
 
       if (result.success) {
         toast.success(
-          isEditing ? "Projeto atualizado com sucesso!" : "Projeto criado com sucesso!",
+          isEditing
+            ? "Projeto atualizado com sucesso!"
+            : "Projeto criado com sucesso!",
         );
         onSuccess();
       } else {
@@ -135,7 +141,9 @@ export default function ProjectForm({
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[500px]">
         <DialogHeader>
-          <DialogTitle>{isEditing ? "Editar Projeto" : "Novo Projeto/Cliente"}</DialogTitle>
+          <DialogTitle>
+            {isEditing ? "Editar Projeto" : "Novo Projeto/Cliente"}
+          </DialogTitle>
           <DialogDescription>
             {isEditing
               ? "Atualize as informações do projeto."
@@ -168,7 +176,11 @@ export default function ProjectForm({
                 <FormItem>
                   <FormLabel>Nome do Projeto (Opcional)</FormLabel>
                   <FormControl>
-                    <Input placeholder="Ex: Desenvolvimento de Site" {...field} value={field.value || ""} />
+                    <Input
+                      placeholder="Ex: Desenvolvimento de Site"
+                      {...field}
+                      value={field.value || ""}
+                    />
                   </FormControl>
                   <FormDescription>
                     Nome específico do projeto, se houver
@@ -265,7 +277,3 @@ export default function ProjectForm({
     </Dialog>
   );
 }
-
-
-
-

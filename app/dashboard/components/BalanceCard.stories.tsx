@@ -2,21 +2,21 @@
  * Storybook Stories para BalanceCard
  */
 
-import type { Meta, StoryObj } from '@storybook/react';
-import { BalanceCard } from './BalanceCard';
+import type { Meta, StoryObj } from "@storybook/react";
+import { BalanceCard } from "./BalanceCard";
 
 const meta = {
-  title: 'Dashboard/BalanceCard',
+  title: "Dashboard/BalanceCard",
   component: BalanceCard,
   parameters: {
-    layout: 'centered',
+    layout: "centered",
   },
-  tags: ['autodocs'],
+  tags: ["autodocs"],
   argTypes: {
-    balance: { control: 'number' },
-    changePercent: { control: 'number' },
-    onRefresh: { action: 'refreshed' },
-    isLoading: { control: 'boolean' },
+    balance: { control: "number" },
+    changePercent: { control: "number" },
+    onRefresh: { action: "refreshed" },
+    isLoading: { control: "boolean" },
   },
 } satisfies Meta<typeof BalanceCard>;
 
@@ -62,9 +62,3 @@ export const PositiveChange: Story = {
     isLoading: false,
   },
 };
-
-
-
-
-
-

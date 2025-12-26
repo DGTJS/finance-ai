@@ -16,26 +16,20 @@ const Progress = React.forwardRef<HTMLDivElement, ProgressProps>(
       <div
         ref={ref}
         className={cn(
-          "relative h-2 w-full overflow-hidden rounded-full bg-secondary",
-          className
+          "bg-secondary relative h-2 w-full overflow-hidden rounded-full",
+          className,
         )}
         {...props}
       >
         <div
-          className="h-full rounded-full bg-primary transition-all duration-300"
+          className="bg-primary h-full rounded-full transition-all duration-300"
           style={{ width: `${percentage}%` }}
         />
       </div>
     );
-  }
+  },
 );
 
 Progress.displayName = "Progress";
 
 export { Progress };
-
-
-
-
-
-

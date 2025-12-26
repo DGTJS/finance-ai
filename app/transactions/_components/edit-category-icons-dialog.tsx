@@ -12,7 +12,10 @@ import {
 import { Button } from "@/app/_components/ui/button";
 import { EmojiPicker } from "@/app/_components/emoji-picker";
 import { Label } from "@/app/_components/ui/label";
-import { TRANSACTION_CATEGORY_LABELS, TRANSACTION_CATEGORY_EMOJIS } from "@/app/_constants/transactions";
+import {
+  TRANSACTION_CATEGORY_LABELS,
+  TRANSACTION_CATEGORY_EMOJIS,
+} from "@/app/_constants/transactions";
 import { TransactionCategory } from "@/app/generated/prisma/client";
 import { saveUserSettings } from "@/app/_actions/user-settings";
 import { toast } from "sonner";
@@ -34,7 +37,9 @@ export default function EditCategoryIconsDialog({
   const [icons, setIcons] = useState<Record<string, string>>(currentIcons);
   const [isSaving, setIsSaving] = useState(false);
 
-  const categories = Object.keys(TRANSACTION_CATEGORY_LABELS) as TransactionCategory[];
+  const categories = Object.keys(
+    TRANSACTION_CATEGORY_LABELS,
+  ) as TransactionCategory[];
 
   const handleIconChange = (category: TransactionCategory, icon: string) => {
     setIcons((prev) => ({
@@ -98,7 +103,7 @@ export default function EditCategoryIconsDialog({
                   <span className="text-2xl">{currentIcon}</span>
                   <div>
                     <Label className="font-medium">{label}</Label>
-                    <p className="text-xs text-muted-foreground">
+                    <p className="text-muted-foreground text-xs">
                       Padrão: {defaultIcon}
                     </p>
                   </div>
@@ -144,10 +149,3 @@ export default function EditCategoryIconsDialog({
     </Dialog>
   );
 }
-
-
-
-
-
-
-

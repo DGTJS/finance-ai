@@ -13,7 +13,7 @@ const addAmountSchema = z.object({
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: { id: string } },
 ) {
   try {
     const body = await request.json();
@@ -24,18 +24,18 @@ export async function POST(
     if (!result.success) {
       return NextResponse.json(
         { error: result.error || "Erro ao adicionar valor à meta" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Erro ao adicionar valor à meta:", error);
-    
+
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: "Dados inválidos", details: error.errors },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -44,13 +44,7 @@ export async function POST(
         error: "Erro ao adicionar valor à meta",
         message: error instanceof Error ? error.message : "Erro desconhecido",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
-
-
-
-
-
-

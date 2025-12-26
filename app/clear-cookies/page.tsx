@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 export default function ClearCookiesPage() {
   const router = useRouter();
   const [status, setStatus] = useState<"clearing" | "success" | "error">(
-    "clearing"
+    "clearing",
   );
 
   useEffect(() => {
@@ -15,8 +15,9 @@ export default function ClearCookiesPage() {
         // Limpar cookies do lado do cliente também
         document.cookie.split(";").forEach((cookie) => {
           const eqPos = cookie.indexOf("=");
-          const name = eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
-          
+          const name =
+            eqPos > -1 ? cookie.substr(0, eqPos).trim() : cookie.trim();
+
           // Limpar cookies relacionados ao NextAuth
           if (
             name.includes("next-auth") ||
@@ -60,7 +61,7 @@ export default function ClearCookiesPage() {
         {status === "clearing" && (
           <>
             <div className="mb-4 text-lg">Limpando cookies...</div>
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900 mx-auto"></div>
+            <div className="mx-auto h-8 w-8 animate-spin rounded-full border-b-2 border-gray-900"></div>
           </>
         )}
         {status === "success" && (
@@ -80,7 +81,7 @@ export default function ClearCookiesPage() {
             </div>
             <button
               onClick={() => (window.location.href = "/login")}
-              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+              className="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
             >
               Ir para Login
             </button>
@@ -90,12 +91,3 @@ export default function ClearCookiesPage() {
     </div>
   );
 }
-
-
-
-
-
-
-
-
-

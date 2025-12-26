@@ -1,7 +1,13 @@
 "use client";
 
 import { formatCurrency, formatHours } from "./utils";
-import { TrendingUp, Clock, CheckCircle2, AlertCircle, XCircle } from "lucide-react";
+import {
+  TrendingUp,
+  Clock,
+  CheckCircle2,
+  AlertCircle,
+  XCircle,
+} from "lucide-react";
 
 interface FinancialHeroProps {
   monthlyNetProfit: number;
@@ -72,12 +78,12 @@ export default function FinancialHero({
   const StatusIcon = dayStatus.icon;
 
   return (
-    <div className="relative overflow-hidden rounded-2xl border-2 bg-gradient-to-br from-primary/5 via-background to-primary/5 p-6 shadow-lg sm:p-8">
+    <div className="from-primary/5 via-background to-primary/5 relative overflow-hidden rounded-2xl border-2 bg-gradient-to-br p-6 shadow-lg sm:p-8">
       {/* Hero Principal */}
       <div className="relative z-10">
         {/* Ganho Líquido do Mês - Destaque Principal */}
         <div className="mb-6">
-          <div className="mb-2 text-sm font-medium text-muted-foreground">
+          <div className="text-muted-foreground mb-2 text-sm font-medium">
             Ganho Líquido do Mês
           </div>
           <div className="text-5xl font-bold tracking-tight sm:text-6xl">
@@ -87,11 +93,13 @@ export default function FinancialHero({
 
         {/* Ganho Médio por Hora - Destaque Secundário */}
         <div className="mb-6 flex items-center gap-3">
-          <div className="flex items-center gap-2 rounded-lg bg-primary/10 px-4 py-2">
-            <TrendingUp className="h-5 w-5 text-primary" />
+          <div className="bg-primary/10 flex items-center gap-2 rounded-lg px-4 py-2">
+            <TrendingUp className="text-primary h-5 w-5" />
             <div>
-              <div className="text-xs text-muted-foreground">Média por hora</div>
-              <div className="text-2xl font-bold text-primary">
+              <div className="text-muted-foreground text-xs">
+                Média por hora
+              </div>
+              <div className="text-primary text-2xl font-bold">
                 {formatCurrency(averageHourlyRate)}
               </div>
             </div>
@@ -103,23 +111,27 @@ export default function FinancialHero({
           className={`rounded-xl border-2 ${dayStatus.bgColor} p-4 transition-all hover:shadow-md`}
         >
           <div className="flex items-start gap-3">
-            <StatusIcon className={`h-6 w-6 ${dayStatus.color} mt-0.5 flex-shrink-0`} />
+            <StatusIcon
+              className={`h-6 w-6 ${dayStatus.color} mt-0.5 flex-shrink-0`}
+            />
             <div className="flex-1">
               <div className={`mb-1 font-semibold ${dayStatus.color}`}>
                 {dayStatus.label}
               </div>
-              <div className="text-sm text-muted-foreground">
+              <div className="text-muted-foreground text-sm">
                 {dayStatus.message}
               </div>
               {todayStats.periodCount > 0 && (
-                <div className="mt-2 flex items-center gap-4 text-xs text-muted-foreground">
+                <div className="text-muted-foreground mt-2 flex items-center gap-4 text-xs">
                   <div className="flex items-center gap-1">
                     <Clock className="h-3 w-3" />
                     <span>{formatHours(todayStats.totalHours)} hoje</span>
                   </div>
                   <div className="flex items-center gap-1">
                     <TrendingUp className="h-3 w-3" />
-                    <span>{formatCurrency(todayStats.totalNetProfit)} líquido</span>
+                    <span>
+                      {formatCurrency(todayStats.totalNetProfit)} líquido
+                    </span>
                   </div>
                 </div>
               )}
@@ -128,28 +140,26 @@ export default function FinancialHero({
         </div>
 
         {/* Microcopy Humana */}
-        <div className="mt-6 text-sm leading-relaxed text-muted-foreground">
+        <div className="text-muted-foreground mt-6 text-sm leading-relaxed">
           {averageHourlyRate > 0 ? (
             <p>
               Hoje, cada hora sua vale em média{" "}
-              <span className="font-semibold text-foreground">
+              <span className="text-foreground font-semibold">
                 {formatCurrency(averageHourlyRate)}
               </span>
               .
             </p>
           ) : (
-            <p>Comece a registrar seus períodos de trabalho para ver seus ganhos.</p>
+            <p>
+              Comece a registrar seus períodos de trabalho para ver seus ganhos.
+            </p>
           )}
         </div>
       </div>
 
       {/* Decoração de fundo sutil */}
-      <div className="pointer-events-none absolute -right-20 -top-20 h-64 w-64 rounded-full bg-primary/5 blur-3xl" />
-      <div className="pointer-events-none absolute -bottom-20 -left-20 h-64 w-64 rounded-full bg-primary/5 blur-3xl" />
+      <div className="bg-primary/5 pointer-events-none absolute -top-20 -right-20 h-64 w-64 rounded-full blur-3xl" />
+      <div className="bg-primary/5 pointer-events-none absolute -bottom-20 -left-20 h-64 w-64 rounded-full blur-3xl" />
     </div>
   );
 }
-
-
-
-

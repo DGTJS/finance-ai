@@ -18,7 +18,9 @@ export const paymentSchema = z.object({
 // Schema principal do perfil financeiro
 export const financialProfileSchema = z.object({
   rendaFixa: z.number().min(0, "Renda fixa deve ser maior ou igual a zero"),
-  rendaVariavelMedia: z.number().min(0, "Renda variável deve ser maior ou igual a zero"),
+  rendaVariavelMedia: z
+    .number()
+    .min(0, "Renda variável deve ser maior ou igual a zero"),
   beneficios: z.array(benefitSchema).default([]),
   diaPagamento: z.number().int().min(1).max(31).nullable().optional(),
   multiplePayments: z.array(paymentSchema).nullable().optional(),
@@ -27,9 +29,3 @@ export const financialProfileSchema = z.object({
 export type FinancialProfileInput = z.infer<typeof financialProfileSchema>;
 export type BenefitInput = z.infer<typeof benefitSchema>;
 export type PaymentInput = z.infer<typeof paymentSchema>;
-
-
-
-
-
-

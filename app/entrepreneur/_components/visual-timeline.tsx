@@ -4,7 +4,14 @@ import { useState } from "react";
 import { Card, CardContent } from "@/app/_components/ui/card";
 import { Button } from "@/app/_components/ui/button";
 import { Badge } from "@/app/_components/ui/badge";
-import { Edit, Trash2, Clock, DollarSign, TrendingUp, TrendingDown } from "lucide-react";
+import {
+  Edit,
+  Trash2,
+  Clock,
+  DollarSign,
+  TrendingUp,
+  TrendingDown,
+} from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -72,14 +79,17 @@ export default function VisualTimeline({
     }
   };
 
-  const groupedPeriods = periods.reduce((acc, period) => {
-    const dateKey = new Date(period.date).toISOString().split("T")[0];
-    if (!acc[dateKey]) {
-      acc[dateKey] = [];
-    }
-    acc[dateKey].push(period);
-    return acc;
-  }, {} as Record<string, WorkPeriod[]>);
+  const groupedPeriods = periods.reduce(
+    (acc, period) => {
+      const dateKey = new Date(period.date).toISOString().split("T")[0];
+      if (!acc[dateKey]) {
+        acc[dateKey] = [];
+      }
+      acc[dateKey].push(period);
+      return acc;
+    },
+    {} as Record<string, WorkPeriod[]>,
+  );
 
   const sortedDates = Object.keys(groupedPeriods).sort(
     (a, b) => new Date(b).getTime() - new Date(a).getTime(),
@@ -88,7 +98,10 @@ export default function VisualTimeline({
   // Calcular melhor e pior dia
   const dayStats = sortedDates.map((dateKey) => {
     const dayPeriods = groupedPeriods[dateKey];
-    const totalNetProfit = dayPeriods.reduce((sum, p) => sum + Number(p.netProfit), 0);
+    const totalNetProfit = dayPeriods.reduce(
+      (sum, p) => sum + Number(p.netProfit),
+      0,
+    );
     const totalHours = dayPeriods.reduce((sum, p) => sum + p.hours, 0);
     const hourlyRate = totalHours > 0 ? totalNetProfit / totalHours : 0;
     return { dateKey, totalNetProfit, hourlyRate };
@@ -99,7 +112,8 @@ export default function VisualTimeline({
     dayStats[0] || { dateKey: "", hourlyRate: 0 },
   );
   const worstDay = dayStats.reduce(
-    (worst, current) => (current.hourlyRate < worst.hourlyRate ? current : worst),
+    (worst, current) =>
+      current.hourlyRate < worst.hourlyRate ? current : worst,
     dayStats[0] || { dateKey: "", hourlyRate: Infinity },
   );
 
@@ -107,11 +121,13 @@ export default function VisualTimeline({
     return (
       <Card className="border-2 border-dashed">
         <CardContent className="flex flex-col items-center justify-center py-16 text-center">
-          <Clock className="mb-4 h-12 w-12 text-muted-foreground" />
-          <h3 className="mb-2 text-lg font-semibold">Nenhum período registrado</h3>
-          <p className="max-w-md text-sm text-muted-foreground">
-            Comece registrando seus períodos de trabalho para ver seu histórico e insights
-            personalizados.
+          <Clock className="text-muted-foreground mb-4 h-12 w-12" />
+          <h3 className="mb-2 text-lg font-semibold">
+            Nenhum período registrado
+          </h3>
+          <p className="text-muted-foreground max-w-md text-sm">
+            Comece registrando seus períodos de trabalho para ver seu histórico
+            e insights personalizados.
           </p>
         </CardContent>
       </Card>
@@ -124,11 +140,16 @@ export default function VisualTimeline({
         {sortedDates.map((dateKey) => {
           const dayPeriods = groupedPeriods[dateKey];
           const date = new Date(dateKey);
-          const dayTotal = dayPeriods.reduce((sum, p) => sum + Number(p.netProfit), 0);
+          const dayTotal = dayPeriods.reduce(
+            (sum, p) => sum + Number(p.netProfit),
+            0,
+          );
           const dayHours = dayPeriods.reduce((sum, p) => sum + p.hours, 0);
           const dayHourlyRate = dayHours > 0 ? dayTotal / dayHours : 0;
           const isBestDay = dateKey === bestDay.dateKey;
-          const isWorstDay = dateKey === worstDay.dateKey && dayHourlyRate < averageHourlyRate * 0.8;
+          const isWorstDay =
+            dateKey === worstDay.dateKey &&
+            dayHourlyRate < averageHourlyRate * 0.8;
 
           return (
             <Card
@@ -145,13 +166,14 @@ export default function VisualTimeline({
                 {/* Header do Dia */}
                 <div className="mb-4 flex items-center justify-between border-b pb-3">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-lg font-bold text-primary">
+                    <div className="bg-primary/10 text-primary flex h-12 w-12 items-center justify-center rounded-xl text-lg font-bold">
                       {date.getDate()}
                     </div>
                     <div>
                       <div className="font-semibold">{formatDate(date)}</div>
-                      <div className="text-xs text-muted-foreground">
-                        {dayPeriods.length} {dayPeriods.length === 1 ? "período" : "períodos"}
+                      <div className="text-muted-foreground text-xs">
+                        {dayPeriods.length}{" "}
+                        {dayPeriods.length === 1 ? "período" : "períodos"}
                       </div>
                     </div>
                   </div>
@@ -159,12 +181,17 @@ export default function VisualTimeline({
                     {isBestDay && (
                       <Badge className="mb-1 bg-green-600">Melhor dia</Badge>
                     )}
-                    {isWorstDay && <Badge variant="destructive" className="mb-1">Abaixo da média</Badge>}
+                    {isWorstDay && (
+                      <Badge variant="destructive" className="mb-1">
+                        Abaixo da média
+                      </Badge>
+                    )}
                     <div className="text-lg font-bold text-green-600 dark:text-green-400">
                       {formatCurrency(dayTotal)}
                     </div>
-                    <div className="text-xs text-muted-foreground">
-                      {formatHours(dayHours)} • {formatCurrency(dayHourlyRate)}/h
+                    <div className="text-muted-foreground text-xs">
+                      {formatHours(dayHours)} • {formatCurrency(dayHourlyRate)}
+                      /h
                     </div>
                   </div>
                 </div>
@@ -172,33 +199,37 @@ export default function VisualTimeline({
                 {/* Períodos do Dia */}
                 <div className="space-y-2">
                   {dayPeriods.map((period) => {
-                    const periodHourlyRate = period.hours > 0 ? period.netProfit / period.hours : 0;
+                    const periodHourlyRate =
+                      period.hours > 0 ? period.netProfit / period.hours : 0;
                     return (
                       <div
                         key={period.id}
-                        className="group flex items-center justify-between rounded-lg border bg-card p-3 transition-colors hover:bg-muted/50"
+                        className="group bg-card hover:bg-muted/50 flex items-center justify-between rounded-lg border p-3 transition-colors"
                       >
                         <div className="flex-1">
                           <div className="mb-1 flex items-center gap-2">
-                            <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+                            <Clock className="text-muted-foreground h-3.5 w-3.5" />
                             <span className="text-sm font-medium">
                               {formatTime(new Date(period.startTime))} -{" "}
                               {formatTime(new Date(period.endTime))}
                             </span>
-                            <span className="text-xs text-muted-foreground">
+                            <span className="text-muted-foreground text-xs">
                               ({formatHours(period.hours)})
                             </span>
                           </div>
                           {period.project && (
-                            <div className="mb-1 text-xs text-muted-foreground">
+                            <div className="text-muted-foreground mb-1 text-xs">
                               {period.project.clientName}
-                              {period.project.projectName && ` - ${period.project.projectName}`}
+                              {period.project.projectName &&
+                                ` - ${period.project.projectName}`}
                             </div>
                           )}
                           <div className="flex items-center gap-3 text-xs">
                             <div className="flex items-center gap-1">
                               <DollarSign className="h-3 w-3 text-green-600" />
-                              <span className="font-medium">{formatCurrency(period.amount)}</span>
+                              <span className="font-medium">
+                                {formatCurrency(period.amount)}
+                              </span>
                             </div>
                             {period.expenses > 0 && (
                               <span className="text-muted-foreground">
@@ -245,10 +276,14 @@ export default function VisualTimeline({
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Excluir período?</AlertDialogTitle>
-            <AlertDialogDescription>Esta ação não pode ser desfeita.</AlertDialogDescription>
+            <AlertDialogDescription>
+              Esta ação não pode ser desfeita.
+            </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel disabled={isDeleting}>Cancelar</AlertDialogCancel>
+            <AlertDialogCancel disabled={isDeleting}>
+              Cancelar
+            </AlertDialogCancel>
             <AlertDialogAction
               onClick={handleDelete}
               disabled={isDeleting}
@@ -262,7 +297,3 @@ export default function VisualTimeline({
     </>
   );
 }
-
-
-
-

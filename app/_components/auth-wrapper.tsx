@@ -17,72 +17,56 @@ export default function AuthWrapper({ children }: AuthWrapperProps) {
   const [mounted, setMounted] = useState(false);
   const pathname = usePathname();
   const router = useRouter();
+
   const isLoginPage = pathname === "/login";
-  const isLandingPage = pathname === "/landing";
+  const isLandingPage = pathname === "/";
   const isPublicPage = isLoginPage || isLandingPage;
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
-  // Enquanto não montou, não renderizar nada (evitar flash)
-  if (!mounted) {
-    return (
-      <div className="bg-background flex min-h-screen items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="border-primary h-8 w-8 animate-spin rounded-full border-4 border-t-transparent"></div>
-          <div className="text-muted-foreground text-sm">Carregando...</div>
-        </div>
-      </div>
-    );
-  }
+  // 🔑 REDIRECTS SEMPRE AQUI
+  useEffect(() => {
+    if (!mounted || status === "loading") return;
 
-  // Enquanto está carregando a sessão, mostrar loading
-  if (status === "loading") {
-    return (
-      <div className="bg-background flex min-h-screen items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="border-primary h-8 w-8 animate-spin rounded-full border-4 border-t-transparent"></div>
-          <div className="text-muted-foreground text-sm">
-            Verificando autenticação...
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Se não estiver autenticado
-  if (!session) {
-    // Se está em uma página pública, mostrar apenas o conteúdo
-    if (isPublicPage) {
-      return <>{children}</>;
+    // Não autenticado tentando acessar página privada
+    if (!session && !isPublicPage) {
+      router.replace("/");
+      return;
     }
-    // Se não está em página pública, redirecionar para landing
-    router.push("/landing");
-    return (
-      <div className="bg-background flex min-h-screen items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="border-primary h-8 w-8 animate-spin rounded-full border-4 border-t-transparent"></div>
-          <div className="text-muted-foreground text-sm">Redirecionando...</div>
-        </div>
-      </div>
-    );
+
+    // Autenticado tentando acessar login ou landing
+    if (session && isPublicPage) {
+      router.replace("/dashboard");
+    }
+  }, [mounted, status, session, isPublicPage, router]);
+
+  // Enquanto não montou
+  if (!mounted) {
+    return loading("Carregando...");
   }
 
-  // Se está autenticado e em página pública, redirecionar para dashboard
-  if (session && (isLoginPage || isLandingPage)) {
-    router.push("/dashboard");
-    return (
-      <div className="bg-background flex min-h-screen items-center justify-center">
-        <div className="flex flex-col items-center gap-3">
-          <div className="border-primary h-8 w-8 animate-spin rounded-full border-4 border-t-transparent"></div>
-          <div className="text-muted-foreground text-sm">Redirecionando...</div>
-        </div>
-      </div>
-    );
+  // Enquanto carrega sessão
+  if (status === "loading") {
+    return loading("Verificando autenticação...");
   }
 
-  // Se estiver autenticado, mostrar navbar, sidebar e conteúdo
+  // Não autenticado em página pública
+  if (!session && isPublicPage) {
+    return <>{children}</>;
+  }
+
+  // Estados intermediários (enquanto redireciona)
+  if (!session && !isPublicPage) {
+    return loading("Redirecionando...");
+  }
+
+  if (session && isPublicPage) {
+    return loading("Redirecionando...");
+  }
+
+  // Autenticado em página privada
   return (
     <>
       <Navbar />
@@ -91,5 +75,16 @@ export default function AuthWrapper({ children }: AuthWrapperProps) {
       <AssistantButton />
       <AddTransactionFab />
     </>
+  );
+}
+
+function loading(text: string) {
+  return (
+    <div className="bg-background flex min-h-screen items-center justify-center">
+      <div className="flex flex-col items-center gap-3">
+        <div className="border-primary h-8 w-8 animate-spin rounded-full border-4 border-t-transparent"></div>
+        <div className="text-muted-foreground text-sm">{text}</div>
+      </div>
+    </div>
   );
 }

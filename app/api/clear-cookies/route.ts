@@ -4,7 +4,7 @@ import { cookies } from "next/headers";
 export async function GET() {
   try {
     const cookieStore = await cookies();
-    
+
     // Lista de cookies do NextAuth que devem ser limpos
     const authCookies = [
       "next-auth.session-token",
@@ -43,11 +43,11 @@ export async function GET() {
           "Set-Cookie": authCookies
             .map(
               (name) =>
-                `${name}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Lax`
+                `${name}=; Path=/; Expires=Thu, 01 Jan 1970 00:00:00 GMT; HttpOnly; SameSite=Lax`,
             )
             .join(", "),
         },
-      }
+      },
     );
   } catch (error) {
     console.error("Erro ao limpar cookies:", error);
@@ -56,7 +56,7 @@ export async function GET() {
         success: false,
         error: "Erro ao limpar cookies",
       },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }
@@ -64,12 +64,3 @@ export async function GET() {
 export async function POST() {
   return GET();
 }
-
-
-
-
-
-
-
-
-

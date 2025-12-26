@@ -36,7 +36,7 @@ function log(message: string, color: keyof typeof colors = "reset") {
 function runTest(name: string, command: () => void): TestResult {
   const start = Date.now();
   log(`\n🧪 ${name}...`, "cyan");
-  
+
   try {
     command();
     const duration = Date.now() - start;
@@ -54,7 +54,10 @@ function runTest(name: string, command: () => void): TestResult {
   }
 }
 
-function execCommand(command: string, options: { cwd?: string; stdio?: any } = {}) {
+function execCommand(
+  command: string,
+  options: { cwd?: string; stdio?: any } = {},
+) {
   try {
     execSync(command, {
       stdio: options.stdio || "inherit",
@@ -87,7 +90,7 @@ async function main() {
       if (missing.length > 0) {
         throw new Error(`Arquivos faltando: ${missing.join(", ")}`);
       }
-    })
+    }),
   );
 
   // 2. Verificar variáveis de ambiente
@@ -98,7 +101,7 @@ async function main() {
       if (missing.length > 0) {
         throw new Error(`Variáveis faltando: ${missing.join(", ")}`);
       }
-    })
+    }),
   );
 
   // 3. Verificar dependências instaladas
@@ -107,42 +110,42 @@ async function main() {
       if (!existsSync("node_modules")) {
         throw new Error("node_modules não encontrado. Execute: npm install");
       }
-    })
+    }),
   );
 
   // 4. Testar Prisma Client
   results.push(
     runTest("Gerar Prisma Client", () => {
       execCommand("npx prisma generate", { stdio: "pipe" });
-    })
+    }),
   );
 
   // 5. Testar conexão com banco de dados
   results.push(
     runTest("Testar conexão com banco de dados", () => {
       execCommand("npm run test:db", { stdio: "pipe" });
-    })
+    }),
   );
 
   // 6. Testar lint
   results.push(
     runTest("Executar ESLint", () => {
       execCommand("npm run lint", { stdio: "pipe" });
-    })
+    }),
   );
 
   // 7. Testar TypeScript
   results.push(
     runTest("Verificar tipos TypeScript", () => {
       execCommand("npx tsc --noEmit", { stdio: "pipe" });
-    })
+    }),
   );
 
   // 8. Testar testes unitários
   results.push(
     runTest("Executar testes unitários", () => {
       execCommand("npm test -- --run", { stdio: "pipe" });
-    })
+    }),
   );
 
   // 9. Testar build (sem output)
@@ -154,7 +157,7 @@ async function main() {
       }
       // Build sem output para ser mais rápido
       execCommand("npm run build:webpack", { stdio: "pipe" });
-    })
+    }),
   );
 
   // 10. Verificar estrutura de pastas
@@ -174,7 +177,7 @@ async function main() {
       if (missing.length > 0) {
         throw new Error(`Pastas faltando: ${missing.join(", ")}`);
       }
-    })
+    }),
   );
 
   // Resumo final
@@ -217,12 +220,3 @@ main().catch((error) => {
   log(`\n❌ Erro fatal: ${error.message}`, "red");
   process.exit(1);
 });
-
-
-
-
-
-
-
-
-

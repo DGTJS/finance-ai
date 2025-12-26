@@ -14,7 +14,7 @@ export default auth((req) => {
   }
 
   // Páginas públicas que não precisam de autenticação
-  const publicRoutes = ["/login", "/landing"];
+  const publicRoutes = ["/login", "/"];
   const isPublicRoute = publicRoutes.includes(pathname);
 
   // Debug: log para verificar o estado da autenticação
@@ -40,10 +40,15 @@ export default auth((req) => {
     return NextResponse.redirect(loginUrl);
   }
 
-  // Se está autenticado e tenta acessar o login, redireciona para home
+  // Se está autenticado e tenta acessar rota pública (login ou landing), redireciona para dashboard
   if (req.auth && isPublicRoute) {
-    const homeUrl = new URL("/", req.url);
-    return NextResponse.redirect(homeUrl);
+    // Usar a mesma origem da requisição para evitar problemas de porta
+    const dashboardUrl = new URL("/dashboard", req.url);
+    const host = req.headers.get("host");
+    if (host) {
+      dashboardUrl.host = host;
+    }
+    return NextResponse.redirect(dashboardUrl);
   }
 
   return NextResponse.next();

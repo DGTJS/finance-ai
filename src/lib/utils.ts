@@ -27,17 +27,13 @@ export function formatDate(date: string | Date): string {
 /**
  * Calcula dias até uma data
  */
-export function daysUntil(date: string | Date): number {
+export function daysUntil(date: string | Date | null | undefined): number {
+  if (!date) return 999;
   const target = typeof date === "string" ? new Date(date) : date;
+  if (isNaN(target.getTime())) return 999;
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   target.setHours(0, 0, 0, 0);
   const diff = target.getTime() - today.getTime();
   return Math.ceil(diff / (1000 * 60 * 60 * 24));
 }
-
-
-
-
-
-

@@ -4,7 +4,10 @@
  */
 
 import type { DashboardSummary, Projection } from "@/src/types/dashboard";
-import { dashboardSummarySchema, projectionSchema } from "@/src/schemas/dashboard";
+import {
+  dashboardSummarySchema,
+  projectionSchema,
+} from "@/src/schemas/dashboard";
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
 
@@ -13,10 +16,12 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL || "/api";
  */
 async function fetchAPI<T>(
   endpoint: string,
-  options?: RequestInit
+  options?: RequestInit,
 ): Promise<T> {
-  const url = endpoint.startsWith("http") ? endpoint : `${API_BASE_URL}${endpoint}`;
-  
+  const url = endpoint.startsWith("http")
+    ? endpoint
+    : `${API_BASE_URL}${endpoint}`;
+
   const response = await fetch(url, {
     ...options,
     headers: {
@@ -26,7 +31,9 @@ async function fetchAPI<T>(
   });
 
   if (!response.ok) {
-    const error = await response.json().catch(() => ({ message: "Erro desconhecido" }));
+    const error = await response
+      .json()
+      .catch(() => ({ message: "Erro desconhecido" }));
     throw new Error(error.message || `HTTP ${response.status}`);
   }
 
@@ -38,7 +45,7 @@ async function fetchAPI<T>(
  */
 export async function getDashboardSummary(): Promise<DashboardSummary> {
   const data = await fetchAPI<DashboardSummary>("/dashboard/summary");
-  
+
   // Validar com Zod
   const validated = dashboardSummarySchema.parse(data);
   return validated;
@@ -49,9 +56,9 @@ export async function getDashboardSummary(): Promise<DashboardSummary> {
  */
 export async function getProjection(month: string): Promise<Projection> {
   const data = await fetchAPI<Projection>(
-    `/profile-finance/projection?month=${month}`
+    `/profile-finance/projection?month=${month}`,
   );
-  
+
   // Validar com Zod
   const validated = projectionSchema.parse(data);
   return validated;
@@ -60,7 +67,10 @@ export async function getProjection(month: string): Promise<Projection> {
 /**
  * Adiciona valor a uma meta
  */
-export async function addGoalAmount(goalId: string, amount: number): Promise<void> {
+export async function addGoalAmount(
+  goalId: string,
+  amount: number,
+): Promise<void> {
   await fetchAPI(`/goals/${goalId}/add-amount`, {
     method: "POST",
     body: JSON.stringify({ amount }),
@@ -70,15 +80,12 @@ export async function addGoalAmount(goalId: string, amount: number): Promise<voi
 /**
  * Executa uma ação rápida sugerida pela IA
  */
-export async function executeInsightAction(actionId: string, params?: Record<string, unknown>): Promise<void> {
+export async function executeInsightAction(
+  actionId: string,
+  params?: Record<string, unknown>,
+): Promise<void> {
   await fetchAPI(`/insights/actions/${actionId}`, {
     method: "POST",
     body: JSON.stringify(params || {}),
   });
 }
-
-
-
-
-
-

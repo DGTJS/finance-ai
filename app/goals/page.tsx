@@ -22,34 +22,38 @@ const GoalsPage = async () => {
   // Calcular estatísticas
   const activeGoals = goals.filter((g) => g.status === "ACTIVE");
   const completedGoals = goals.filter((g) => g.status === "COMPLETED");
-  const totalTarget = activeGoals.reduce((sum, g) => sum + Number(g.targetAmount), 0);
-  const totalCurrent = activeGoals.reduce((sum, g) => sum + Number(g.currentAmount), 0);
-  const progressPercentage = totalTarget > 0 ? (totalCurrent / totalTarget) * 100 : 0;
+  const totalTarget = activeGoals.reduce(
+    (sum, g) => sum + Number(g.targetAmount),
+    0,
+  );
+  const totalCurrent = activeGoals.reduce(
+    (sum, g) => sum + Number(g.currentAmount),
+    0,
+  );
+  const progressPercentage =
+    totalTarget > 0 ? (totalCurrent / totalTarget) * 100 : 0;
 
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto space-y-4 p-4 sm:space-y-6 sm:p-6">
-        {/* Header */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">Metas Financeiras</h1>
-            <p className="text-muted-foreground text-sm sm:text-base">
-              Defina e acompanhe suas metas financeiras
-            </p>
-          </div>
+    <div className="bg-background min-h-screen">
+      <div className="container mx-auto space-y-4 p-3 sm:space-y-6 sm:p-4 md:p-6">
+        {/* Header Minimalista */}
+        <div className="border-b pb-4">
+          <h1 className="text-xl font-light tracking-tight sm:text-2xl md:text-3xl">
+            Metas Financeiras
+          </h1>
+          <p className="text-muted-foreground mt-1 text-xs sm:text-sm">
+            Defina e acompanhe suas metas financeiras
+          </p>
         </div>
 
-        {/* Stats Cards */}
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Stats Cards Minimalistas */}
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:gap-4">
           {/* Metas Ativas */}
-          <div className="rounded-lg border bg-card p-4 shadow-sm transition-all hover:shadow-md sm:p-6">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-medium text-muted-foreground sm:text-sm">
-                Metas Ativas
-              </p>
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-500/10 sm:h-10 sm:w-10">
+          <div className="bg-muted/20 rounded-lg border-0 p-3 shadow-sm sm:p-4 md:p-6">
+            <div className="flex items-center gap-2">
+              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-500/10 sm:h-7 sm:w-7">
                 <svg
-                  className="h-5 w-5 text-blue-500"
+                  className="h-3.5 w-3.5 text-blue-600 sm:h-4 sm:w-4 dark:text-blue-400"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -62,17 +66,22 @@ const GoalsPage = async () => {
                   />
                 </svg>
               </div>
+              <p className="text-muted-foreground text-[10px] font-medium tracking-wider uppercase sm:text-xs">
+                Metas Ativas
+              </p>
             </div>
-            <p className="mt-2 text-xl font-bold sm:text-2xl">{activeGoals.length}</p>
-            <p className="mt-1 text-xs text-muted-foreground">
+            <p className="mt-2 text-lg font-light tracking-tight sm:text-xl md:text-2xl">
+              {activeGoals.length}
+            </p>
+            <p className="text-muted-foreground mt-1 text-[9px] sm:text-xs">
               {completedGoals.length} concluída(s)
             </p>
           </div>
 
           {/* Valor Total Alvo */}
-          <div className="rounded-lg border bg-card p-4 shadow-sm transition-all hover:shadow-md sm:p-6">
+          <div className="bg-card rounded-lg border p-4 shadow-sm transition-all hover:shadow-md sm:p-6">
             <div className="flex items-center justify-between">
-              <p className="text-xs font-medium text-muted-foreground sm:text-sm">
+              <p className="text-muted-foreground text-xs font-medium sm:text-sm">
                 Valor Total Alvo
               </p>
               <div className="flex h-8 w-8 items-center justify-center rounded-full bg-green-500/10 sm:h-10 sm:w-10">
@@ -97,20 +106,17 @@ const GoalsPage = async () => {
                 currency: "BRL",
               }).format(totalTarget)}
             </p>
-            <p className="mt-1 text-xs text-muted-foreground">
+            <p className="text-muted-foreground mt-1 text-xs">
               {goals.length} meta(s) cadastrada(s)
             </p>
           </div>
 
           {/* Valor Atual */}
-          <div className="rounded-lg border bg-card p-4 shadow-sm transition-all hover:shadow-md sm:p-6">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-medium text-muted-foreground sm:text-sm">
-                Valor Atual
-              </p>
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-purple-500/10 sm:h-10 sm:w-10">
+          <div className="bg-muted/20 rounded-lg border-0 p-3 shadow-sm sm:p-4 md:p-6">
+            <div className="flex items-center gap-2">
+              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-purple-500/10 sm:h-7 sm:w-7">
                 <svg
-                  className="h-5 w-5 text-purple-500"
+                  className="h-3.5 w-3.5 text-purple-600 sm:h-4 sm:w-4 dark:text-purple-400"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -123,27 +129,27 @@ const GoalsPage = async () => {
                   />
                 </svg>
               </div>
+              <p className="text-muted-foreground text-[10px] font-medium tracking-wider uppercase sm:text-xs">
+                Valor Atual
+              </p>
             </div>
-            <p className="mt-2 text-xl font-bold text-purple-500 sm:text-2xl">
+            <p className="mt-2 text-lg font-light tracking-tight text-purple-600 sm:text-xl md:text-2xl dark:text-purple-400">
               {new Intl.NumberFormat("pt-BR", {
                 style: "currency",
                 currency: "BRL",
               }).format(totalCurrent)}
             </p>
-            <p className="mt-1 text-xs text-muted-foreground">
+            <p className="text-muted-foreground mt-1 text-[9px] sm:text-xs">
               {progressPercentage.toFixed(1)}% do total
             </p>
           </div>
 
           {/* Progresso Geral */}
-          <div className="rounded-lg border bg-card p-4 shadow-sm transition-all hover:shadow-md sm:p-6">
-            <div className="flex items-center justify-between">
-              <p className="text-xs font-medium text-muted-foreground sm:text-sm">
-                Progresso Geral
-              </p>
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-orange-500/10 sm:h-10 sm:w-10">
+          <div className="bg-muted/20 rounded-lg border-0 p-3 shadow-sm sm:p-4 md:p-6">
+            <div className="flex items-center gap-2">
+              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-orange-500/10 sm:h-7 sm:w-7">
                 <svg
-                  className="h-5 w-5 text-orange-500"
+                  className="h-3.5 w-3.5 text-orange-600 sm:h-4 sm:w-4 dark:text-orange-400"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -157,12 +163,15 @@ const GoalsPage = async () => {
                 </svg>
               </div>
             </div>
-            <p className="mt-2 text-xl font-bold sm:text-2xl">
+            <p className="text-muted-foreground text-[10px] font-medium tracking-wider uppercase sm:text-xs">
+              Progresso Geral
+            </p>
+            <p className="mt-2 text-lg font-light tracking-tight sm:text-xl md:text-2xl">
               {progressPercentage.toFixed(1)}%
             </p>
-            <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-muted">
+            <div className="bg-muted mt-2 h-1.5 w-full overflow-hidden rounded-full">
               <div
-                className="h-full bg-primary transition-all"
+                className="bg-primary h-full transition-all"
                 style={{ width: `${Math.min(progressPercentage, 100)}%` }}
               />
             </div>
@@ -177,5 +186,3 @@ const GoalsPage = async () => {
 };
 
 export default GoalsPage;
-
-

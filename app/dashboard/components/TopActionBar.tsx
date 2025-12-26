@@ -1,6 +1,6 @@
 /**
  * TopActionBar - Barra de ações rápidas no topo do dashboard
- * 
+ *
  * Funcionalidades:
  * - Toggle de tema (dark/light)
  * - Botões de ação rápida (adicionar transação, meta, etc)
@@ -31,7 +31,7 @@ export function TopActionBar() {
 
   if (!mounted) {
     return (
-      <div className="flex h-12 items-center justify-between rounded-lg border bg-card p-4" />
+      <div className="bg-card flex h-12 items-center justify-between rounded-lg border p-4" />
     );
   }
 
@@ -39,7 +39,7 @@ export function TopActionBar() {
     <div
       role="toolbar"
       aria-label="Ações rápidas"
-      className="flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-card p-4 shadow-sm"
+      className="bg-card flex flex-wrap items-center justify-between gap-3 rounded-lg border p-4 shadow-sm"
     >
       <div className="flex items-center gap-2">
         <h1 className="text-xl font-bold">Dashboard Financeiro</h1>
@@ -72,12 +72,7 @@ export function TopActionBar() {
         </Button>
 
         {/* Configurações */}
-        <Button
-          variant="ghost"
-          size="sm"
-          asChild
-          aria-label="Configurações"
-        >
+        <Button variant="ghost" size="sm" asChild aria-label="Configurações">
           <Link href="/settings">
             <Settings className="h-4 w-4" />
           </Link>
@@ -86,9 +81,3 @@ export function TopActionBar() {
     </div>
   );
 }
-
-
-
-
-
-

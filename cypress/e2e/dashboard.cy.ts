@@ -62,9 +62,3 @@ describe("Dashboard E2E", () => {
     cy.contains("Dashboard Financeiro").should("be.visible");
   });
 });
-
-
-
-
-
-

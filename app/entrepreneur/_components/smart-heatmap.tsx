@@ -1,6 +1,11 @@
 "use client";
 
-import { Card, CardContent, CardHeader, CardTitle } from "@/app/_components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from "@/app/_components/ui/card";
 import { DayStats } from "../_lib/calculations";
 import { formatCurrency, formatHours } from "./utils";
 import { CalendarDays, Lightbulb } from "lucide-react";
@@ -26,7 +31,8 @@ export default function SmartHeatmap({
 
   const allNetProfits = dayStats.map((d) => d.netProfit);
   const maxNetProfit = Math.max(...allNetProfits, 1);
-  const avgNetProfit = allNetProfits.reduce((a, b) => a + b, 0) / (allNetProfits.length || 1);
+  const avgNetProfit =
+    allNetProfits.reduce((a, b) => a + b, 0) / (allNetProfits.length || 1);
 
   const firstDay = new Date(currentYear, currentMonth, 1);
   const lastDay = new Date(currentYear, currentMonth + 1, 0);
@@ -51,16 +57,21 @@ export default function SmartHeatmap({
       return "bg-gray-100 hover:bg-gray-200";
     }
 
-    const netProfitPerHour = stats.totalHours > 0 ? stats.netProfit / stats.totalHours : 0;
+    const netProfitPerHour =
+      stats.totalHours > 0 ? stats.netProfit / stats.totalHours : 0;
     const avgNetProfitPerHour =
       avgNetProfit > 0 && dayStats.length > 0
         ? dayStats.reduce(
-            (sum, d) => sum + (d.totalHours > 0 ? d.netProfit / d.totalHours : 0),
+            (sum, d) =>
+              sum + (d.totalHours > 0 ? d.netProfit / d.totalHours : 0),
             0,
           ) / dayStats.length
         : 0;
 
-    if (netProfitPerHour < avgNetProfitPerHour * 0.7 && avgNetProfitPerHour > 0) {
+    if (
+      netProfitPerHour < avgNetProfitPerHour * 0.7 &&
+      avgNetProfitPerHour > 0
+    ) {
       return "bg-red-200 hover:bg-red-300";
     }
 
@@ -82,16 +93,16 @@ export default function SmartHeatmap({
     <Card className="border-2 shadow-lg">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <CalendarDays className="h-5 w-5 text-primary" />
+          <CalendarDays className="text-primary h-5 w-5" />
           Calendário de Ganhos
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
           {/* Cabeçalho */}
-          <div className="grid grid-cols-7 gap-1 text-xs font-medium text-muted-foreground">
+          <div className="text-muted-foreground grid grid-cols-7 gap-1 text-xs font-medium">
             {weekdayNames.map((day) => (
-              <div key={day} className="text-center p-1">
+              <div key={day} className="p-1 text-center">
                 {day}
               </div>
             ))}
@@ -107,12 +118,14 @@ export default function SmartHeatmap({
               const stats = item.stats;
               const hasData = stats && stats.periodCount > 0;
               const netProfitPerHour =
-                stats && stats.totalHours > 0 ? stats.netProfit / stats.totalHours : 0;
+                stats && stats.totalHours > 0
+                  ? stats.netProfit / stats.totalHours
+                  : 0;
 
               return (
                 <div
                   key={item.day}
-                  className={`aspect-square rounded-md p-1 text-xs transition-all cursor-pointer ${getColorClass(
+                  className={`aspect-square cursor-pointer rounded-md p-1 text-xs transition-all ${getColorClass(
                     stats,
                   )} ${!hasData ? "opacity-50" : ""}`}
                   title={
@@ -129,8 +142,12 @@ export default function SmartHeatmap({
                     <span className="font-medium">{item.day}</span>
                     {hasData && (
                       <div className="text-[10px] leading-tight">
-                        <div className="font-semibold">{formatCurrency(stats.netProfit)}</div>
-                        <div className="opacity-80">{formatHours(stats.totalHours)}</div>
+                        <div className="font-semibold">
+                          {formatCurrency(stats.netProfit)}
+                        </div>
+                        <div className="opacity-80">
+                          {formatHours(stats.totalHours)}
+                        </div>
                       </div>
                     )}
                   </div>
@@ -140,7 +157,7 @@ export default function SmartHeatmap({
           </div>
 
           {/* Legenda */}
-          <div className="flex flex-wrap gap-4 pt-2 text-xs text-muted-foreground">
+          <div className="text-muted-foreground flex flex-wrap gap-4 pt-2 text-xs">
             <div className="flex items-center gap-2">
               <div className="h-3 w-3 rounded bg-green-600" />
               <span>Muito lucrativo</span>
@@ -166,14 +183,16 @@ export default function SmartHeatmap({
 
         {/* Insights da IA */}
         {aiInsights && aiInsights.length > 0 && (
-          <div className="rounded-lg border-l-4 border-primary bg-primary/5 p-4">
+          <div className="border-primary bg-primary/5 rounded-lg border-l-4 p-4">
             <div className="mb-2 flex items-center gap-2">
-              <Lightbulb className="h-4 w-4 text-primary" />
-              <span className="text-sm font-semibold">Insights Automáticos</span>
+              <Lightbulb className="text-primary h-4 w-4" />
+              <span className="text-sm font-semibold">
+                Insights Automáticos
+              </span>
             </div>
             <ul className="space-y-1">
               {aiInsights.map((insight, index) => (
-                <li key={index} className="text-sm text-muted-foreground">
+                <li key={index} className="text-muted-foreground text-sm">
                   • {insight}
                 </li>
               ))}
@@ -184,7 +203,3 @@ export default function SmartHeatmap({
     </Card>
   );
 }
-
-
-
-

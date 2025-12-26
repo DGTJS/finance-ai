@@ -98,23 +98,15 @@ export function PWAInstallPrompt() {
             <Download className="mr-2 h-4 w-4" />
             Instalar Agora
           </Button>
-          <Button
-            onClick={handleDismiss}
-            variant="outline"
-            className="w-full"
-          >
+          <Button onClick={handleDismiss} variant="outline" className="w-full">
             <X className="mr-2 h-4 w-4" />
             Agora Não
           </Button>
         </div>
-        <p className="text-xs text-center text-muted-foreground pt-2">
+        <p className="text-muted-foreground pt-2 text-center text-xs">
           Você pode instalar depois através do menu do navegador
         </p>
       </DialogContent>
     </Dialog>
   );
 }
-
-
-
-

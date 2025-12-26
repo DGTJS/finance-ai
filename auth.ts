@@ -6,13 +6,16 @@ import { db } from "@/app/_lib/prisma";
 
 // Garantir que a URL base seja localhost:3000 em desenvolvimento
 const getBaseUrl = () => {
-  if (process.env.NEXTAUTH_URL) {
-    return process.env.NEXTAUTH_URL;
-  }
+  // Em produção, usar variáveis de ambiente
   if (process.env.VERCEL_URL) {
     return `https://${process.env.VERCEL_URL}`;
   }
-  // Em desenvolvimento, usar localhost:3000
+  // Em produção, usar NEXTAUTH_URL se configurada
+  if (process.env.NODE_ENV === "production" && process.env.NEXTAUTH_URL) {
+    return process.env.NEXTAUTH_URL;
+  }
+  // Em desenvolvimento, usar localhost:3000 por padrão
+  // O trustHost: true garantirá que use a origem correta da requisição
   return "http://localhost:3000";
 };
 
@@ -64,14 +67,16 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
                 image: testUser.image,
               };
             }
-        } catch (error: any) {
-          console.error("❌ Erro ao buscar usuário de teste:", error);
-          if (error.code === "P1001" || error.code === "P1000") {
-            console.error("❌ Erro de conexão com banco de dados!");
-            console.error("💡 Verifique se o MySQL está rodando e se a DATABASE_URL está correta.");
+          } catch (error: any) {
+            console.error("❌ Erro ao buscar usuário de teste:", error);
+            if (error.code === "P1001" || error.code === "P1000") {
+              console.error("❌ Erro de conexão com banco de dados!");
+              console.error(
+                "💡 Verifique se o MySQL está rodando e se a DATABASE_URL está correta.",
+              );
+            }
+            return null;
           }
-          return null;
-        }
 
           // Fallback caso o banco não esteja acessível
           return null;
@@ -108,7 +113,9 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
           console.error("❌ Erro ao buscar usuário:", error);
           if (error.code === "P1001" || error.code === "P1000") {
             console.error("❌ Erro de conexão com banco de dados!");
-            console.error("💡 Verifique se o MySQL está rodando e se a DATABASE_URL está correta.");
+            console.error(
+              "💡 Verifique se o MySQL está rodando e se a DATABASE_URL está correta.",
+            );
           } else if (error.code === "P1003") {
             console.error("❌ Erro: Tabelas não encontradas!");
             console.error("💡 Execute: npx prisma migrate dev");
@@ -158,7 +165,9 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
         console.error("❌ Erro no callback signIn:", error);
         if (error.code === "P1001" || error.code === "P1000") {
           console.error("❌ Erro de conexão com banco de dados!");
-          console.error("💡 Verifique se o MySQL está rodando e se a DATABASE_URL está correta.");
+          console.error(
+            "💡 Verifique se o MySQL está rodando e se a DATABASE_URL está correta.",
+          );
         } else if (error.code === "P1003") {
           console.error("❌ Erro: Tabelas não encontradas!");
           console.error("💡 Execute: npx prisma migrate dev");
@@ -245,7 +254,10 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
                 id: dbUser.id,
                 email: dbUser.email,
                 name: dbUser.name,
-                image: dbUser.image && dbUser.image.length <= 50 * 1024 ? dbUser.image : null,
+                image:
+                  dbUser.image && dbUser.image.length <= 50 * 1024
+                    ? dbUser.image
+                    : null,
               };
             }
           } else {

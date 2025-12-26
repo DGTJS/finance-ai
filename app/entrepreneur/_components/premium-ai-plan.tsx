@@ -4,7 +4,15 @@ import { Card, CardContent } from "@/app/_components/ui/card";
 import { Button } from "@/app/_components/ui/button";
 import { Progress } from "@/app/_components/ui/progress";
 import { Badge } from "@/app/_components/ui/badge";
-import { Brain, Target, TrendingUp, CheckCircle2, AlertCircle, Info, Sparkles } from "lucide-react";
+import {
+  Brain,
+  Target,
+  TrendingUp,
+  CheckCircle2,
+  AlertCircle,
+  Info,
+  Sparkles,
+} from "lucide-react";
 import { formatCurrency, formatHours } from "./utils";
 import WorkGoalForm from "./work-goal-form";
 import { useState } from "react";
@@ -35,14 +43,13 @@ export default function PremiumAIPlan({
     return (
       <Card className="border-2 border-dashed">
         <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-          <Brain className="mb-4 h-12 w-12 text-muted-foreground" />
+          <Brain className="text-muted-foreground mb-4 h-12 w-12" />
           <h3 className="mb-2 text-lg font-semibold">Configure sua meta</h3>
-          <p className="mb-4 text-sm text-muted-foreground">
-            Defina uma meta mensal para o AI Work Planner criar seu plano personalizado.
+          <p className="text-muted-foreground mb-4 text-sm">
+            Defina uma meta mensal para o AI Work Planner criar seu plano
+            personalizado.
           </p>
-          <Button onClick={() => setIsFormOpen(true)}>
-            Definir Meta
-          </Button>
+          <Button onClick={() => setIsFormOpen(true)}>Definir Meta</Button>
           <WorkGoalForm
             isOpen={isFormOpen}
             onClose={() => setIsFormOpen(false)}
@@ -58,15 +65,32 @@ export default function PremiumAIPlan({
   }
 
   const getAlertConfig = () => {
-    if (!aiPlan) return { icon: Info, color: "text-blue-600", bg: "bg-blue-50 border-blue-200" };
-    
+    if (!aiPlan)
+      return {
+        icon: Info,
+        color: "text-blue-600",
+        bg: "bg-blue-50 border-blue-200",
+      };
+
     switch (aiPlan.alert) {
       case "positive":
-        return { icon: CheckCircle2, color: "text-green-600", bg: "bg-green-50 border-green-200" };
+        return {
+          icon: CheckCircle2,
+          color: "text-green-600",
+          bg: "bg-green-50 border-green-200",
+        };
       case "critical":
-        return { icon: AlertCircle, color: "text-red-600", bg: "bg-red-50 border-red-200" };
+        return {
+          icon: AlertCircle,
+          color: "text-red-600",
+          bg: "bg-red-50 border-red-200",
+        };
       default:
-        return { icon: Info, color: "text-blue-600", bg: "bg-blue-50 border-blue-200" };
+        return {
+          icon: Info,
+          color: "text-blue-600",
+          bg: "bg-blue-50 border-blue-200",
+        };
     }
   };
 
@@ -75,20 +99,24 @@ export default function PremiumAIPlan({
 
   return (
     <>
-      <Card className={`relative overflow-hidden border-2 ${alertConfig.bg} shadow-lg`}>
+      <Card
+        className={`relative overflow-hidden border-2 ${alertConfig.bg} shadow-lg`}
+      >
         {/* Decoração premium */}
-        <div className="absolute right-0 top-0 -mr-20 -mt-20 h-40 w-40 rounded-full bg-primary/10 blur-3xl" />
-        
+        <div className="bg-primary/10 absolute top-0 right-0 -mt-20 -mr-20 h-40 w-40 rounded-full blur-3xl" />
+
         <CardContent className="relative z-10 p-6 sm:p-8">
           {/* Header */}
           <div className="mb-6 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="rounded-lg bg-primary/10 p-2">
-                <Brain className="h-5 w-5 text-primary" />
+              <div className="bg-primary/10 rounded-lg p-2">
+                <Brain className="text-primary h-5 w-5" />
               </div>
               <div>
                 <h2 className="text-xl font-bold">Plano da IA para Você</h2>
-                <p className="text-sm text-muted-foreground">Recomendações personalizadas</p>
+                <p className="text-muted-foreground text-sm">
+                  Recomendações personalizadas
+                </p>
               </div>
             </div>
             <Button
@@ -102,7 +130,7 @@ export default function PremiumAIPlan({
           </div>
 
           {isGenerating ? (
-            <div className="py-8 text-center text-muted-foreground">
+            <div className="text-muted-foreground py-8 text-center">
               <Sparkles className="mx-auto mb-2 h-8 w-8 animate-pulse" />
               <p>Gerando seu plano personalizado...</p>
             </div>
@@ -110,20 +138,32 @@ export default function PremiumAIPlan({
             <div className="space-y-6">
               {/* Resumo da Meta */}
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                <div className="rounded-lg border bg-background/50 p-4">
-                  <div className="mb-1 text-xs text-muted-foreground">Meta Mensal</div>
-                  <div className="text-2xl font-bold">{formatCurrency(goal.monthlyGoal)}</div>
+                <div className="bg-background/50 rounded-lg border p-4">
+                  <div className="text-muted-foreground mb-1 text-xs">
+                    Meta Mensal
+                  </div>
+                  <div className="text-2xl font-bold">
+                    {formatCurrency(goal.monthlyGoal)}
+                  </div>
                 </div>
-                <div className="rounded-lg border bg-background/50 p-4">
-                  <div className="mb-1 text-xs text-muted-foreground">Falta</div>
-                  <div className="text-2xl font-bold text-primary">
+                <div className="bg-background/50 rounded-lg border p-4">
+                  <div className="text-muted-foreground mb-1 text-xs">
+                    Falta
+                  </div>
+                  <div className="text-primary text-2xl font-bold">
                     {formatCurrency(goalAnalysis.remainingAmount)}
                   </div>
                 </div>
-                <div className="rounded-lg border bg-background/50 p-4">
-                  <div className="mb-1 text-xs text-muted-foreground">Progresso</div>
+                <div className="bg-background/50 rounded-lg border p-4">
+                  <div className="text-muted-foreground mb-1 text-xs">
+                    Progresso
+                  </div>
                   <div className="text-2xl font-bold">
-                    {((goalAnalysis.currentAmount / goalAnalysis.monthlyGoal) * 100).toFixed(0)}%
+                    {(
+                      (goalAnalysis.currentAmount / goalAnalysis.monthlyGoal) *
+                      100
+                    ).toFixed(0)}
+                    %
                   </div>
                 </div>
               </div>
@@ -131,7 +171,10 @@ export default function PremiumAIPlan({
               {/* Progresso Visual */}
               <div className="space-y-2">
                 <Progress
-                  value={(goalAnalysis.currentAmount / goalAnalysis.monthlyGoal) * 100}
+                  value={
+                    (goalAnalysis.currentAmount / goalAnalysis.monthlyGoal) *
+                    100
+                  }
                   className="h-3"
                 />
               </div>
@@ -139,17 +182,21 @@ export default function PremiumAIPlan({
               {/* Insight Principal da IA */}
               <div className={`rounded-xl border-2 ${alertConfig.bg} p-4`}>
                 <div className="flex items-start gap-3">
-                  <AlertIcon className={`h-5 w-5 ${alertConfig.color} mt-0.5 flex-shrink-0`} />
+                  <AlertIcon
+                    className={`h-5 w-5 ${alertConfig.color} mt-0.5 flex-shrink-0`}
+                  />
                   <div className="flex-1">
-                    <p className="font-medium leading-relaxed">{aiPlan.summary}</p>
+                    <p className="leading-relaxed font-medium">
+                      {aiPlan.summary}
+                    </p>
                   </div>
                 </div>
               </div>
 
               {/* Plano Recomendado */}
-              <div className="rounded-lg border bg-background/50 p-4">
+              <div className="bg-background/50 rounded-lg border p-4">
                 <div className="mb-3 flex items-center gap-2">
-                  <Target className="h-4 w-4 text-primary" />
+                  <Target className="text-primary h-4 w-4" />
                   <span className="font-semibold">Plano Recomendado</span>
                 </div>
                 <div className="grid grid-cols-2 gap-4 text-sm">
@@ -161,15 +208,23 @@ export default function PremiumAIPlan({
                   </div>
                   <div>
                     <div className="text-muted-foreground">Dias restantes</div>
-                    <div className="text-lg font-bold">{goalAnalysis.workDaysRemaining} dias</div>
+                    <div className="text-lg font-bold">
+                      {goalAnalysis.workDaysRemaining} dias
+                    </div>
                   </div>
                 </div>
                 {aiPlan.plan.focusDays.length > 0 && (
                   <div className="mt-3">
-                    <div className="mb-2 text-xs text-muted-foreground">Foque nestes dias:</div>
+                    <div className="text-muted-foreground mb-2 text-xs">
+                      Foque nestes dias:
+                    </div>
                     <div className="flex flex-wrap gap-2">
                       {aiPlan.plan.focusDays.map((day) => (
-                        <Badge key={day} variant="secondary" className="font-medium">
+                        <Badge
+                          key={day}
+                          variant="secondary"
+                          className="font-medium"
+                        >
                           {day}s
                         </Badge>
                       ))}
@@ -179,10 +234,12 @@ export default function PremiumAIPlan({
               </div>
 
               {/* Probabilidade */}
-              <div className="flex items-center justify-between rounded-lg border bg-background/50 p-4">
+              <div className="bg-background/50 flex items-center justify-between rounded-lg border p-4">
                 <div className="flex items-center gap-2">
-                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">Probabilidade de bater a meta</span>
+                  <TrendingUp className="text-muted-foreground h-4 w-4" />
+                  <span className="text-sm font-medium">
+                    Probabilidade de bater a meta
+                  </span>
                 </div>
                 <Badge
                   variant={
@@ -204,8 +261,11 @@ export default function PremiumAIPlan({
                   <div className="text-sm font-semibold">Insights</div>
                   <ul className="space-y-2">
                     {aiPlan.insights.map((insight, index) => (
-                      <li key={index} className="flex items-start gap-2 text-sm">
-                        <span className="mt-1.5 h-1.5 w-1.5 rounded-full bg-primary" />
+                      <li
+                        key={index}
+                        className="flex items-start gap-2 text-sm"
+                      >
+                        <span className="bg-primary mt-1.5 h-1.5 w-1.5 rounded-full" />
                         <span className="text-muted-foreground">{insight}</span>
                       </li>
                     ))}
@@ -214,7 +274,7 @@ export default function PremiumAIPlan({
               )}
             </div>
           ) : (
-            <div className="py-8 text-center text-muted-foreground">
+            <div className="text-muted-foreground py-8 text-center">
               <p>Configure sua meta para ver o plano da IA.</p>
             </div>
           )}
@@ -233,7 +293,3 @@ export default function PremiumAIPlan({
     </>
   );
 }
-
-
-
-
