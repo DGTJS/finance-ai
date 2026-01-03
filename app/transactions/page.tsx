@@ -53,38 +53,8 @@ const Transactions = async () => {
     },
   });
 
-  // Buscar perfis financeiros de todos os usuários da família
-  const financialProfiles = await db.financialProfile.findMany({
-    where: { userId: { in: familyUserIds } },
-  });
-
-  // Calcular salários totais de todos os usuários
-  const totalSalary = financialProfiles.reduce((sum, profile) => {
-    return (
-      sum +
-      Number(profile.rendaFixa || 0) +
-      Number(profile.rendaVariavelMedia || 0)
-    );
-  }, 0);
-
-  // Calcular benefícios totais de todos os usuários
-  const totalBenefits = financialProfiles.reduce((sum, profile) => {
-    const beneficios =
-      (profile.beneficios as Array<{
-        type?: string;
-        value?: number;
-        notes?: string;
-        category?: string;
-      }>) || [];
-    const userBenefitsTotal = beneficios.reduce(
-      (benSum, b) => benSum + (Number(b.value) || 0),
-      0,
-    );
-    return sum + userBenefitsTotal;
-  }, 0);
-
-  // Calcular estatísticas das transações
-  const totalIncomeFromTransactions = transactions
+  // Calcular estatísticas
+  const totalIncome = transactions
     .filter((t) => t.type === "DEPOSIT")
     .reduce((sum, t) => sum + Number(t.amount), 0);
 
@@ -96,10 +66,6 @@ const Transactions = async () => {
     .filter((t) => t.type === "INVESTMENT")
     .reduce((sum, t) => sum + Number(t.amount), 0);
 
-  // Receitas totais = transações de depósito + salários + benefícios
-  const totalIncome = totalIncomeFromTransactions + totalSalary + totalBenefits;
-
-  // Saldo = receitas - despesas - investimentos
   const balance = totalIncome - totalExpenses - totalInvestments;
 
   // Buscar configurações do usuário
@@ -122,7 +88,7 @@ const Transactions = async () => {
         </div>
 
         {/* Stats Cards Minimalistas */}
-        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 lg:gap-4 xl:grid-cols-5">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:gap-4">
           {/* Total Receitas */}
           <div className="bg-muted/20 rounded-lg border-0 p-3 shadow-sm sm:p-4 md:p-6">
             <div className="flex items-center gap-2">
@@ -154,9 +120,6 @@ const Transactions = async () => {
             <p className="text-muted-foreground mt-1 text-[9px] sm:text-xs">
               {transactions.filter((t) => t.type === "DEPOSIT").length}{" "}
               transações
-              {totalSalary + totalBenefits > 0 && (
-                <span className="mt-0.5 block">+ Salários e Benefícios</span>
-              )}
             </p>
           </div>
 
@@ -272,39 +235,6 @@ const Transactions = async () => {
             </p>
             <p className="text-muted-foreground mt-1 text-[9px] sm:text-xs">
               {transactions.length} transações totais
-            </p>
-          </div>
-
-          {/* Saldo de Benefícios */}
-          <div className="bg-muted/20 rounded-lg border-0 p-3 shadow-sm sm:p-4 md:p-6">
-            <div className="flex items-center gap-2">
-              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-purple-500/10 sm:h-7 sm:w-7">
-                <svg
-                  className="h-3.5 w-3.5 text-purple-600 sm:h-4 sm:w-4 dark:text-purple-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 109.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"
-                  />
-                </svg>
-              </div>
-              <p className="text-muted-foreground text-[10px] font-medium tracking-wider uppercase sm:text-xs">
-                Benefícios
-              </p>
-            </div>
-            <p className="mt-2 text-lg font-light tracking-tight text-purple-600 sm:text-xl md:text-2xl dark:text-purple-400">
-              {new Intl.NumberFormat("pt-BR", {
-                style: "currency",
-                currency: "BRL",
-              }).format(totalBenefits)}
-            </p>
-            <p className="text-muted-foreground mt-1 text-[9px] sm:text-xs">
-              Total disponível
             </p>
           </div>
         </div>

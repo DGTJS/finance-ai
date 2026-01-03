@@ -5,6 +5,7 @@
 
 "use client";
 
+import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/app/_components/ui/card";
 import { Button } from "@/app/_components/ui/button";
 import { formatCurrency } from "@/src/lib/utils";
@@ -14,7 +15,6 @@ import type {
   DailyBalance,
   Transaction,
   UpcomingPayment,
-  ScheduledPayment,
   FamilySalaryBalance,
   FamilyBenefitsBalance,
   CategoryData,
@@ -44,7 +44,6 @@ interface CompleteDashboardCardProps {
   dailyBalance: DailyBalance[];
   recentTransactions: Transaction[];
   upcomingPayments: UpcomingPayment[];
-  scheduledPayments?: ScheduledPayment[];
   familySalaryBalance?: FamilySalaryBalance;
   familyBenefitsBalance?: FamilyBenefitsBalance;
   categories: CategoryData[];
@@ -63,7 +62,6 @@ export function CompleteDashboardCard({
   dailyBalance,
   recentTransactions,
   upcomingPayments,
-  scheduledPayments = [],
   familySalaryBalance,
   familyBenefitsBalance,
   categories,
@@ -72,6 +70,7 @@ export function CompleteDashboardCard({
   onRefresh,
   isRefreshing = false,
 }: CompleteDashboardCardProps) {
+  const router = useRouter();
   const isPositive = currentBalance >= 0;
   const isProjectedPositive = projectedBalance >= 0;
   const hasImprovement = projectedBalance > currentBalance;
@@ -108,6 +107,15 @@ export function CompleteDashboardCard({
             >
               <span>💼</span>
               Freelancer
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => router.push("/dashboard/company")}
+              className="h-7 gap-1.5 px-3 text-xs font-medium"
+            >
+              <span>🏢</span>
+              Empresa
             </Button>
           </div>
           <Button
@@ -299,13 +307,7 @@ export function CompleteDashboardCard({
         {/* Seção 2: Gráfico e Transações */}
         <div className="mb-8 grid grid-cols-[3fr_1fr] gap-6 border-b pb-8">
           <div className="flex h-full min-h-0 [&>div]:border-0 [&>div]:shadow-none">
-            <DailyBalanceChart
-              dailyBalance={dailyBalance}
-              upcomingPayments={upcomingPayments}
-              scheduledPayments={scheduledPayments}
-              transactions={recentTransactions}
-              familySalaryBalance={familySalaryBalance}
-            />
+            <DailyBalanceChart dailyBalance={dailyBalance} />
           </div>
           <div className="flex h-full min-h-0 w-full [&>div]:border-0 [&>div]:shadow-none">
             <RecentExpensesCard transactions={recentTransactions} />

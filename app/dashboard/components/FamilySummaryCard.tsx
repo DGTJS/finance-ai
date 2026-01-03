@@ -64,9 +64,92 @@ export function FamilySummaryCard({
   return (
     <Card className="bg-background overflow-hidden border-0 shadow-sm">
       <CardContent className="p-6">
-        <div className="flex flex-col gap-6 sm:grid sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
-          {/* Vencimentos - Primeiro no mobile, último no desktop */}
-          <div className="order-1 space-y-4 sm:order-3 lg:order-3">
+        <div className="grid grid-cols-3 gap-6">
+          {/* Salário */}
+          <div className="space-y-4">
+            <div>
+              <div className="mb-2 flex items-center gap-2">
+                <Wallet className="h-4 w-4 text-green-600 dark:text-green-400" />
+                <p className="text-muted-foreground text-[10px] font-medium tracking-wider uppercase">
+                  Salário
+                </p>
+              </div>
+              <p className="text-2xl font-light tracking-tight text-green-600 dark:text-green-400">
+                {salaryBalance
+                  ? formatCurrency(salaryBalance.total)
+                  : "R$ 0,00"}
+              </p>
+            </div>
+
+            {salaryBalance && salaryBalance.byUser.length > 0 && (
+              <div className="space-y-2">
+                {salaryBalance.byUser.map((user) => (
+                  <div
+                    key={user.userId}
+                    className="flex items-center justify-between"
+                  >
+                    <p className="text-muted-foreground truncate text-xs">
+                      {user.name}
+                    </p>
+                    <p className="text-xs font-medium text-green-600 dark:text-green-400">
+                      {formatCurrency(user.amount)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Benefícios */}
+          <div className="space-y-4">
+            <div>
+              <div className="mb-2 flex items-center gap-2">
+                <Gift className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                <p className="text-muted-foreground text-[10px] font-medium tracking-wider uppercase">
+                  Benefícios
+                </p>
+              </div>
+              <p className="text-2xl font-light tracking-tight text-purple-600 dark:text-purple-400">
+                {benefitsBalance
+                  ? formatCurrency(benefitsBalance.available)
+                  : "R$ 0,00"}
+              </p>
+            </div>
+
+            {benefitsBalance && benefitsBalance.byUser.length > 0 && (
+              <div className="space-y-2">
+                {benefitsBalance.byUser.map((user) => (
+                  <div
+                    key={user.userId}
+                    className="flex items-center justify-between"
+                  >
+                    <p className="text-muted-foreground truncate text-xs">
+                      {user.name}
+                    </p>
+                    <p className="text-xs font-medium text-purple-600 dark:text-purple-400">
+                      {formatCurrency(user.total)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {benefitsBalance && (
+              <div className="flex items-center gap-3 text-xs">
+                <span className="text-green-600 dark:text-green-400">
+                  Disp: {formatCurrency(benefitsBalance.available)}
+                </span>
+                {benefitsBalance.used > 0 && (
+                  <span className="text-red-600 dark:text-red-400">
+                    Usado: {formatCurrency(benefitsBalance.used)}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Vencimentos */}
+          <div className="space-y-4">
             <div>
               <div className="mb-2 flex items-center gap-2">
                 <Calendar className="h-4 w-4 text-blue-600 dark:text-blue-400" />
@@ -149,89 +232,6 @@ export function FamilySummaryCard({
                       {upcomingPayments.length - 3 !== 1 ? "s" : ""}
                     </p>
                   </div>
-                )}
-              </div>
-            )}
-          </div>
-
-          {/* Salário - Segundo no mobile, primeiro no desktop */}
-          <div className="order-2 space-y-4 sm:order-1 lg:order-1">
-            <div>
-              <div className="mb-2 flex items-center gap-2">
-                <Wallet className="h-4 w-4 text-green-600 dark:text-green-400" />
-                <p className="text-muted-foreground text-[10px] font-medium tracking-wider uppercase">
-                  Salário
-                </p>
-              </div>
-              <p className="text-2xl font-light tracking-tight text-green-600 dark:text-green-400">
-                {salaryBalance
-                  ? formatCurrency(salaryBalance.total)
-                  : "R$ 0,00"}
-              </p>
-            </div>
-
-            {salaryBalance && salaryBalance.byUser.length > 0 && (
-              <div className="space-y-2">
-                {salaryBalance.byUser.map((user) => (
-                  <div
-                    key={user.userId}
-                    className="flex items-center justify-between"
-                  >
-                    <p className="text-muted-foreground truncate text-xs">
-                      {user.name}
-                    </p>
-                    <p className="text-xs font-medium text-green-600 dark:text-green-400">
-                      {formatCurrency(user.amount)}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Benefícios - Terceiro no mobile, segundo no desktop */}
-          <div className="order-3 space-y-4 sm:order-2 lg:order-2">
-            <div>
-              <div className="mb-2 flex items-center gap-2">
-                <Gift className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                <p className="text-muted-foreground text-[10px] font-medium tracking-wider uppercase">
-                  Benefícios
-                </p>
-              </div>
-              <p className="text-2xl font-light tracking-tight text-purple-600 dark:text-purple-400">
-                {benefitsBalance
-                  ? formatCurrency(benefitsBalance.available)
-                  : "R$ 0,00"}
-              </p>
-            </div>
-
-            {benefitsBalance && benefitsBalance.byUser.length > 0 && (
-              <div className="space-y-2">
-                {benefitsBalance.byUser.map((user) => (
-                  <div
-                    key={user.userId}
-                    className="flex items-center justify-between"
-                  >
-                    <p className="text-muted-foreground truncate text-xs">
-                      {user.name}
-                    </p>
-                    <p className="text-xs font-medium text-purple-600 dark:text-purple-400">
-                      {formatCurrency(user.total)}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {benefitsBalance && (
-              <div className="flex items-center gap-3 text-xs">
-                <span className="text-green-600 dark:text-green-400">
-                  Disp: {formatCurrency(benefitsBalance.available)}
-                </span>
-                {benefitsBalance.used > 0 && (
-                  <span className="text-red-600 dark:text-red-400">
-                    Usado: {formatCurrency(benefitsBalance.used)}
-                  </span>
                 )}
               </div>
             )}

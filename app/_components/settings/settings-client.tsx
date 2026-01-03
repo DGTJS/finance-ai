@@ -33,7 +33,6 @@ import {
   Sparkles,
   Eye,
   EyeOff,
-  Loader2,
 } from "lucide-react";
 import { FaSync } from "react-icons/fa";
 import { toast } from "sonner";
@@ -61,7 +60,6 @@ interface SettingsClientProps {
     userTitle?: string | null;
     hfApiKey?: string | null;
     closingDay?: number | null;
-    savingsGoal?: number | null;
     emailNotifications?: boolean | null;
     subscriptionAlerts?: boolean | null;
     transactionAlerts?: boolean | null;
@@ -103,10 +101,6 @@ export default function SettingsClient({
   const [closingDay, setClosingDay] = useState(
     initialSettings?.closingDay || 5,
   );
-  const [savingsGoal, setSavingsGoal] = useState(
-    initialSettings?.savingsGoal || 0,
-  );
-  const [isSavingFinancial, setIsSavingFinancial] = useState(false);
 
   // Configurações de notificações
   const [emailNotifications, setEmailNotifications] = useState(
@@ -239,26 +233,9 @@ export default function SettingsClient({
     }
   };
 
-  const handleSaveFinancial = async () => {
-    setIsSavingFinancial(true);
-    try {
-      const result = await saveUserSettings({
-        closingDay,
-        savingsGoal,
-      });
-
-      if (result.success) {
-        toast.success("Configurações financeiras salvas!");
-        router.refresh();
-      } else {
-        toast.error(result.error || "Erro ao salvar configurações");
-      }
-    } catch (error) {
-      console.error("Erro ao salvar configurações financeiras:", error);
-      toast.error("Erro ao salvar configurações financeiras");
-    } finally {
-      setIsSavingFinancial(false);
-    }
+  const handleSaveFinancial = () => {
+    localStorage.setItem("closingDay", closingDay.toString());
+    toast.success("Configurações financeiras salvas!");
   };
 
   const handleSaveNotifications = () => {
@@ -815,34 +792,16 @@ export default function SettingsClient({
                   id="savingsGoal"
                   type="number"
                   placeholder="0,00"
-                  value={savingsGoal}
-                  onChange={(e) =>
-                    setSavingsGoal(parseFloat(e.target.value) || 0)
-                  }
-                  step="0.01"
-                  min="0"
+                  defaultValue="0"
                 />
                 <p className="text-muted-foreground text-xs">
                   Quanto você deseja economizar por mês
                 </p>
               </div>
 
-              <Button
-                onClick={handleSaveFinancial}
-                className="w-full gap-2"
-                disabled={isSavingFinancial}
-              >
-                {isSavingFinancial ? (
-                  <>
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    Salvando...
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4" />
-                    Salvar Configurações
-                  </>
-                )}
+              <Button onClick={handleSaveFinancial} className="w-full gap-2">
+                <Save className="h-4 w-4" />
+                Salvar Configurações
               </Button>
             </CardContent>
           </Card>

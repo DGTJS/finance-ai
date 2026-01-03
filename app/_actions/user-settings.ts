@@ -8,7 +8,6 @@ export interface UserSettingsData {
   userTitle?: string;
   hfApiKey?: string;
   closingDay?: number;
-  savingsGoal?: number;
   emailNotifications?: boolean;
   subscriptionAlerts?: boolean;
   transactionAlerts?: boolean;

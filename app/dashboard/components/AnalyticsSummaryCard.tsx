@@ -44,9 +44,103 @@ export function AnalyticsSummaryCard({
   return (
     <Card className="bg-background overflow-hidden border-0 shadow-sm">
       <CardContent className="p-6">
-        <div className="flex flex-col gap-6 sm:grid sm:grid-cols-2 sm:gap-6 lg:grid-cols-3">
-          {/* Usuários - Primeiro no mobile ocupando toda a linha, último no desktop */}
-          <div className="order-1 col-span-2 space-y-4 sm:col-span-2 lg:order-3 lg:col-span-1">
+        <div className="grid grid-cols-3 gap-6">
+          {/* Benefícios */}
+          <div className="space-y-4">
+            <div>
+              <div className="mb-2 flex items-center gap-2">
+                <Gift className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+                <p className="text-muted-foreground text-[10px] font-medium tracking-wider uppercase">
+                  Benefícios
+                </p>
+              </div>
+              {benefitsBalance ? (
+                <>
+                  <p className="text-2xl font-light tracking-tight text-purple-600 dark:text-purple-400">
+                    {formatCurrency(benefitsBalance.available)}
+                  </p>
+                  <div className="mt-2 flex items-center gap-3 text-xs">
+                    <span className="text-green-600 dark:text-green-400">
+                      Disp: {formatCurrency(benefitsBalance.available)}
+                    </span>
+                    {benefitsBalance.used > 0 && (
+                      <span className="text-red-600 dark:text-red-400">
+                        Usado: {formatCurrency(benefitsBalance.used)}
+                      </span>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <p className="text-muted-foreground text-sm">Nenhum</p>
+              )}
+            </div>
+
+            {benefitsBalance && benefitsBalance.byUser.length > 0 && (
+              <div className="space-y-2">
+                {benefitsBalance.byUser.slice(0, 2).map((user) => (
+                  <div
+                    key={user.userId}
+                    className="flex items-center justify-between"
+                  >
+                    <p className="text-muted-foreground truncate text-xs">
+                      {user.name}
+                    </p>
+                    <p className="text-xs font-medium text-purple-600 dark:text-purple-400">
+                      {formatCurrency(user.total)}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Despesas por Categoria */}
+          <div className="space-y-4">
+            <div>
+              <div className="mb-2 flex items-center gap-2">
+                <PieChart className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+                <p className="text-muted-foreground text-[10px] font-medium tracking-wider uppercase">
+                  Despesas
+                </p>
+              </div>
+              <p className="text-2xl font-light tracking-tight text-blue-600 dark:text-blue-400">
+                {formatCurrency(totalExpenses)}
+              </p>
+            </div>
+
+            {topCategory ? (
+              <div className="space-y-2">
+                <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-2.5 dark:border-blue-900/50 dark:bg-blue-950/20">
+                  <div className="mb-1.5 flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-base">{topCategory.emoji}</span>
+                      <p className="text-xs font-medium">{topCategory.key}</p>
+                    </div>
+                    <p className="text-xs font-semibold text-blue-600 dark:text-blue-400">
+                      {totalExpenses > 0
+                        ? ((topCategory.value / totalExpenses) * 100).toFixed(0)
+                        : 0}
+                      %
+                    </p>
+                  </div>
+                  <p className="text-sm font-semibold text-blue-600 dark:text-blue-400">
+                    {formatCurrency(topCategory.value)}
+                  </p>
+                </div>
+                {categories.length > 1 && (
+                  <p className="text-muted-foreground text-[10px]">
+                    +{categories.length - 1} categoria
+                    {categories.length - 1 !== 1 ? "s" : ""}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <p className="text-muted-foreground text-xs">Nenhuma despesa</p>
+            )}
+          </div>
+
+          {/* Estatísticas por Usuário */}
+          <div className="space-y-4">
             <div>
               <div className="mb-3 flex items-center gap-2">
                 <Users className="h-4 w-4 text-green-600 dark:text-green-400" />
@@ -160,100 +254,6 @@ export function AnalyticsSummaryCard({
                   </p>
                 )}
               </div>
-            )}
-          </div>
-
-          {/* Benefícios */}
-          <div className="order-2 space-y-4 lg:order-1">
-            <div>
-              <div className="mb-2 flex items-center gap-2">
-                <Gift className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                <p className="text-muted-foreground text-[10px] font-medium tracking-wider uppercase">
-                  Benefícios
-                </p>
-              </div>
-              {benefitsBalance ? (
-                <>
-                  <p className="text-2xl font-light tracking-tight text-purple-600 dark:text-purple-400">
-                    {formatCurrency(benefitsBalance.available)}
-                  </p>
-                  <div className="mt-2 flex items-center gap-3 text-xs">
-                    <span className="text-green-600 dark:text-green-400">
-                      Disp: {formatCurrency(benefitsBalance.available)}
-                    </span>
-                    {benefitsBalance.used > 0 && (
-                      <span className="text-red-600 dark:text-red-400">
-                        Usado: {formatCurrency(benefitsBalance.used)}
-                      </span>
-                    )}
-                  </div>
-                </>
-              ) : (
-                <p className="text-muted-foreground text-sm">Nenhum</p>
-              )}
-            </div>
-
-            {benefitsBalance && benefitsBalance.byUser.length > 0 && (
-              <div className="space-y-2">
-                {benefitsBalance.byUser.slice(0, 2).map((user) => (
-                  <div
-                    key={user.userId}
-                    className="flex items-center justify-between"
-                  >
-                    <p className="text-muted-foreground truncate text-xs">
-                      {user.name}
-                    </p>
-                    <p className="text-xs font-medium text-purple-600 dark:text-purple-400">
-                      {formatCurrency(user.total)}
-                    </p>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          {/* Despesas por Categoria */}
-          <div className="order-3 space-y-4 lg:order-2">
-            <div>
-              <div className="mb-2 flex items-center gap-2">
-                <PieChart className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                <p className="text-muted-foreground text-[10px] font-medium tracking-wider uppercase">
-                  Despesas
-                </p>
-              </div>
-              <p className="text-2xl font-light tracking-tight text-blue-600 dark:text-blue-400">
-                {formatCurrency(totalExpenses)}
-              </p>
-            </div>
-
-            {topCategory ? (
-              <div className="space-y-2">
-                <div className="rounded-lg border border-blue-200 bg-blue-50/50 p-2.5 dark:border-blue-900/50 dark:bg-blue-950/20">
-                  <div className="mb-1.5 flex items-center justify-between">
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-base">{topCategory.emoji}</span>
-                      <p className="text-xs font-medium">{topCategory.key}</p>
-                    </div>
-                    <p className="text-xs font-semibold text-blue-600 dark:text-blue-400">
-                      {totalExpenses > 0
-                        ? ((topCategory.value / totalExpenses) * 100).toFixed(0)
-                        : 0}
-                      %
-                    </p>
-                  </div>
-                  <p className="text-sm font-semibold text-blue-600 dark:text-blue-400">
-                    {formatCurrency(topCategory.value)}
-                  </p>
-                </div>
-                {categories.length > 1 && (
-                  <p className="text-muted-foreground text-[10px]">
-                    +{categories.length - 1} categoria
-                    {categories.length - 1 !== 1 ? "s" : ""}
-                  </p>
-                )}
-              </div>
-            ) : (
-              <p className="text-muted-foreground text-xs">Nenhuma despesa</p>
             )}
           </div>
         </div>

@@ -278,22 +278,7 @@ export async function GET(request: NextRequest) {
     });
 
     // Adicionar assinaturas às despesas fixas
-    // FILTRAR APENAS ASSINATURAS DO MÊS ATUAL (já venceram ou vão vencer este mês)
-    const currentMonthSubscriptions = subscriptions.filter((sub) => {
-      if (!sub.recurring) return false;
-
-      // Se tem nextDueDate, verificar se está no mês atual ou já passou
-      if (sub.nextDueDate) {
-        const dueDate = new Date(sub.nextDueDate);
-        return dueDate <= currentMonthEnd; // Já venceu ou vai vencer este mês
-      }
-
-      // Se não tem nextDueDate, usar dueDate
-      const dueDate = new Date(sub.dueDate);
-      return dueDate <= currentMonthEnd; // Já venceu ou vai vencer este mês
-    });
-
-    const subscriptionsTotal = currentMonthSubscriptions.reduce(
+    const subscriptionsTotal = subscriptions.reduce(
       (sum, sub) => sum + Number(sub.amount),
       0,
     );
@@ -674,20 +659,10 @@ export async function GET(request: NextRequest) {
       userId: string;
       name: string;
       amount: number;
-      payments: Array<{
-        label: string;
-        day: number;
-        value: number;
-      }>;
     }> = [];
 
     financialProfiles.forEach((profile) => {
       let userSalary = 0;
-      const userPayments: Array<{
-        label: string;
-        day: number;
-        value: number;
-      }> = [];
 
       // Verificar múltiplos pagamentos
       if (profile.multiplePayments && Array.isArray(profile.multiplePayments)) {
@@ -699,20 +674,11 @@ export async function GET(request: NextRequest) {
           }>;
 
           multiplePayments.forEach((payment) => {
-            // Adicionar TODOS os pagamentos aos pagamentos do usuário (não apenas os que contêm "salário")
-            // Isso permite que o gráfico mostre todos os dias de pagamento configurados
-            userPayments.push({
-              label: payment.label,
-              day: payment.day,
-              value: payment.value,
-            });
-
-            // Se o pagamento é de salário (label contém "salário" ou similar), incluir no cálculo do salário
-            const isSalary =
+            // Se o pagamento é de salário (label contém "salário" ou similar)
+            if (
               payment.label.toLowerCase().includes("salário") ||
-              payment.label.toLowerCase().includes("salario");
-
-            if (isSalary) {
+              payment.label.toLowerCase().includes("salario")
+            ) {
               // Verificar se já foi recebido este mês
               const hasReceived = currentMonthTransactions.some((t) => {
                 const txDate = t.date || t.createdAt;
@@ -744,12 +710,6 @@ export async function GET(request: NextRequest) {
       } else if (profile.diaPagamento && profile.rendaFixa > 0) {
         // Dia único de pagamento
         const paymentDay = profile.diaPagamento;
-        userPayments.push({
-          label: "Salário",
-          day: paymentDay,
-          value: profile.rendaFixa,
-        });
-
         const hasReceived = currentMonthTransactions.some((t) => {
           const txDate = t.date || t.createdAt;
           const txDay = txDate.getDate();
@@ -767,13 +727,7 @@ export async function GET(request: NextRequest) {
           userSalary = profile.rendaFixa;
         }
       } else if (profile.rendaFixa > 0) {
-        // Sem dia de pagamento definido, usar renda fixa no dia 1
-        userPayments.push({
-          label: "Salário",
-          day: 1,
-          value: profile.rendaFixa,
-        });
-
+        // Sem dia de pagamento definido, usar renda fixa
         // Verificar se há transações de salário este mês
         const salaryTransactions = currentMonthTransactions.filter(
           (t) =>
@@ -790,36 +744,15 @@ export async function GET(request: NextRequest) {
         userSalary = receivedSalary > 0 ? receivedSalary : profile.rendaFixa;
       }
 
-      // Sempre adicionar o usuário se tem renda fixa configurada ou tem pagamentos configurados
-      // Incluir mesmo que userSalary seja 0, desde que tenha pagamentos configurados
-      const userName = profile.user.name || profile.user.email || "Usuário";
-
-      console.log(
-        `🔍 DEBUG API - User: ${userName}, userSalary: ${userSalary}, userPayments.length: ${userPayments.length}`,
-      );
-      console.log(
-        `🔍 DEBUG API - userPayments:`,
-        JSON.stringify(userPayments, null, 2),
-      );
-
-      if (userSalary > 0 || userPayments.length > 0) {
-        const userData = {
+      // Sempre adicionar o usuário se tem renda fixa configurada, mesmo que seja 0
+      // Mas vamos adicionar apenas se userSalary > 0 para não mostrar zeros
+      if (userSalary > 0) {
+        const userName = profile.user.name || profile.user.email || "Usuário";
+        familySalaryByUser.push({
           userId: profile.userId,
           name: userName,
           amount: userSalary,
-          payments: userPayments.length > 0 ? userPayments : [], // Sempre incluir array, mesmo que vazio
-        };
-
-        console.log(
-          `🔍 DEBUG API - Adding user with payments:`,
-          JSON.stringify(userData, null, 2),
-        );
-
-        familySalaryByUser.push(userData);
-      } else {
-        console.log(
-          `🔍 DEBUG API - Skipping user ${userName} (no salary and no payments)`,
-        );
+        });
       }
     });
 
@@ -828,29 +761,9 @@ export async function GET(request: NextRequest) {
       0,
     );
 
-    // Debug: verificar estrutura antes de criar objeto final
-    console.log(
-      "🔍 DEBUG API - familySalaryByUser antes de criar familySalaryBalance:",
-      JSON.stringify(
-        familySalaryByUser.map((u) => ({
-          userId: u.userId,
-          name: u.name,
-          amount: u.amount,
-          payments: u.payments,
-        })),
-        null,
-        2,
-      ),
-    );
-
     const familySalaryBalance = {
       total: familySalaryTotal,
-      byUser: familySalaryByUser.map((u) => ({
-        userId: u.userId,
-        name: u.name,
-        amount: u.amount,
-        payments: u.payments || [], // Garantir que payments sempre seja um array
-      })),
+      byUser: familySalaryByUser,
     };
 
     // ===== SALDO DE BENEFÍCIOS FAMILIAR =====
@@ -976,7 +889,6 @@ export async function GET(request: NextRequest) {
       .sort((a, b) => b.value - a.value);
 
     // Estatísticas por usuário
-    // Primeiro, inicializar com todos os usuários da família
     const userStatsMap = new Map<
       string,
       {
@@ -989,31 +901,6 @@ export async function GET(request: NextRequest) {
       }
     >();
 
-    // Inicializar com todos os usuários da família (mesmo sem transações)
-    if (user?.familyAccount?.users) {
-      user.familyAccount.users.forEach((familyUser) => {
-        userStatsMap.set(familyUser.id, {
-          userId: familyUser.id,
-          name: familyUser.name || familyUser.email || "Usuário",
-          avatarUrl: familyUser.image || null,
-          revenues: 0,
-          expenses: 0,
-          investments: 0,
-        });
-      });
-    } else {
-      // Se não há conta familiar, incluir apenas o usuário atual
-      userStatsMap.set(session.user.id, {
-        userId: session.user.id,
-        name: user?.name || session.user.email || "Usuário",
-        avatarUrl: user?.image || null,
-        revenues: 0,
-        expenses: 0,
-        investments: 0,
-      });
-    }
-
-    // Agora adicionar estatísticas das transações
     currentMonthTransactions.forEach((transaction) => {
       const creatorId = transaction.createdBy?.id || transaction.userId;
       const creatorName =
@@ -1022,7 +909,6 @@ export async function GET(request: NextRequest) {
         "Usuário";
       const creatorImage = transaction.createdBy?.image || null;
 
-      // Se o usuário não estiver no mapa, adicionar
       if (!userStatsMap.has(creatorId)) {
         userStatsMap.set(creatorId, {
           userId: creatorId,
@@ -1148,12 +1034,6 @@ export async function GET(request: NextRequest) {
       // Insights
       insight: mainInsight,
     };
-
-    // Debug: verificar se payments estão sendo incluídos
-    console.log(
-      "🔍 DEBUG API - familySalaryBalance antes de retornar:",
-      JSON.stringify(familySalaryBalance, null, 2),
-    );
 
     return NextResponse.json(dashboardSummary);
   } catch (error) {

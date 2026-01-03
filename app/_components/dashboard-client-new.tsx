@@ -135,22 +135,6 @@ export default function DashboardClient({
 
   useEffect(() => {
     setMounted(true);
-
-    // Injetar estilos para garantir que o Recharts seja contido
-    const styleId = "recharts-container-fix";
-    if (!document.getElementById(styleId)) {
-      const style = document.createElement("style");
-      style.id = styleId;
-      style.textContent = `
-        .chart-wrapper-container .recharts-wrapper {
-          position: relative !important;
-        }
-        .chart-wrapper-container .recharts-surface {
-          position: relative !important;
-        }
-      `;
-      document.head.appendChild(style);
-    }
   }, []);
 
   const formatCurrency = (value: number) => {
@@ -230,10 +214,7 @@ export default function DashboardClient({
         {/* Grid Principal - 2 colunas */}
         <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
           {/* Latest Expenses Card */}
-          <Card
-            className="bg-card relative border shadow-sm"
-            style={{ zIndex: 1, overflow: "hidden" }}
-          >
+          <Card className="bg-card border shadow-sm">
             <CardHeader className="pb-4">
               <div className="flex items-center justify-between">
                 <div>
@@ -248,7 +229,7 @@ export default function DashboardClient({
                 </div>
               </div>
             </CardHeader>
-            <CardContent className="bg-card relative overflow-hidden">
+            <CardContent>
               <div className="mb-4">
                 <div className="mb-2 text-3xl font-bold">
                   {formatCurrency(stats.totalExpenses)}
@@ -267,75 +248,51 @@ export default function DashboardClient({
               </div>
 
               {/* Gráfico de Barras Comparativo */}
-              <div
-                className="chart-wrapper-container bg-card relative h-[180px] w-full rounded-md sm:h-[200px]"
-                style={{
-                  position: "relative",
-                  overflow: "hidden",
-                  contain: "layout style paint",
-                  isolation: "isolate",
-                  backgroundColor: "hsl(var(--card))",
-                }}
-              >
-                <div
-                  style={{
-                    position: "relative",
-                    width: "100%",
-                    height: "100%",
-                    overflow: "hidden",
-                    zIndex: 0,
-                    backgroundColor: "hsl(var(--card))",
-                  }}
-                >
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart
-                      data={barChartData}
-                      margin={{ top: 5, right: 5, left: 5, bottom: 5 }}
-                    >
-                      <CartesianGrid
-                        strokeDasharray="3 3"
-                        stroke="hsl(var(--border))"
-                        opacity={0.3}
-                      />
-                      <XAxis
-                        dataKey="date"
-                        stroke="hsl(var(--muted-foreground))"
-                        fontSize={12}
-                        tickLine={false}
-                      />
-                      <YAxis
-                        stroke="hsl(var(--muted-foreground))"
-                        fontSize={12}
-                        tickLine={false}
-                        tickFormatter={(value) =>
-                          `R$ ${(value / 1000).toFixed(0)}k`
-                        }
-                      />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: "hsl(var(--card))",
-                          border: "1px solid hsl(var(--border))",
-                          borderRadius: "8px",
-                          boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
-                          color: "hsl(var(--foreground))",
-                          zIndex: 50,
-                        }}
-                        formatter={(value: number) => formatCurrency(value)}
-                      />
-                      <Legend />
-                      <Bar
-                        dataKey="Despesas Atuais"
-                        fill="hsl(var(--primary))"
-                        radius={[4, 4, 0, 0]}
-                      />
-                      <Bar
-                        dataKey="Semana Anterior"
-                        fill="hsl(var(--muted))"
-                        radius={[4, 4, 0, 0]}
-                      />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
+              <div className="h-[180px] w-full sm:h-[200px]">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={barChartData}>
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke="hsl(var(--border))"
+                      opacity={0.3}
+                    />
+                    <XAxis
+                      dataKey="date"
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={12}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      stroke="hsl(var(--muted-foreground))"
+                      fontSize={12}
+                      tickLine={false}
+                      tickFormatter={(value) =>
+                        `R$ ${(value / 1000).toFixed(0)}k`
+                      }
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "hsl(var(--card))",
+                        border: "1px solid hsl(var(--border))",
+                        borderRadius: "8px",
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                        color: "hsl(var(--foreground))",
+                      }}
+                      formatter={(value: number) => formatCurrency(value)}
+                    />
+                    <Legend />
+                    <Bar
+                      dataKey="Despesas Atuais"
+                      fill="hsl(var(--primary))"
+                      radius={[4, 4, 0, 0]}
+                    />
+                    <Bar
+                      dataKey="Semana Anterior"
+                      fill="hsl(var(--muted))"
+                      radius={[4, 4, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
               </div>
 
               <div className="mt-4 flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
@@ -366,10 +323,7 @@ export default function DashboardClient({
           </Card>
 
           {/* Reimbursement / Transações Recentes Card */}
-          <Card
-            className="bg-card relative border shadow-sm"
-            style={{ zIndex: 2 }}
-          >
+          <Card className="bg-card border shadow-sm">
             <CardHeader className="pb-4">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <CardTitle className="text-base font-semibold sm:text-lg">
@@ -731,7 +685,7 @@ export default function DashboardClient({
           </Card>
 
           {/* Circular Expense Chart */}
-          <Card className="bg-card flex h-full min-h-0 flex-col overflow-visible border shadow-sm">
+          <Card className="bg-card flex h-full min-h-0 flex-col border shadow-sm">
             <CardHeader className="flex-shrink-0 pb-3 sm:pb-4">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <CardTitle className="truncate text-sm font-semibold sm:text-base md:text-lg">
@@ -747,22 +701,20 @@ export default function DashboardClient({
                 </Button>
               </div>
             </CardHeader>
-            <CardContent className="flex min-h-0 flex-1 flex-col overflow-visible p-2 sm:p-4 md:p-6">
+            <CardContent className="flex min-h-0 flex-1 flex-col overflow-hidden p-2 sm:p-4 md:p-6">
               {expensesChartData.length > 0 ? (
-                <div className="flex min-h-[250px] flex-1 items-center justify-center sm:min-h-[300px]">
-                  <CircularExpenseChart
-                    categories={expensesChartData.map((item) => ({
-                      name:
-                        TRANSACTION_CATEGORY_LABELS[item.category] ||
-                        item.category,
-                      emoji: TRANSACTION_CATEGORY_EMOJIS[item.category] || "📦",
-                      color:
-                        TRANSACTION_CATEGORY_COLORS[item.category] || "#6B7280",
-                      value: item.total,
-                    }))}
-                    onViewTransactions={() => router.push("/transactions")}
-                  />
-                </div>
+                <CircularExpenseChart
+                  categories={expensesChartData.map((item) => ({
+                    name:
+                      TRANSACTION_CATEGORY_LABELS[item.category] ||
+                      item.category,
+                    emoji: TRANSACTION_CATEGORY_EMOJIS[item.category] || "📦",
+                    color:
+                      TRANSACTION_CATEGORY_COLORS[item.category] || "#6B7280",
+                    value: item.total,
+                  }))}
+                  onViewTransactions={() => router.push("/transactions")}
+                />
               ) : (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <p className="text-muted-foreground mb-3 text-sm">

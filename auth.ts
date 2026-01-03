@@ -4,28 +4,12 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import bcrypt from "bcryptjs";
 import { db } from "@/app/_lib/prisma";
 
-// Garantir que a URL base seja localhost:3000 em desenvolvimento
-const getBaseUrl = () => {
-  // Em produção, usar variáveis de ambiente
-  if (process.env.VERCEL_URL) {
-    return `https://${process.env.VERCEL_URL}`;
-  }
-  // Em produção, usar NEXTAUTH_URL se configurada
-  if (process.env.NODE_ENV === "production" && process.env.NEXTAUTH_URL) {
-    return process.env.NEXTAUTH_URL;
-  }
-  // Em desenvolvimento, usar localhost:3000 por padrão
-  // O trustHost: true garantirá que use a origem correta da requisição
-  return "http://localhost:3000";
-};
-
 export const { auth, handlers, signIn, signOut } = NextAuth({
   secret:
     process.env.NEXTAUTH_SECRET ||
     "Upp0lfMf+K7Sj0UG2A5SCfezMwI34FE+idJrc6l6mZI=",
   trustHost: true,
   basePath: "/api/auth",
-  baseUrl: getBaseUrl(),
   session: {
     strategy: "jwt",
     maxAge: 30 * 24 * 60 * 60, // 30 dias

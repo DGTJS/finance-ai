@@ -7,6 +7,8 @@ import Navbar from "./navbar";
 import Sidebar from "./sidebar";
 import AssistantButton from "./assistant/assistant-button";
 import AddTransactionFab from "./add-transaction-fab";
+import { SidebarProvider, useSidebar } from "@/app/_contexts/sidebar-context";
+import { cn } from "@/app/_lib/utils";
 
 interface AuthWrapperProps {
   children: ReactNode;
@@ -68,10 +70,28 @@ export default function AuthWrapper({ children }: AuthWrapperProps) {
 
   // Autenticado em página privada
   return (
+    <SidebarProvider>
+      <AuthenticatedLayout>{children}</AuthenticatedLayout>
+    </SidebarProvider>
+  );
+}
+
+function AuthenticatedLayout({ children }: { children: ReactNode }) {
+  const { isOpen } = useSidebar();
+
+  return (
     <>
       <Navbar />
       <Sidebar />
-      <main className="bg-background pt-16 lg:pl-64">{children}</main>
+      <main
+        className={cn(
+          "bg-background pt-16",
+          "transition-[padding-left] duration-300 ease-in-out",
+          isOpen ? "lg:pl-64" : "lg:pl-20",
+        )}
+      >
+        {children}
+      </main>
       <AssistantButton />
       <AddTransactionFab />
     </>

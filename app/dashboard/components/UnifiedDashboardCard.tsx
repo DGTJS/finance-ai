@@ -5,6 +5,7 @@
 
 "use client";
 
+import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/app/_components/ui/card";
 import { Button } from "@/app/_components/ui/button";
 import { formatCurrency } from "@/src/lib/utils";
@@ -42,6 +43,7 @@ export function UnifiedDashboardCard({
   onRefresh,
   isRefreshing = false,
 }: UnifiedDashboardCardProps) {
+  const router = useRouter();
   const isPositive = currentBalance >= 0;
   const isProjectedPositive = projectedBalance >= 0;
   const hasImprovement = projectedBalance > currentBalance;
@@ -78,6 +80,15 @@ export function UnifiedDashboardCard({
             >
               <span>💼</span>
               Freelancer
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => router.push("/dashboard/company")}
+              className="h-7 gap-1.5 px-3 text-xs font-medium"
+            >
+              <span>🏢</span>
+              Empresa
             </Button>
           </div>
           <Button

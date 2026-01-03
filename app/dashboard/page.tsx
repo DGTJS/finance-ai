@@ -162,6 +162,15 @@ export default function DashboardPage() {
                 <span>💼</span>
                 Freelancer
               </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => router.push("/dashboard/company")}
+                className="gap-2"
+              >
+                <span>🏢</span>
+                Empresa
+              </Button>
             </div>
             <Button
               onClick={handleRefresh}
@@ -229,7 +238,6 @@ export default function DashboardPage() {
               dailyBalance={data.dailyBalanceSparkline}
               recentTransactions={data.recentTransactions}
               upcomingPayments={data.upcomingPayments}
-              scheduledPayments={data.scheduledPayments}
               familySalaryBalance={data.familySalaryBalance}
               familyBenefitsBalance={data.familyBenefitsBalance}
               categories={data.categories}

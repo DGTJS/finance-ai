@@ -4,6 +4,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import { Button } from "./ui/button";
+import { useSidebar } from "@/app/_contexts/sidebar-context";
+import { cn } from "@/app/_lib/utils";
 import {
   FaSignOutAlt,
   FaUser,
@@ -16,6 +18,7 @@ import {
   FaDollarSign,
   FaBullseye,
   FaSearch,
+  FaBuilding,
 } from "react-icons/fa";
 import { useState } from "react";
 import NotificationsDropdown from "./notifications-dropdown";
@@ -27,6 +30,7 @@ const Navbar = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  const { isOpen } = useSidebar();
 
   const handleSignOut = async () => {
     if (isSigningOut) return; // Prevenir múltiplos cliques
@@ -66,6 +70,7 @@ const Navbar = () => {
     { href: "/subscription", label: "Assinatura", icon: FaCreditCard },
     { href: "/goals", label: "Metas", icon: FaBullseye },
     { href: "/entrepreneur", label: "Freelancer", icon: FaUser },
+    { href: "/dashboard/company", label: "Empresa", icon: FaBuilding },
     {
       href: "/profile-finance",
       label: "Perfil Financeiro",
@@ -78,7 +83,13 @@ const Navbar = () => {
   return (
     <>
       {/* Desktop Navbar */}
-      <nav className="bg-card fixed top-0 right-0 left-0 z-50 border-b lg:left-64">
+      <nav
+        className={cn(
+          "bg-card fixed top-0 right-0 z-50 border-b",
+          "left-0 transition-[left] duration-300 ease-in-out",
+          isOpen ? "lg:left-64" : "lg:left-20",
+        )}
+      >
         <div className="flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4">
           {/* Mobile Menu Button - Esquerda */}
           <div className="flex items-center gap-3 lg:hidden">

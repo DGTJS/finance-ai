@@ -5,8 +5,6 @@ import { TRANSACTION_CATEGORY_LABELS } from "@/app/_constants/transactions";
 
 const HF_API_URL = "https://api-inference.huggingface.co/models";
 const HF_MODEL = "mistralai/Mistral-7B-Instruct-v0.2"; // Modelo gratuito e bom
-const OLLAMA_API_URL = process.env.OLLAMA_API_URL || "http://localhost:11434";
-const OLLAMA_MODEL = process.env.OLLAMA_MODEL || "llama3.2"; // Modelo padrão do Ollama
 const MAX_PROMPT_LENGTH = 2000;
 
 /**
@@ -18,56 +16,6 @@ function sanitizeInput(input: string): string {
     .slice(0, MAX_PROMPT_LENGTH)
     .replace(/<script>/gi, "")
     .replace(/<\/script>/gi, "");
-}
-
-/**
- * Chama a API do Ollama (código aberto, roda localmente)
- */
-async function callOllama(
-  prompt: string,
-  options: AIOptions = {},
-): Promise<AIResponse> {
-  try {
-    const response = await fetch(`${OLLAMA_API_URL}/api/generate`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: OLLAMA_MODEL,
-        prompt: prompt,
-        stream: false,
-        options: {
-          temperature: options.temperature || 0.7,
-          top_p: 0.95,
-          num_predict: options.maxTokens || 500,
-        },
-      }),
-    });
-
-    if (!response.ok) {
-      // Se Ollama não estiver rodando, retornar erro silencioso
-      return {
-        ok: false,
-        error: `Ollama não disponível: ${response.status}`,
-      };
-    }
-
-    const data = await response.json();
-    const text = data.response || JSON.stringify(data);
-
-    return {
-      ok: true,
-      text,
-      data,
-    };
-  } catch (error) {
-    // Ollama não está rodando ou não está configurado
-    return {
-      ok: false,
-      error: error instanceof Error ? error.message : "Ollama não disponível",
-    };
-  }
 }
 
 /**
@@ -492,7 +440,7 @@ async function localFallback(
 }
 
 /**
- * Função principal - tenta Ollama primeiro, depois HF, depois fallback
+ * Função principal - tenta HF primeiro, depois fallback
  */
 export async function askAI(
   prompt: string,
@@ -508,14 +456,9 @@ export async function askAI(
     };
   }
 
-  // Tentar Ollama primeiro (código aberto, roda localmente)
-  const ollamaResponse = await callOllama(sanitizedPrompt, options);
-  if (ollamaResponse.ok) {
-    return ollamaResponse;
-  }
-
-  // Tentar Hugging Face
+  // Tentar Hugging Face primeiro
   const hfResponse = await callHuggingFace(sanitizedPrompt, options);
+
   if (hfResponse.ok) {
     return hfResponse;
   }

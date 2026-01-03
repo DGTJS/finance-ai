@@ -4,7 +4,17 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 import { Button } from "@/app/_components/ui/button";
-import { Plus, Target } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/app/_components/ui/dialog";
+import { Label } from "@/app/_components/ui/label";
+import { MoneyInput } from "@/app/_components/money-input";
+import { Plus, Target, DollarSign } from "lucide-react";
 import { cn } from "@/app/_lib/utils";
 import WorkPeriodForm from "./work-period-form";
 import ProjectForm from "./project-form";
@@ -14,6 +24,8 @@ import TodayIntelligenceCard from "./today-intelligence-card";
 import SmartHeatmap from "./smart-heatmap";
 import HourlyValueCard from "./hourly-value-card";
 import VisualTimeline from "./visual-timeline";
+import FixedCostManager from "./fixed-cost-manager";
+import { DailyEarningsChart } from "./daily-earnings-chart";
 import { getWorkPeriods, getWorkPeriodStats } from "@/app/_actions/work-period";
 import { getProjects } from "@/app/_actions/project";
 import { getWorkGoal } from "@/app/_actions/work-goal";
@@ -92,6 +104,7 @@ export default function EntrepreneurClient({
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isProjectFormOpen, setIsProjectFormOpen] = useState(false);
   const [isGoalFormOpen, setIsGoalFormOpen] = useState(false);
+  const [isFixedCostFormOpen, setIsFixedCostFormOpen] = useState(false);
   const [selectedPeriod, setSelectedPeriod] = useState<WorkPeriod | null>(null);
 
   // States para análises
@@ -180,10 +193,10 @@ export default function EntrepreneurClient({
   };
 
   const handleSuccess = async () => {
-    router.refresh();
     setIsFormOpen(false);
     setSelectedPeriod(null);
 
+    // Recarregar dados sem recarregar a página
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
     const endOfMonth = new Date(
@@ -208,30 +221,71 @@ export default function EntrepreneurClient({
       59,
     );
 
-    const [periodsResult, statsResult, todayStatsResult, projectsResult] =
-      await Promise.all([
-        getWorkPeriods(startOfMonth, endOfMonth),
-        getWorkPeriodStats(startOfMonth, endOfMonth),
-        getWorkPeriodStats(startOfToday, endOfToday),
-        getProjects(),
-      ]);
+    const [periodsResult, statsResult, todayStatsResult] = await Promise.all([
+      getWorkPeriods(startOfMonth, endOfMonth),
+      getWorkPeriodStats(startOfMonth, endOfMonth),
+      getWorkPeriodStats(startOfToday, endOfToday),
+    ]);
 
+    // Atualizar estados
     if (periodsResult.success) {
-      setPeriods(periodsResult.data || []);
+      const updatedPeriods = periodsResult.data || [];
+      setPeriods(updatedPeriods);
+
+      // Recalcular análises com os novos períodos
+      if (updatedPeriods.length > 0) {
+        // Usar os períodos atualizados diretamente
+        const dayMap = groupPeriodsByDay(updatedPeriods);
+        const dayStatsArray = Array.from(dayMap.values());
+        setDayStats(dayStatsArray);
+
+        const weekdayStatsArray = analyzeWeekdayStats(updatedPeriods);
+        setWeekdayStats(weekdayStatsArray);
+
+        // Calcular análise de meta
+        if (goal) {
+          const goalType = (goal.goalType || "monthly") as
+            | "daily"
+            | "weekly"
+            | "monthly"
+            | "custom";
+          let goalValue = 0;
+
+          if (goalType === "daily" && goal.dailyGoal)
+            goalValue = goal.dailyGoal;
+          else if (goalType === "weekly" && goal.weeklyGoal)
+            goalValue = goal.weeklyGoal;
+          else if (goalType === "monthly" && goal.monthlyGoal)
+            goalValue = goal.monthlyGoal;
+          else if (goalType === "custom" && goal.customGoal)
+            goalValue = goal.customGoal;
+          else if (goal.monthlyGoal) goalValue = goal.monthlyGoal;
+
+          if (goalValue > 0) {
+            const analysis = calculateGoalAnalysis(
+              updatedPeriods,
+              goalType,
+              goalValue,
+              goal.workDays,
+              goal.maxHoursDay,
+              goal.customStartDate ? new Date(goal.customStartDate) : null,
+              goal.customEndDate ? new Date(goal.customEndDate) : null,
+            );
+            setGoalAnalysis(analysis);
+          }
+        }
+      }
     }
+
     if (statsResult.success) {
       setStats(statsResult.data);
     }
     if (todayStatsResult.success) {
       setTodayStats(todayStatsResult.data);
     }
-    if (projectsResult.success) {
-      setProjects(projectsResult.data || []);
-    }
   };
 
   const handleProjectSuccess = async () => {
-    router.refresh();
     setIsProjectFormOpen(false);
     const projectsResult = await getProjects();
     if (projectsResult.success) {
@@ -460,12 +514,21 @@ export default function EntrepreneurClient({
                   <span>💼</span>
                   Freelancer
                 </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => router.push("/dashboard/company")}
+                  className="gap-2"
+                >
+                  <span>🏢</span>
+                  Empresa
+                </Button>
               </div>
             </div>
           </div>
         )}
 
-        {/* Botões de Ação */}
+        {/* Botões de Ação - Editar Meta e Custo */}
         <div className="flex flex-row gap-2">
           <Button
             variant="outline"
@@ -479,16 +542,61 @@ export default function EntrepreneurClient({
             {goal ? "Editar Meta" : "Definir Meta"}
           </Button>
           <Button
+            variant="outline"
+            size="lg"
+            onClick={() => {
+              setIsFixedCostFormOpen(true);
+            }}
+            className="flex-1 gap-2"
+          >
+            <DollarSign className="h-5 w-5" />
+            Custo
+          </Button>
+        </div>
+
+        {/* Botão Registrar Trabalho - Linha separada */}
+        <div>
+          <Button
             size="lg"
             onClick={() => {
               setSelectedPeriod(null);
               setIsFormOpen(true);
             }}
-            className="flex-1 gap-2"
+            className="w-full gap-2"
           >
             <Plus className="h-5 w-5" />
             Registrar trabalho de hoje
           </Button>
+        </div>
+
+        {/* Histórico de Serviços */}
+        <div>
+          <div className="mb-4">
+            <h2 className="text-xl font-bold">Histórico de Serviços</h2>
+            <p className="text-muted-foreground text-sm">
+              Seus períodos de trabalho registrados
+            </p>
+          </div>
+          <VisualTimeline
+            periods={periods}
+            onEdit={(period) => handleEdit(period as any)}
+            onDelete={handleSuccess}
+            averageHourlyRate={averageHourlyRate}
+          />
+        </div>
+
+        {/* 1. Gráfico de Evolução dos Ganhos */}
+        <div>
+          {periods.length > 0 ? (
+            <DailyEarningsChart periods={periods} />
+          ) : (
+            <div className="rounded-lg border-2 border-dashed p-12 text-center">
+              <p className="text-muted-foreground">
+                Registre seus períodos de trabalho para ver a evolução dos seus
+                ganhos.
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Quanto Vale Sua Hora - Primeiro no mobile */}
@@ -565,22 +673,6 @@ export default function EntrepreneurClient({
             />
           </div>
         </div>
-
-        {/* 5. Histórico de Serviços */}
-        <div>
-          <div className="mb-4">
-            <h2 className="text-xl font-bold">Histórico de Serviços</h2>
-            <p className="text-muted-foreground text-sm">
-              Seus períodos de trabalho registrados
-            </p>
-          </div>
-          <VisualTimeline
-            periods={periods}
-            onEdit={handleEdit}
-            onDelete={handleSuccess}
-            averageHourlyRate={averageHourlyRate}
-          />
-        </div>
       </div>
 
       {/* Formulários */}
@@ -615,6 +707,12 @@ export default function EntrepreneurClient({
             calculateAll();
           }
         }}
+      />
+
+      {/* Gerenciador de Custos */}
+      <FixedCostManager
+        isOpen={isFixedCostFormOpen}
+        onClose={() => setIsFixedCostFormOpen(false)}
       />
     </>
   );

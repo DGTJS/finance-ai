@@ -62,11 +62,6 @@ export interface FamilySalaryBalance {
     userId: string;
     name: string;
     amount: number; // Salário do mês do usuário
-    payments?: Array<{
-      label: string;
-      day: number;
-      value: number;
-    }>;
   }>;
 }
 

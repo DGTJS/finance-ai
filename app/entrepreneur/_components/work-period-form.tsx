@@ -43,7 +43,7 @@ const workPeriodSchema = z.object({
   type: z.enum(["project", "platform", "none"]).optional().default("none"),
   projectId: z.string().optional().nullable(),
   platform: z.string().optional().nullable(),
-  date: z.date({ required_error: "Data é obrigatória" }),
+  date: z.date(),
   startTime: z
     .string()
     .regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Horário inválido (use HH:mm)"),
@@ -104,9 +104,9 @@ export default function WorkPeriodForm({
   }, [initialProjects]);
 
   const form = useForm<WorkPeriodFormInput>({
-    resolver: zodResolver(workPeriodSchema),
+    resolver: zodResolver(workPeriodSchema) as any, // workaround for zodResolver typing diff
     defaultValues: {
-      type: "none",
+      type: "none" as "none",
       projectId: null,
       platform: null,
       date: new Date(),
@@ -268,7 +268,9 @@ export default function WorkPeriodForm({
 
   const calculatedHours =
     startTime && endTime ? calculateHours(startTime, endTime) : 0;
-  const netProfit = form.watch("amount") - form.watch("expenses");
+  const amount = form.watch("amount") || 0;
+  const expenses = form.watch("expenses") || 0;
+  const netProfit = amount - expenses;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -419,15 +421,12 @@ export default function WorkPeriodForm({
                       </FormControl>
                       <SelectContent>
                         <SelectItem value="none">Sem projeto</SelectItem>
-                        {projects
-                          .filter((p) => p.status === "ACTIVE")
-                          .map((project) => (
-                            <SelectItem key={project.id} value={project.id}>
-                              {project.clientName}
-                              {project.projectName &&
-                                ` - ${project.projectName}`}
-                            </SelectItem>
-                          ))}
+                        {projects.map((project) => (
+                          <SelectItem key={project.id} value={project.id}>
+                            {project.clientName}
+                            {project.projectName && ` - ${project.projectName}`}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                     <FormMessage />
@@ -520,13 +519,27 @@ export default function WorkPeriodForm({
 
             {/* Lucro Calculado */}
             <div className="rounded-lg border bg-green-50 p-3 dark:bg-green-950/20">
-              <p className="text-sm font-medium text-green-700 dark:text-green-400">
-                Lucro Líquido:{" "}
-                {new Intl.NumberFormat("pt-BR", {
-                  style: "currency",
-                  currency: "BRL",
-                }).format(netProfit)}
-              </p>
+              <div className="space-y-1">
+                <p className="text-sm font-medium text-green-700 dark:text-green-400">
+                  Lucro Líquido:{" "}
+                  {new Intl.NumberFormat("pt-BR", {
+                    style: "currency",
+                    currency: "BRL",
+                  }).format(netProfit)}
+                </p>
+                <p className="text-muted-foreground text-xs">
+                  Valor recebido:{" "}
+                  {new Intl.NumberFormat("pt-BR", {
+                    style: "currency",
+                    currency: "BRL",
+                  }).format(amount)}{" "}
+                  - Despesas:{" "}
+                  {new Intl.NumberFormat("pt-BR", {
+                    style: "currency",
+                    currency: "BRL",
+                  }).format(expenses)}
+                </p>
+              </div>
             </div>
 
             {/* Descrição */}

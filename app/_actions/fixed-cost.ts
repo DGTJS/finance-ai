@@ -11,12 +11,19 @@ export interface FixedCostInput {
   isFixed?: boolean; // DEPRECATED: Use frequency = "ONCE" para custos únicos
   description?: string;
   isActive?: boolean;
+  entityType?: "USER" | "COMPANY"; // Tipo da entidade
+  entityId?: string; // ID da entidade
 }
 
 /**
  * Busca todos os custos fixos do usuário
+ * @param entityType - Tipo da entidade: "USER" (pessoa física) ou "COMPANY" (empresa)
+ * @param entityId - ID da entidade (userId para USER, companyId para COMPANY)
  */
-export async function getFixedCosts() {
+export async function getFixedCosts(
+  entityType?: "USER" | "COMPANY",
+  entityId?: string,
+) {
   const session = await auth();
 
   if (!session?.user?.id) {
@@ -27,11 +34,22 @@ export async function getFixedCosts() {
   }
 
   try {
+    let query = `SELECT * FROM \`fixedcost\` WHERE \`userId\` = ?`;
+    const params: any[] = [session.user.id];
+
+    // Se entityType e entityId foram fornecidos, filtrar por eles
+    if (entityType && entityId) {
+      query += ` AND \`entityType\` = ? AND \`entityId\` = ?`;
+      params.push(entityType, entityId);
+    } else {
+      // Se não especificado, buscar apenas custos de pessoa física (entityType IS NULL ou entityType = 'USER')
+      query += ` AND (\`entityType\` IS NULL OR \`entityType\` = 'USER' OR \`entityType\` = '')`;
+    }
+
+    query += ` ORDER BY \`createdAt\` DESC`;
+
     // Usar SQL raw para garantir que isFixed seja retornado mesmo se o Prisma Client não tiver o campo
-    const fixedCostsRaw = (await db.$queryRawUnsafe(
-      `SELECT * FROM \`fixedcost\` WHERE \`userId\` = ? ORDER BY \`createdAt\` DESC`,
-      session.user.id,
-    )) as any[];
+    const fixedCostsRaw = (await db.$queryRawUnsafe(query, ...params)) as any[];
 
     // Converter isFixed de tinyint(1) para boolean e mapear para o formato esperado
     const fixedCosts = fixedCostsRaw.map((cost: any) => ({
@@ -46,6 +64,8 @@ export async function getFixedCosts() {
           : true, // Padrão true se não existir (valores antigos)
       description: cost.description,
       isActive: cost.isActive === 1 || cost.isActive === true,
+      entityType: cost.entityType || null,
+      entityId: cost.entityId || null,
       createdAt: cost.createdAt,
       updatedAt: cost.updatedAt,
     }));
@@ -137,6 +157,8 @@ export async function createFixedCost(data: FixedCostInput) {
       isFixed: finalIsFixed,
       description: data.description?.trim() || null,
       isActive: data.isActive !== undefined ? data.isActive : true,
+      entityType: data.entityType || null,
+      entityId: data.entityId || null,
     };
 
     console.log("[CREATE FIXED COST] Data received:", {
@@ -152,21 +174,14 @@ export async function createFixedCost(data: FixedCostInput) {
     if (createData.frequency === "ONCE") {
       console.log("[CREATE FIXED COST] Using SQL raw for ONCE frequency");
 
-      // Verificar se a coluna isFixed existe antes de tentar inserir
+      // Verificar e criar colunas necessárias antes de tentar inserir
       try {
-        const columnCheck = (await db.$queryRawUnsafe(`
+        // Verificar isFixed
+        const isFixedCheck = (await db.$queryRawUnsafe(`
           SHOW COLUMNS FROM \`fixedcost\` LIKE 'isFixed'
         `)) as any[];
 
-        console.log(
-          "[CREATE FIXED COST] Verificação pré-inserção da coluna isFixed:",
-          {
-            exists: columnCheck && columnCheck.length > 0,
-            columnInfo: columnCheck?.[0],
-          },
-        );
-
-        if (!columnCheck || columnCheck.length === 0) {
+        if (!isFixedCheck || isFixedCheck.length === 0) {
           console.log(
             "[CREATE FIXED COST] Coluna isFixed não existe - tentando adicionar...",
           );
@@ -178,40 +193,67 @@ export async function createFixedCost(data: FixedCostInput) {
             console.log(
               "[CREATE FIXED COST] Coluna isFixed adicionada com sucesso!",
             );
-
-            // Criar índice se não existir
-            try {
-              const indexCheck = (await db.$queryRawUnsafe(`
-                SHOW INDEXES FROM \`fixedcost\` WHERE Key_name = 'fixedcost_isFixed_idx'
-              `)) as any[];
-
-              if (!indexCheck || indexCheck.length === 0) {
-                await db.$executeRawUnsafe(`
-                  CREATE INDEX \`fixedcost_isFixed_idx\` ON \`fixedcost\`(\`isFixed\`)
-                `);
-                console.log("[CREATE FIXED COST] Índice criado com sucesso!");
-              } else {
-                console.log("[CREATE FIXED COST] Índice já existe");
-              }
-            } catch (idxError: any) {
-              // Índice pode já existir, ignorar erro
-              console.log(
-                "[CREATE FIXED COST] Erro ao criar índice (pode já existir):",
-                idxError?.message,
-              );
-            }
           } catch (addColumnError: any) {
             console.error(
               "[CREATE FIXED COST] Erro ao adicionar coluna isFixed:",
-              addColumnError,
+              addColumnError?.message,
             );
-            // Continuar mesmo se falhar - pode ser que já exista
+          }
+        }
+
+        // Verificar entityType
+        const entityTypeCheck = (await db.$queryRawUnsafe(`
+          SHOW COLUMNS FROM \`fixedcost\` LIKE 'entityType'
+        `)) as any[];
+
+        if (!entityTypeCheck || entityTypeCheck.length === 0) {
+          console.log(
+            "[CREATE FIXED COST] Coluna entityType não existe - tentando adicionar...",
+          );
+          try {
+            await db.$executeRawUnsafe(`
+              ALTER TABLE \`fixedcost\` 
+              ADD COLUMN \`entityType\` VARCHAR(20) NULL
+            `);
+            console.log(
+              "[CREATE FIXED COST] Coluna entityType adicionada com sucesso!",
+            );
+          } catch (addColumnError: any) {
+            console.error(
+              "[CREATE FIXED COST] Erro ao adicionar coluna entityType:",
+              addColumnError?.message,
+            );
+          }
+        }
+
+        // Verificar entityId
+        const entityIdCheck = (await db.$queryRawUnsafe(`
+          SHOW COLUMNS FROM \`fixedcost\` LIKE 'entityId'
+        `)) as any[];
+
+        if (!entityIdCheck || entityIdCheck.length === 0) {
+          console.log(
+            "[CREATE FIXED COST] Coluna entityId não existe - tentando adicionar...",
+          );
+          try {
+            await db.$executeRawUnsafe(`
+              ALTER TABLE \`fixedcost\` 
+              ADD COLUMN \`entityId\` VARCHAR(191) NULL
+            `);
+            console.log(
+              "[CREATE FIXED COST] Coluna entityId adicionada com sucesso!",
+            );
+          } catch (addColumnError: any) {
+            console.error(
+              "[CREATE FIXED COST] Erro ao adicionar coluna entityId:",
+              addColumnError?.message,
+            );
           }
         }
       } catch (checkError: any) {
         console.error(
-          "[CREATE FIXED COST] Erro ao verificar coluna antes de inserir:",
-          checkError,
+          "[CREATE FIXED COST] Erro ao verificar colunas antes de inserir:",
+          checkError?.message,
         );
         // Continuar mesmo se a verificação falhar
       }
@@ -222,8 +264,8 @@ export async function createFixedCost(data: FixedCostInput) {
 
       // MySQL usa tinyint(1) para boolean, então usamos 1 ou 0
       // Usar backticks para garantir que os nomes das colunas sejam tratados corretamente
-      const sql = `INSERT INTO \`fixedcost\` (\`id\`, \`userId\`, \`name\`, \`amount\`, \`frequency\`, \`isFixed\`, \`description\`, \`isActive\`, \`createdAt\`, \`updatedAt\`) 
-                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+      const sql = `INSERT INTO \`fixedcost\` (\`id\`, \`userId\`, \`name\`, \`amount\`, \`frequency\`, \`isFixed\`, \`description\`, \`isActive\`, \`entityType\`, \`entityId\`, \`createdAt\`, \`updatedAt\`) 
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
       // IMPORTANTE: Para frequency = "ONCE", isFixed sempre deve ser false
       const isFixedValue = 0; // false para custos únicos
@@ -237,6 +279,8 @@ export async function createFixedCost(data: FixedCostInput) {
         isFixed: isFixedValue,
         description: createData.description,
         isActive: createData.isActive ? 1 : 0,
+        entityType: createData.entityType,
+        entityId: createData.entityId,
       });
 
       try {
@@ -250,6 +294,8 @@ export async function createFixedCost(data: FixedCostInput) {
           isFixedValue, // 0 (false)
           createData.description || null,
           createData.isActive ? 1 : 0,
+          createData.entityType || null,
+          createData.entityId || null,
           now,
           now,
         );
@@ -349,6 +395,65 @@ export async function createFixedCost(data: FixedCostInput) {
         throw sqlError;
       }
     } else {
+      // Para outras frequências, verificar e criar colunas necessárias antes de tentar inserir
+      try {
+        // Verificar entityType
+        const entityTypeCheck = (await db.$queryRawUnsafe(`
+          SHOW COLUMNS FROM \`fixedcost\` LIKE 'entityType'
+        `)) as any[];
+
+        if (!entityTypeCheck || entityTypeCheck.length === 0) {
+          console.log(
+            "[CREATE FIXED COST] Coluna entityType não existe - tentando adicionar...",
+          );
+          try {
+            await db.$executeRawUnsafe(`
+              ALTER TABLE \`fixedcost\` 
+              ADD COLUMN \`entityType\` VARCHAR(20) NULL
+            `);
+            console.log(
+              "[CREATE FIXED COST] Coluna entityType adicionada com sucesso!",
+            );
+          } catch (addColumnError: any) {
+            console.error(
+              "[CREATE FIXED COST] Erro ao adicionar coluna entityType:",
+              addColumnError?.message,
+            );
+          }
+        }
+
+        // Verificar entityId
+        const entityIdCheck = (await db.$queryRawUnsafe(`
+          SHOW COLUMNS FROM \`fixedcost\` LIKE 'entityId'
+        `)) as any[];
+
+        if (!entityIdCheck || entityIdCheck.length === 0) {
+          console.log(
+            "[CREATE FIXED COST] Coluna entityId não existe - tentando adicionar...",
+          );
+          try {
+            await db.$executeRawUnsafe(`
+              ALTER TABLE \`fixedcost\` 
+              ADD COLUMN \`entityId\` VARCHAR(191) NULL
+            `);
+            console.log(
+              "[CREATE FIXED COST] Coluna entityId adicionada com sucesso!",
+            );
+          } catch (addColumnError: any) {
+            console.error(
+              "[CREATE FIXED COST] Erro ao adicionar coluna entityId:",
+              addColumnError?.message,
+            );
+          }
+        }
+      } catch (checkError: any) {
+        console.error(
+          "[CREATE FIXED COST] Erro ao verificar colunas antes de inserir:",
+          checkError?.message,
+        );
+        // Continuar mesmo se a verificação falhar
+      }
+
       // Para outras frequências, tentar usar Prisma Client primeiro
       try {
         console.log(
@@ -382,10 +487,88 @@ export async function createFixedCost(data: FixedCostInput) {
 
         fixedCost = verifiedCost;
       } catch (prismaError: any) {
-        // Se o erro for sobre campo desconhecido, usar SQL raw
+        console.log("[CREATE FIXED COST] Análise do erro:", {
+          code: prismaError?.code,
+          metaCode: prismaError?.meta?.code,
+          mentionsIsFixed: prismaError?.message?.includes("isFixed"),
+          isIsFixedColumnError:
+            prismaError?.code === "P2022" &&
+            prismaError?.meta?.column === "isFixed",
+          errorMessage: prismaError?.message,
+          metaMessage: prismaError?.meta?.message || "",
+          fullError: JSON.stringify({
+            code: prismaError?.code,
+            meta: prismaError?.meta,
+            clientVersion: prismaError?.clientVersion,
+            name: prismaError?.name,
+          }),
+        });
+
+        // Se o erro for sobre coluna não existir (P2022), tentar criar e tentar novamente
+        let columnCreated = false;
         if (
-          prismaError?.message?.includes("Unknown argument `isFixed`") ||
-          prismaError?.message?.includes("Unknown argument")
+          prismaError?.code === "P2022" &&
+          (prismaError?.meta?.column === "entityType" ||
+            prismaError?.meta?.column === "entityId")
+        ) {
+          console.log(
+            `[CREATE FIXED COST] Coluna ${prismaError?.meta?.column} não existe - tentando criar...`,
+          );
+          try {
+            const columnName = prismaError?.meta?.column;
+            const columnType =
+              columnName === "entityType" ? "VARCHAR(20)" : "VARCHAR(191)";
+
+            await db.$executeRawUnsafe(`
+              ALTER TABLE \`fixedcost\` 
+              ADD COLUMN \`${columnName}\` ${columnType} NULL
+            `);
+            console.log(
+              `[CREATE FIXED COST] Coluna ${columnName} criada com sucesso! Tentando novamente...`,
+            );
+            columnCreated = true;
+
+            // Tentar criar novamente
+            fixedCost = await db.fixedCost.create({
+              data: createData as any,
+            });
+
+            // Buscar novamente usando SQL raw para garantir que isFixed seja retornado corretamente
+            const selectResult = (await db.$queryRawUnsafe(
+              `SELECT * FROM \`fixedcost\` WHERE \`id\` = ?`,
+              fixedCost.id,
+            )) as any[];
+
+            let verifiedCost = fixedCost;
+            if (selectResult && selectResult.length > 0) {
+              const rawCost = selectResult[0];
+              rawCost.isFixed =
+                rawCost.isFixed === 1 || rawCost.isFixed === true;
+              verifiedCost = rawCost as any;
+            }
+
+            fixedCost = verifiedCost;
+            console.log(
+              `[CREATE FIXED COST] Custo criado com sucesso após criar coluna ${columnName}`,
+            );
+          } catch (retryError: any) {
+            console.error(
+              `[CREATE FIXED COST] Erro ao criar coluna ou tentar novamente:`,
+              retryError?.message,
+            );
+            // Continuar para o fallback SQL raw
+            columnCreated = false;
+          }
+        }
+
+        // Se o erro for sobre campo desconhecido ou se a coluna não foi criada com sucesso, usar SQL raw
+        if (
+          !columnCreated &&
+          (prismaError?.message?.includes("Unknown argument `isFixed`") ||
+            prismaError?.message?.includes("Unknown argument") ||
+            (prismaError?.code === "P2022" &&
+              (prismaError?.meta?.column === "entityType" ||
+                prismaError?.meta?.column === "entityId")))
         ) {
           try {
             // Gerar ID simples (o Prisma cuid será usado quando regenerar)
@@ -394,8 +577,8 @@ export async function createFixedCost(data: FixedCostInput) {
 
             // MySQL usa tinyint(1) para boolean, então usamos 1 ou 0
             // Usar backticks para garantir que os nomes das colunas sejam tratados corretamente
-            const sql = `INSERT INTO \`fixedcost\` (\`id\`, \`userId\`, \`name\`, \`amount\`, \`frequency\`, \`isFixed\`, \`description\`, \`isActive\`, \`createdAt\`, \`updatedAt\`) 
-                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+            const sql = `INSERT INTO \`fixedcost\` (\`id\`, \`userId\`, \`name\`, \`amount\`, \`frequency\`, \`isFixed\`, \`description\`, \`isActive\`, \`entityType\`, \`entityId\`, \`createdAt\`, \`updatedAt\`) 
+                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
             // IMPORTANTE: Preservar false explicitamente - usar comparação estrita
             const isFixedValue =
@@ -417,6 +600,8 @@ export async function createFixedCost(data: FixedCostInput) {
               isFixedStrictTrue: createData.isFixed === true,
               description: createData.description,
               isActive: createData.isActive ? 1 : 0,
+              entityType: createData.entityType,
+              entityId: createData.entityId,
             });
 
             await db.$executeRawUnsafe(
@@ -429,6 +614,8 @@ export async function createFixedCost(data: FixedCostInput) {
               isFixedValue, // MySQL boolean = tinyint(1): 1 = true, 0 = false
               createData.description || null,
               createData.isActive ? 1 : 0,
+              createData.entityType || null,
+              createData.entityId || null,
               now,
               now,
             );
@@ -467,8 +654,8 @@ export async function createFixedCost(data: FixedCostInput) {
               const id = `c${Date.now().toString(36)}${Math.random().toString(36).substring(2, 9)}`;
               const now = new Date();
 
-              const sqlWithoutIsFixed = `INSERT INTO \`fixedcost\` (\`id\`, \`userId\`, \`name\`, \`amount\`, \`frequency\`, \`description\`, \`isActive\`, \`createdAt\`, \`updatedAt\`) 
-                                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`;
+              const sqlWithoutIsFixed = `INSERT INTO \`fixedcost\` (\`id\`, \`userId\`, \`name\`, \`amount\`, \`frequency\`, \`description\`, \`isActive\`, \`entityType\`, \`entityId\`, \`createdAt\`, \`updatedAt\`) 
+                                         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`;
 
               await db.$executeRawUnsafe(
                 sqlWithoutIsFixed,
@@ -479,6 +666,8 @@ export async function createFixedCost(data: FixedCostInput) {
                 createData.frequency,
                 createData.description || null,
                 createData.isActive ? 1 : 0,
+                createData.entityType || null,
+                createData.entityId || null,
                 now,
                 now,
               );

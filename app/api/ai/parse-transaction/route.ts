@@ -11,7 +11,6 @@ import {
 import { v4 as uuidv4 } from "uuid";
 import { createWorkPeriod } from "@/app/_actions/work-period";
 import { createGoal } from "@/app/_actions/goal";
-import { askAI } from "@/app/_lib/ai";
 
 export const runtime = "nodejs";
 
@@ -37,14 +36,8 @@ export async function POST(request: NextRequest) {
 
     console.log("Processando prompt:", prompt);
 
-    // Tentar usar IA primeiro para fazer parse inteligente
-    let parsed = await parseTransactionWithAI(prompt, session.user.id);
-
-    // Se a IA não conseguiu, usar fallback de regex
-    if (!parsed) {
-      console.log("IA não conseguiu fazer parse, tentando fallback...");
-      parsed = parseTransactionPrompt(prompt);
-    }
+    // Parse simples do prompt (pode ser melhorado com IA real)
+    const parsed = parseTransactionPrompt(prompt);
 
     if (!parsed) {
       console.error("Não foi possível fazer parse do prompt:", prompt);
@@ -922,100 +915,4 @@ function parseWrittenNumber(text: string): number | null {
   }
 
   return null;
-}
-
-/**
- * Parse de transação usando IA (Ollama ou Hugging Face)
- */
-async function parseTransactionWithAI(
-  prompt: string,
-  userId: string,
-): Promise<ReturnType<typeof parseTransactionPrompt> | null> {
-  try {
-    // Criar prompt estruturado para a IA
-    const aiPrompt = `Analise a seguinte descrição de transação financeira e extraia as informações em formato JSON.
-
-Descrição: "${prompt}"
-
-Extraia as seguintes informações:
-- name: Nome da transação (ex: "Notebook", "Uber", "Salário")
-- amount: Valor numérico (apenas número, sem R$)
-- type: "DEPOSIT" (receita), "EXPENSE" (despesa) ou "INVESTMENT" (investimento)
-- category: Uma das categorias: FOOD, TRANSPORTATION, HOUSING, HEALTH, ENTERTAINMENT, EDUCATION, UTILITY, SALARY, OTHER
-- paymentMethod: "CREDIT_CARD", "DEBIT_CARD", "PIX", "CASH", "BANK_SLIP", "BANK_TRANSFER", "BENEFIT" ou "OTHER"
-- installments: Número de parcelas se mencionado (null se não mencionado)
-- isSubscription: true se for assinatura recorrente, false caso contrário
-- isGoal: true se for uma meta financeira, false caso contrário
-- isWorkPeriod: true se for período de trabalho (freelancer), false caso contrário
-
-Responda APENAS com JSON válido, sem texto adicional. Exemplo:
-{
-  "name": "Notebook",
-  "amount": 3500,
-  "type": "EXPENSE",
-  "category": "OTHER",
-  "paymentMethod": "CREDIT_CARD",
-  "installments": 12,
-  "isSubscription": false,
-  "isGoal": false,
-  "isWorkPeriod": false
-}`;
-
-    const aiResponse = await askAI(aiPrompt, { userId, maxTokens: 300 });
-
-    if (!aiResponse.ok || !aiResponse.text) {
-      console.log("IA não retornou resposta válida");
-      return null;
-    }
-
-    // Tentar extrair JSON da resposta
-    let jsonText = aiResponse.text.trim();
-
-    // Remover markdown code blocks se existirem
-    jsonText = jsonText.replace(/```json\n?/g, "").replace(/```\n?/g, "");
-
-    // Tentar encontrar JSON na resposta
-    const jsonMatch = jsonText.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) {
-      console.log("Não encontrou JSON na resposta da IA");
-      return null;
-    }
-
-    const parsed = JSON.parse(jsonMatch[0]);
-
-    // Validar e converter para o formato esperado
-    if (!parsed.amount || parsed.amount <= 0) {
-      return null;
-    }
-
-    return {
-      name: parsed.name || "Transação",
-      amount: Number(parsed.amount),
-      type:
-        parsed.type === "DEPOSIT"
-          ? TransactionType.DEPOSIT
-          : parsed.type === "INVESTMENT"
-            ? TransactionType.INVESTMENT
-            : TransactionType.EXPENSE,
-      category: (parsed.category || "OTHER") as TransactionCategory,
-      paymentMethod: (parsed.paymentMethod ||
-        "OTHER") as TransactionPaymentMethod,
-      installments: parsed.installments || undefined,
-      isSubscription: parsed.isSubscription || false,
-      isGoal: parsed.isGoal || false,
-      goalCategory: GoalCategory.SAVINGS,
-      goalDeadline: null,
-      goalDescription: null,
-      isWorkPeriod: parsed.isWorkPeriod || false,
-      startTime: null,
-      endTime: null,
-      workDate: null,
-      workExpenses: null,
-      workDescription: null,
-      projectId: null,
-    };
-  } catch (error) {
-    console.error("Erro ao fazer parse com IA:", error);
-    return null;
-  }
 }

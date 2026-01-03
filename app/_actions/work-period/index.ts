@@ -6,9 +6,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 
 const workPeriodSchema = z.object({
-  type: z.enum(["project", "platform", "none"]).optional(), // Apenas para controle do formulário, não salvo no DB
   projectId: z.string().optional().nullable(),
-  platform: z.string().optional().nullable(),
   date: z.date(),
   startTime: z.string(), // "HH:mm" format
   endTime: z.string(), // "HH:mm" format
@@ -93,7 +91,6 @@ export async function createWorkPeriod(data: WorkPeriodInput) {
       data: {
         userId,
         projectId: validatedData.projectId || null,
-        platform: validatedData.platform || null,
         date,
         startTime,
         endTime,
@@ -194,10 +191,6 @@ export async function updateWorkPeriod(
           validatedData.projectId !== undefined
             ? validatedData.projectId
             : existingPeriod.projectId,
-        platform:
-          validatedData.platform !== undefined
-            ? validatedData.platform
-            : (existingPeriod as any).platform || null,
         date,
         startTime,
         endTime,

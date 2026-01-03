@@ -69,15 +69,6 @@ export const familySalaryBalanceSchema = z.object({
       userId: z.string(),
       name: z.string(),
       amount: z.number().min(0),
-      payments: z
-        .array(
-          z.object({
-            label: z.string(),
-            day: z.number().min(1).max(31),
-            value: z.number().min(0),
-          }),
-        )
-        .optional(),
     }),
   ),
 });

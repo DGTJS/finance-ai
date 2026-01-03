@@ -1,8 +1,6 @@
 "use client";
 
 import { useMemo } from "react";
-import { Button } from "./ui/button";
-import { useRouter } from "next/navigation";
 
 export interface Category {
   name: string;
@@ -13,7 +11,6 @@ export interface Category {
 
 interface CircularExpenseChartProps {
   categories: Category[];
-  onViewTransactions?: () => void;
   showBalance?: boolean;
   balance?: number;
 }
@@ -47,12 +44,9 @@ function getPositionOnCircle(
 
 export default function CircularExpenseChart({
   categories,
-  onViewTransactions,
   showBalance = false,
   balance = 0,
 }: CircularExpenseChartProps) {
-  const router = useRouter();
-
   // Debug: verificar quantas categorias estão chegando
   if (typeof window !== "undefined") {
     console.log(
@@ -251,36 +245,18 @@ export default function CircularExpenseChart({
     console.error("Nenhum arco foi gerado das categorias:", categories);
   }
 
-  const handleViewTransactions = () => {
-    if (onViewTransactions) {
-      onViewTransactions();
-    } else {
-      router.push("/transactions");
-    }
-  };
-
   return (
-    <div className="flex w-full items-center justify-center p-1 sm:p-2 md:p-4">
+    <div className="flex min-h-[300px] w-full items-center justify-center p-2 sm:min-h-[350px] sm:p-4 md:min-h-[400px] md:p-6">
       <div
         className="relative w-full max-w-full"
-        style={{
-          aspectRatio: "1 / 1",
-          maxWidth: "100%",
-          minHeight: "250px",
-          maxHeight: "400px",
-        }}
+        style={{ aspectRatio: "1 / 1", maxWidth: "100%" }}
       >
         <svg
           width="100%"
           height="100%"
           viewBox="0 0 400 400"
-          className="w-full"
-          style={{
-            display: "block",
-            maxWidth: "100%",
-            minHeight: "250px",
-            maxHeight: "400px",
-          }}
+          className="h-auto w-full"
+          style={{ display: "block", maxWidth: "100%", height: "auto" }}
           preserveAspectRatio="xMidYMid meet"
         >
           {/* Arcos */}
@@ -362,12 +338,12 @@ export default function CircularExpenseChart({
 
         {/* Centro do gráfico */}
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-          <div className="pointer-events-auto flex flex-col items-center gap-2 text-center">
-            <p className="text-muted-foreground text-sm font-medium">
+          <div className="pointer-events-auto flex flex-col items-center gap-1 text-center">
+            <p className="text-muted-foreground text-xs font-medium">
               {showBalance ? "Saldo Total" : "Total"}
             </p>
             <p
-              className={`text-2xl font-bold sm:text-3xl ${
+              className={`text-lg font-bold sm:text-xl ${
                 showBalance
                   ? balance >= 0
                     ? "text-green-600 dark:text-green-400"
@@ -377,12 +353,6 @@ export default function CircularExpenseChart({
             >
               {showBalance ? formatCurrency(balance) : formatCurrency(total)}
             </p>
-            <Button
-              onClick={handleViewTransactions}
-              className="mt-2 h-auto rounded-md bg-[#065f46] px-4 py-2 text-xs font-medium text-white shadow-sm transition-all hover:bg-[#047857] hover:shadow-md sm:text-sm"
-            >
-              Ver transações
-            </Button>
           </div>
         </div>
       </div>

@@ -46,6 +46,10 @@ model User {
   projects            Project[]
   workPeriods         WorkPeriod[]
   workGoal            UserGoal?
+  fixedCosts          FixedCost[]
+  companies           Company[]
+  companyRevenues     CompanyRevenue[]
+  companyProducts     CompanyProduct[]
   createdAt           DateTime          @default(now())
   updatedAt           DateTime          @updatedAt
 }
@@ -229,7 +233,6 @@ model UserSettings {
   userTitle          String? // Título personalizado exibido na sidebar (ex: "Gerente Financeiro")
   hfApiKey           String?  @db.Text // Chave da API Hugging Face
   closingDay         Int?     @default(5) // Dia de fechamento
-  savingsGoal        Float?   @default(0) // Meta de economia mensal
   emailNotifications Boolean  @default(true)
   subscriptionAlerts Boolean  @default(true)
   transactionAlerts  Boolean  @default(false)
@@ -345,7 +348,6 @@ model WorkPeriod {
   id          String   @id @default(cuid())
   userId      String
   projectId   String? // Opcional - pode trabalhar sem projeto
-  platform    String? // Opcional - plataforma online (Uber, 99, iFood, etc.)
   date        DateTime // Data do serviço
   startTime   DateTime // Horário de início
   endTime     DateTime // Horário de fim
@@ -367,21 +369,119 @@ model WorkPeriod {
 
 // UserGoal - Metas de trabalho para freelancers
 model UserGoal {
-  id          String   @id @default(cuid())
-  userId      String   @unique
-  goalType    String   @default("monthly") // "daily", "weekly", "monthly", "custom"
-  dailyGoal   Float? // Meta diária (opcional)
-  weeklyGoal  Float? // Meta semanal (opcional)
-  monthlyGoal Float? // Meta mensal (opcional)
-  customGoal  Float? // Meta personalizada (opcional)
+  id              String    @id @default(cuid())
+  userId          String    @unique
+  goalType        String    @default("monthly") // "daily", "weekly", "monthly", "custom"
+  dailyGoal       Float? // Meta diária (opcional)
+  weeklyGoal      Float? // Meta semanal (opcional)
+  monthlyGoal     Float? // Meta mensal (opcional)
+  customGoal      Float? // Meta personalizada (opcional)
   customStartDate DateTime? // Data inicial da meta personalizada
   customEndDate   DateTime? // Data final da meta personalizada
-  maxHoursDay Float? // Horas máximas por dia (opcional)
-  workDays    String   @default("1,2,3,4,5,6,7") // Dias disponíveis: 1=domingo, 2=segunda, ..., 7=sábado
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  maxHoursDay     Float? // Horas máximas por dia (opcional)
+  workDays        String    @default("1,2,3,4,5,6,7") // Dias disponíveis: 1=domingo, 2=segunda, ..., 7=sábado
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
+}
+
+// FixedCost - Custos fixos para freelancers e empresas
+model FixedCost {
+  id          String             @id @default(cuid())
+  userId      String
+  name        String // Nome do custo (ex: "Taxa da plataforma", "Aluguel do escritório")
+  amount      Float // Valor do custo
+  frequency   FixedCostFrequency @default(DAILY) // Frequência: diário, semanal, mensal
+  isFixed     Boolean            @default(true) // Se é custo fixo (acumula) ou único (aplica apenas uma vez)
+  isActive    Boolean            @default(true) // Se está ativo
+  description String?            @db.Text // Descrição opcional
+  entityType  String?            // Tipo da entidade: "USER" (pessoa física) ou "COMPANY" (empresa)
+  entityId    String?            // ID da entidade (userId para USER, companyId para COMPANY)
+  createdAt   DateTime           @default(now())
+  updatedAt   DateTime           @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("fixedcost")
+  @@index([userId])
+  @@index([isActive])
+  @@index([isFixed])
+  @@index([entityType, entityId])
+}
+
+enum FixedCostFrequency {
+  DAILY // Diário
+  WEEKLY // Semanal
+  MONTHLY // Mensal
+  ONCE // Único (aplicado apenas uma vez)
+}
+
+// Company - Empresas do usuário
+model Company {
+  id          String   @id @default(cuid())
+  userId      String
+  name        String // Nome da empresa
+  companyType String // Tipo da empresa (ex: "LTDA", "MEI", "EIRELI", etc.)
+  hasStock    Boolean  @default(false) // Se a empresa possui controle de estoque
+  isActive    Boolean  @default(true) // Se a empresa está ativa
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  revenues CompanyRevenue[]
+  products CompanyProduct[]
+
+  @@index([userId])
+  @@index([isActive])
+  @@map("company")
+}
+
+// CompanyRevenue - Receitas empresariais
+model CompanyRevenue {
+  id              String   @id @default(cuid())
+  companyId       String
+  userId          String // Usuário dono da empresa
+  amount          Float // Valor da receita
+  origin          String // Origem: "Venda", "Serviço", "Assinatura"
+  paymentMethod   String // Forma de recebimento: "PIX", "Cartão", "Boleto", "Dinheiro", "Transferência"
+  date            DateTime // Data da receita
+  description     String?  @db.Text // Descrição opcional
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([userId])
+  @@index([date])
+  @@map("companyrevenue")
+}
+
+// CompanyProduct - Produtos em estoque
+model CompanyProduct {
+  id              String   @id @default(cuid())
+  companyId       String
+  userId          String // Usuário dono da empresa
+  name            String // Nome do produto
+  quantity        Int      @default(0) // Quantidade em estoque
+  minQuantity     Int      @default(0) // Quantidade mínima (para alerta)
+  costPrice       Float    @default(0) // Preço de custo
+  salePrice       Float    @default(0) // Preço de venda
+  margin          Float    @default(0) // Margem calculada: ((salePrice - costPrice) / costPrice) * 100
+  description     String?  @db.Text // Descrição opcional
+  isActive        Boolean  @default(true) // Se o produto está ativo
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  company Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([userId])
+  @@index([isActive])
+  @@map("companyproduct")
 }
