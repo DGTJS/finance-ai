@@ -62,8 +62,11 @@ export async function createWorkPeriod(data: WorkPeriodInput) {
       validatedData.endTime,
     );
 
-    // Calcular lucro líquido
-    const netProfit = validatedData.amount - validatedData.expenses;
+    // Converter valores de reais para centavos (inteiros) antes de salvar
+    // O formulário envia valores em centavos (já convertidos pelo MoneyInput)
+    const amountInCents = Math.round(validatedData.amount);
+    const expensesInCents = Math.round(validatedData.expenses);
+    const netProfitInCents = amountInCents - expensesInCents;
 
     // Combinar data com horários (usando horário brasileiro)
     // A data já vem no horário brasileiro do cliente, precisamos garantir que seja salva corretamente
@@ -95,9 +98,9 @@ export async function createWorkPeriod(data: WorkPeriodInput) {
         startTime,
         endTime,
         hours,
-        amount: validatedData.amount,
-        expenses: validatedData.expenses,
-        netProfit,
+        amount: amountInCents,
+        expenses: expensesInCents,
+        netProfit: netProfitInCents,
         description: validatedData.description || null,
       },
     });
@@ -179,10 +182,16 @@ export async function updateWorkPeriod(
       }
     }
 
-    // Recalcular lucro líquido
-    const amount = validatedData.amount ?? existingPeriod.amount;
-    const expenses = validatedData.expenses ?? existingPeriod.expenses;
-    const netProfit = amount - expenses;
+    // Recalcular lucro líquido (valores em centavos)
+    const amountInCents =
+      validatedData.amount !== undefined
+        ? Math.round(validatedData.amount)
+        : existingPeriod.amount;
+    const expensesInCents =
+      validatedData.expenses !== undefined
+        ? Math.round(validatedData.expenses)
+        : existingPeriod.expenses;
+    const netProfitInCents = amountInCents - expensesInCents;
 
     const updatedPeriod = await db.workPeriod.update({
       where: { id },
@@ -195,9 +204,9 @@ export async function updateWorkPeriod(
         startTime,
         endTime,
         hours,
-        amount,
-        expenses,
-        netProfit,
+        amount: amountInCents,
+        expenses: expensesInCents,
+        netProfit: netProfitInCents,
         description:
           validatedData.description !== undefined
             ? validatedData.description
@@ -296,9 +305,17 @@ export async function getWorkPeriods(startDate?: Date, endDate?: Date) {
       },
     });
 
+    // Converter valores de centavos para reais para exibição
+    const periodsWithReais = periods.map((period) => ({
+      ...period,
+      amount: period.amount / 100,
+      expenses: period.expenses / 100,
+      netProfit: period.netProfit / 100,
+    }));
+
     return {
       success: true,
-      data: periods,
+      data: periodsWithReais,
     };
   } catch (error) {
     console.error("Erro ao buscar períodos:", error);
@@ -347,16 +364,25 @@ export async function getWorkPeriodStats(startDate?: Date, endDate?: Date) {
     });
 
     const totalHours = periods.reduce((sum, p) => sum + p.hours, 0);
-    const totalAmount = periods.reduce((sum, p) => sum + Number(p.amount), 0);
-    const totalExpenses = periods.reduce(
+    // Valores estão em centavos no banco, converter para reais
+    const totalAmountCents = periods.reduce(
+      (sum, p) => sum + Number(p.amount),
+      0,
+    );
+    const totalExpensesCents = periods.reduce(
       (sum, p) => sum + Number(p.expenses),
       0,
     );
-    const totalNetProfit = periods.reduce(
+    const totalNetProfitCents = periods.reduce(
       (sum, p) => sum + Number(p.netProfit),
       0,
     );
     const periodCount = periods.length;
+
+    // Converter para reais
+    const totalAmount = totalAmountCents / 100;
+    const totalExpenses = totalExpensesCents / 100;
+    const totalNetProfit = totalNetProfitCents / 100;
 
     return {
       success: true,

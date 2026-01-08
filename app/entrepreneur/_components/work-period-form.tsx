@@ -178,6 +178,8 @@ export default function WorkPeriodForm({
           type = "platform";
         }
 
+        // Os valores vêm da action já convertidos para reais
+        // Precisamos converter de volta para centavos para o MoneyInput
         form.reset({
           type,
           projectId: period.projectId || null,
@@ -185,8 +187,9 @@ export default function WorkPeriodForm({
           date: dateObj,
           startTime: startTimeStr,
           endTime: endTimeStr,
-          amount: period.amount,
-          expenses: period.expenses,
+          // Converter de reais para centavos para o formulário (MoneyInput trabalha com centavos)
+          amount: Math.round(period.amount * 100),
+          expenses: Math.round(period.expenses * 100),
           description: period.description || "",
         });
       } else {
@@ -268,9 +271,15 @@ export default function WorkPeriodForm({
 
   const calculatedHours =
     startTime && endTime ? calculateHours(startTime, endTime) : 0;
-  const amount = form.watch("amount") || 0;
-  const expenses = form.watch("expenses") || 0;
-  const netProfit = amount - expenses;
+  // Valores estão em centavos no formulário
+  const amountCents = form.watch("amount") || 0;
+  const expensesCents = form.watch("expenses") || 0;
+  // Calcular lucro líquido em centavos
+  const netProfitCents = amountCents - expensesCents;
+  // Converter para reais apenas para exibição
+  const amount = amountCents / 100;
+  const expenses = expensesCents / 100;
+  const netProfit = netProfitCents / 100;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -478,12 +487,15 @@ export default function WorkPeriodForm({
                   <FormLabel>Valor Recebido</FormLabel>
                   <FormControl>
                     <MoneyInput
-                      value={field.value ? (field.value * 100).toString() : ""}
+                      value={
+                        field.value !== undefined && field.value !== null
+                          ? Math.round(field.value).toString()
+                          : ""
+                      }
                       onValueChange={(value) => {
-                        // MoneyInput retorna centavos, converter para reais
+                        // MoneyInput retorna centavos, manter em centavos
                         const centsValue = parseFloat(value) || 0;
-                        const reaisValue = centsValue / 100;
-                        field.onChange(reaisValue);
+                        field.onChange(Math.round(centsValue));
                       }}
                       placeholder="R$ 0,00"
                     />
@@ -502,12 +514,15 @@ export default function WorkPeriodForm({
                   <FormLabel>Despesas</FormLabel>
                   <FormControl>
                     <MoneyInput
-                      value={field.value ? (field.value * 100).toString() : ""}
+                      value={
+                        field.value !== undefined && field.value !== null
+                          ? Math.round(field.value).toString()
+                          : ""
+                      }
                       onValueChange={(value) => {
-                        // MoneyInput retorna centavos, converter para reais
+                        // MoneyInput retorna centavos, manter em centavos
                         const centsValue = parseFloat(value) || 0;
-                        const reaisValue = centsValue / 100;
-                        field.onChange(reaisValue);
+                        field.onChange(Math.round(centsValue));
                       }}
                       placeholder="R$ 0,00"
                     />
@@ -529,6 +544,8 @@ export default function WorkPeriodForm({
                   {new Intl.NumberFormat("pt-BR", {
                     style: "currency",
                     currency: "BRL",
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
                   }).format(netProfit)}
                 </p>
                 <p className="text-muted-foreground text-xs">
@@ -536,11 +553,15 @@ export default function WorkPeriodForm({
                   {new Intl.NumberFormat("pt-BR", {
                     style: "currency",
                     currency: "BRL",
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
                   }).format(amount)}{" "}
                   - Despesas:{" "}
                   {new Intl.NumberFormat("pt-BR", {
                     style: "currency",
                     currency: "BRL",
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
                   }).format(expenses)}
                 </p>
               </div>
