@@ -46,6 +46,8 @@ import { getFixedCosts } from "@/app/_actions/fixed-cost";
 interface WorkPeriod {
   id: string;
   date: Date;
+  startTime?: Date;
+  endTime?: Date;
   netProfit: number;
   amount: number;
   expenses: number;
@@ -89,10 +91,10 @@ export function DailyEarningsChart({ periods }: DailyEarningsChartProps) {
     }>
   >([]);
 
-  // Frequência de acumulação dos ganhos
+  // Frequência de acumulação dos ganhos (também controla o período exibido)
   const [accumulationFrequency, setAccumulationFrequency] = useState<
     "DAILY" | "WEEKLY" | "MONTHLY"
-  >("DAILY");
+  >("MONTHLY");
 
   // Função para buscar e atualizar custos fixos
   const fetchFixedCosts = async () => {
@@ -167,9 +169,29 @@ export function DailyEarningsChart({ periods }: DailyEarningsChartProps) {
     };
   }, []);
 
-  // Calcular datas baseado no modo de seleção
-  // IMPORTANTE: O período do gráfico é independente da frequência de acumulação do lucro
+  // Calcular datas baseado no modo de seleção e frequência de acumulação
+  // Quando a frequência é DAILY ou WEEKLY, o período é controlado automaticamente
   const dateRange = useMemo(() => {
+    // Se for modo diário, mostrar apenas o dia atual
+    if (accumulationFrequency === "DAILY") {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const endOfToday = new Date(today);
+      endOfToday.setHours(23, 59, 59, 999);
+      return { start: today, end: endOfToday };
+    }
+
+    // Se for modo semanal, mostrar os últimos 7 dias
+    if (accumulationFrequency === "WEEKLY") {
+      const today = new Date();
+      today.setHours(23, 59, 59, 999);
+      const sevenDaysAgo = new Date(today);
+      sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6); // 6 dias atrás + hoje = 7 dias
+      sevenDaysAgo.setHours(0, 0, 0, 0);
+      return { start: sevenDaysAgo, end: today };
+    }
+
+    // Se for modo mensal, usar o modo de seleção normal
     if (selectionMode === "month") {
       const start = new Date(selectedYear, selectedMonth - 1, 1);
       const end = new Date(selectedYear, selectedMonth, 0, 23, 59, 59, 999);
@@ -180,7 +202,14 @@ export function DailyEarningsChart({ periods }: DailyEarningsChartProps) {
       end.setHours(23, 59, 59, 999);
       return { start, end };
     }
-  }, [selectionMode, selectedYear, selectedMonth, startDate, endDate]);
+  }, [
+    accumulationFrequency,
+    selectionMode,
+    selectedYear,
+    selectedMonth,
+    startDate,
+    endDate,
+  ]);
 
   // Cache para armazenar custos fixos calculados por semana/mês
   // IMPORTANTE: Deve ser definido DEPOIS de dateRange
@@ -437,57 +466,104 @@ export function DailyEarningsChart({ periods }: DailyEarningsChartProps) {
     // Filtrar períodos no range selecionado
     const filteredPeriods = periods.filter((period) => {
       const periodDate = new Date(period.date);
-      // Normalizar datas para comparação (apenas data, sem hora)
-      const periodDateOnly = new Date(
-        periodDate.getFullYear(),
-        periodDate.getMonth(),
-        periodDate.getDate(),
-      );
-      const startDateOnly = new Date(
-        dateRange.start.getFullYear(),
-        dateRange.start.getMonth(),
-        dateRange.start.getDate(),
-      );
-      const endDateOnly = new Date(
-        dateRange.end.getFullYear(),
-        dateRange.end.getMonth(),
-        dateRange.end.getDate(),
-      );
-      return periodDateOnly >= startDateOnly && periodDateOnly <= endDateOnly;
+
+      if (accumulationFrequency === "DAILY") {
+        // Modo diário: verificar se é o mesmo dia
+        const periodDateOnly = new Date(
+          periodDate.getFullYear(),
+          periodDate.getMonth(),
+          periodDate.getDate(),
+        );
+        const startDateOnly = new Date(
+          dateRange.start.getFullYear(),
+          dateRange.start.getMonth(),
+          dateRange.start.getDate(),
+        );
+        return periodDateOnly.getTime() === startDateOnly.getTime();
+      } else {
+        // Modo semanal ou mensal: comparar apenas datas
+        const periodDateOnly = new Date(
+          periodDate.getFullYear(),
+          periodDate.getMonth(),
+          periodDate.getDate(),
+        );
+        const startDateOnly = new Date(
+          dateRange.start.getFullYear(),
+          dateRange.start.getMonth(),
+          dateRange.start.getDate(),
+        );
+        const endDateOnly = new Date(
+          dateRange.end.getFullYear(),
+          dateRange.end.getMonth(),
+          dateRange.end.getDate(),
+        );
+        return periodDateOnly >= startDateOnly && periodDateOnly <= endDateOnly;
+      }
     });
 
-    // Agrupar por dia
+    // Agrupar por dia ou por hora (dependendo do modo)
     const dailyMap = new Map<string, number>();
+    const hourlyMap = new Map<string, number>(); // Para modo diário
+
     filteredPeriods.forEach((period) => {
       try {
         const date = new Date(period.date);
         if (isNaN(date.getTime())) {
           return;
         }
-        const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-        const current = dailyMap.get(dateKey) || 0;
-        const netProfit =
-          typeof period.netProfit === "number" ? period.netProfit : 0;
-        dailyMap.set(dateKey, current + netProfit);
+
+        if (accumulationFrequency === "DAILY" && period.startTime) {
+          // Modo diário: agrupar por hora
+          const startTime = new Date(period.startTime);
+          const hour = startTime.getHours();
+          const hourKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}-${String(hour).padStart(2, "0")}`;
+          const current = hourlyMap.get(hourKey) || 0;
+          const netProfit =
+            typeof period.netProfit === "number" ? period.netProfit : 0;
+          hourlyMap.set(hourKey, current + netProfit);
+        } else {
+          // Modo semanal ou mensal: agrupar por dia
+          const dateKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+          const current = dailyMap.get(dateKey) || 0;
+          const netProfit =
+            typeof period.netProfit === "number" ? period.netProfit : 0;
+          dailyMap.set(dateKey, current + netProfit);
+        }
       } catch (error) {
         // Ignorar erros ao processar período
       }
     });
 
-    // Criar array de todos os dias no range
+    // Criar array de todos os dias/horas no range
     const days: { date: Date; earnings: number }[] = [];
-    const current = new Date(dateRange.start);
-    current.setHours(0, 0, 0, 0);
-    const endDate = new Date(dateRange.end);
-    endDate.setHours(23, 59, 59, 999);
 
-    while (current <= endDate) {
-      const dateKey = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, "0")}-${String(current.getDate()).padStart(2, "0")}`;
-      days.push({
-        date: new Date(current),
-        earnings: dailyMap.get(dateKey) || 0,
-      });
-      current.setDate(current.getDate() + 1);
+    if (accumulationFrequency === "DAILY") {
+      // Modo diário: criar array com as 24 horas do dia
+      const today = new Date(dateRange.start);
+      for (let hour = 0; hour < 24; hour++) {
+        const hourDate = new Date(today);
+        hourDate.setHours(hour, 0, 0, 0);
+        const hourKey = `${hourDate.getFullYear()}-${String(hourDate.getMonth() + 1).padStart(2, "0")}-${String(hourDate.getDate()).padStart(2, "0")}-${String(hour).padStart(2, "0")}`;
+        days.push({
+          date: hourDate,
+          earnings: hourlyMap.get(hourKey) || 0,
+        });
+      }
+    } else {
+      // Modo semanal ou mensal: criar array com todos os dias
+      const current = new Date(dateRange.start);
+      current.setHours(0, 0, 0, 0);
+      const endDate = new Date(dateRange.end);
+      endDate.setHours(23, 59, 59, 999);
+
+      while (current <= endDate) {
+        const dateKey = `${current.getFullYear()}-${String(current.getMonth() + 1).padStart(2, "0")}-${String(current.getDate()).padStart(2, "0")}`;
+        days.push({
+          date: new Date(current),
+          earnings: dailyMap.get(dateKey) || 0,
+        });
+        current.setDate(current.getDate() + 1);
+      }
     }
 
     // Calcular custos únicos por dia - cada custo único deve ser deduzido no dia em que foi criado
@@ -567,20 +643,25 @@ export function DailyEarningsChart({ periods }: DailyEarningsChartProps) {
       let currentPeriodKey = "";
       switch (accumulationFrequency) {
         case "DAILY":
-          // Acumular dia a dia - sempre acumula todos os ganhos
+          // Modo diário: acumular por hora, mas custos fixos são aplicados apenas uma vez no início do dia
           cumulative += day.earnings;
-          // Deduzir apenas a diferença dos custos fixos recorrentes desde o dia anterior
-          const fixedCostDifference =
-            recurringFixedCostForDay - previousFixedCost;
-          cumulative -= fixedCostDifference;
-          previousFixedCost = recurringFixedCostForDay;
-          // Deduzir custos únicos do dia específico
-          if (oneTimeCostsForDay > 0) {
-            console.log(
-              `[DAILY EARNINGS CHART] DAILY: Deduzindo R$ ${oneTimeCostsForDay} do acumulado. Antes: ${cumulative}, depois: ${cumulative - oneTimeCostsForDay}`,
-            );
+
+          // No modo diário, aplicar custos fixos apenas na primeira hora (00:00)
+          if (date.getHours() === 0) {
+            // Aplicar custos fixos do dia inteiro apenas na primeira hora
+            const fixedCostDifference =
+              recurringFixedCostForDay - previousFixedCost;
+            cumulative -= fixedCostDifference;
+            previousFixedCost = recurringFixedCostForDay;
+
+            // Deduzir custos únicos do dia específico apenas na primeira hora
+            if (oneTimeCostsForDay > 0) {
+              console.log(
+                `[DAILY EARNINGS CHART] DAILY: Deduzindo R$ ${oneTimeCostsForDay} do acumulado. Antes: ${cumulative}, depois: ${cumulative - oneTimeCostsForDay}`,
+              );
+              cumulative -= oneTimeCostsForDay;
+            }
           }
-          cumulative -= oneTimeCostsForDay;
           break;
         case "WEEKLY":
           // Acumular por semana (domingo a sábado)
@@ -653,22 +734,41 @@ export function DailyEarningsChart({ periods }: DailyEarningsChartProps) {
       // Calcular custo total para exibição no tooltip (incluindo custos únicos do dia)
       const totalCostForDay = recurringFixedCostForDay + oneTimeCostsForDay;
 
-      const result = {
-        date: date.getDate(), // Dia do mês
-        earnings: day.earnings, // Ganho bruto do dia
-        fixedCost: totalCostForDay, // Custo total acumulado do dia (recorrentes + únicos) para exibição no tooltip
-        netEarnings, // Ganho bruto do dia
-        cumulative, // Saldo acumulado (ganhos - custos fixos recorrentes - custos únicos uma vez) - mostra quanto tem ou está devendo
-        periodKey: currentPeriodKey, // Chave do período para agrupamento
-        formattedDate: date.toLocaleDateString("pt-BR", {
-          day: "2-digit",
-          month: "short",
-        }),
-        fullDate: date.toLocaleDateString("pt-BR", {
+      // Formatar data/hora para exibição
+      let formattedDate: string;
+      let fullDate: string;
+
+      if (accumulationFrequency === "DAILY") {
+        // Modo diário: mostrar hora
+        formattedDate = `${date.getHours().toString().padStart(2, "0")}:00`;
+        fullDate = `${date.toLocaleDateString("pt-BR", {
           day: "2-digit",
           month: "long",
           year: "numeric",
-        }),
+        })} às ${date.getHours().toString().padStart(2, "0")}:00`;
+      } else {
+        // Modo semanal ou mensal: mostrar data
+        formattedDate = date.toLocaleDateString("pt-BR", {
+          day: "2-digit",
+          month: "short",
+        });
+        fullDate = date.toLocaleDateString("pt-BR", {
+          day: "2-digit",
+          month: "long",
+          year: "numeric",
+        });
+      }
+
+      const result = {
+        date:
+          accumulationFrequency === "DAILY" ? date.getHours() : date.getDate(), // Hora do dia ou dia do mês
+        earnings: day.earnings, // Ganho bruto do dia/hora
+        fixedCost: totalCostForDay, // Custo total acumulado do dia (recorrentes + únicos) para exibição no tooltip
+        netEarnings, // Ganho bruto do dia/hora
+        cumulative, // Saldo acumulado (ganhos - custos fixos recorrentes - custos únicos uma vez) - mostra quanto tem ou está devendo
+        periodKey: currentPeriodKey, // Chave do período para agrupamento
+        formattedDate,
+        fullDate,
       };
 
       return result;
@@ -873,121 +973,152 @@ export function DailyEarningsChart({ periods }: DailyEarningsChartProps) {
             </div>
           </div>
 
-          {/* Seletor de período */}
-          <div className="flex flex-wrap items-center gap-3">
-            <Calendar className="text-muted-foreground h-4 w-4 shrink-0" />
+          {/* Seletor de período - apenas mostrar quando for modo mensal */}
+          {accumulationFrequency === "MONTHLY" && (
+            <div className="flex flex-wrap items-center gap-3">
+              <Calendar className="text-muted-foreground h-4 w-4 shrink-0" />
 
-            {/* Toggle entre modo mês e personalizado */}
-            <div className="flex items-center gap-2 rounded-md border p-0.5">
-              <Button
-                variant={selectionMode === "month" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setSelectionMode("month")}
-                className="h-7 px-2 text-xs"
-              >
-                Mês/Ano
-              </Button>
-              <Button
-                variant={selectionMode === "custom" ? "default" : "ghost"}
-                size="sm"
-                onClick={() => setSelectionMode("custom")}
-                className="h-7 px-2 text-xs"
-              >
-                Personalizado
-              </Button>
+              {/* Toggle entre modo mês e personalizado */}
+              <div className="flex items-center gap-2 rounded-md border p-0.5">
+                <Button
+                  variant={selectionMode === "month" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setSelectionMode("month")}
+                  className="h-7 px-2 text-xs"
+                >
+                  Mês/Ano
+                </Button>
+                <Button
+                  variant={selectionMode === "custom" ? "default" : "ghost"}
+                  size="sm"
+                  onClick={() => setSelectionMode("custom")}
+                  className="h-7 px-2 text-xs"
+                >
+                  Personalizado
+                </Button>
+              </div>
+
+              {selectionMode === "month" ? (
+                /* Modo Mês/Ano */
+                <div className="flex items-center gap-2">
+                  <Select
+                    value={selectedMonth.toString()}
+                    onValueChange={(value) => setSelectedMonth(Number(value))}
+                  >
+                    <SelectTrigger className="h-8 w-[140px] text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {[
+                        { value: 1, label: "Janeiro" },
+                        { value: 2, label: "Fevereiro" },
+                        { value: 3, label: "Março" },
+                        { value: 4, label: "Abril" },
+                        { value: 5, label: "Maio" },
+                        { value: 6, label: "Junho" },
+                        { value: 7, label: "Julho" },
+                        { value: 8, label: "Agosto" },
+                        { value: 9, label: "Setembro" },
+                        { value: 10, label: "Outubro" },
+                        { value: 11, label: "Novembro" },
+                        { value: 12, label: "Dezembro" },
+                      ].map((month) => (
+                        <SelectItem
+                          key={month.value}
+                          value={month.value.toString()}
+                        >
+                          {month.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <Select
+                    value={selectedYear.toString()}
+                    onValueChange={(value) => setSelectedYear(Number(value))}
+                  >
+                    <SelectTrigger className="h-8 w-[100px] text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from(
+                        { length: 5 },
+                        (_, i) => now.getFullYear() - i,
+                      ).map((year) => (
+                        <SelectItem key={year} value={year.toString()}>
+                          {year}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              ) : (
+                /* Modo Personalizado */
+                <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex flex-col gap-1">
+                    <Label
+                      htmlFor="start-date"
+                      className="text-muted-foreground text-[10px]"
+                    >
+                      De
+                    </Label>
+                    <Input
+                      id="start-date"
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      className="h-8 w-[140px] text-xs"
+                      max={endDate}
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <Label
+                      htmlFor="end-date"
+                      className="text-muted-foreground text-[10px]"
+                    >
+                      Até
+                    </Label>
+                    <Input
+                      id="end-date"
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      className="h-8 w-[140px] text-xs"
+                      min={startDate}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
+          )}
 
-            {selectionMode === "month" ? (
-              /* Modo Mês/Ano */
-              <div className="flex items-center gap-2">
-                <Select
-                  value={selectedMonth.toString()}
-                  onValueChange={(value) => setSelectedMonth(Number(value))}
-                >
-                  <SelectTrigger className="h-8 w-[140px] text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {[
-                      { value: 1, label: "Janeiro" },
-                      { value: 2, label: "Fevereiro" },
-                      { value: 3, label: "Março" },
-                      { value: 4, label: "Abril" },
-                      { value: 5, label: "Maio" },
-                      { value: 6, label: "Junho" },
-                      { value: 7, label: "Julho" },
-                      { value: 8, label: "Agosto" },
-                      { value: 9, label: "Setembro" },
-                      { value: 10, label: "Outubro" },
-                      { value: 11, label: "Novembro" },
-                      { value: 12, label: "Dezembro" },
-                    ].map((month) => (
-                      <SelectItem
-                        key={month.value}
-                        value={month.value.toString()}
-                      >
-                        {month.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select
-                  value={selectedYear.toString()}
-                  onValueChange={(value) => setSelectedYear(Number(value))}
-                >
-                  <SelectTrigger className="h-8 w-[100px] text-xs">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {Array.from(
-                      { length: 5 },
-                      (_, i) => now.getFullYear() - i,
-                    ).map((year) => (
-                      <SelectItem key={year} value={year.toString()}>
-                        {year}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            ) : (
-              /* Modo Personalizado */
-              <div className="flex flex-wrap items-center gap-2">
-                <div className="flex flex-col gap-1">
-                  <Label
-                    htmlFor="start-date"
-                    className="text-muted-foreground text-[10px]"
-                  >
-                    De
-                  </Label>
-                  <Input
-                    id="start-date"
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    className="h-8 w-[140px] text-xs"
-                    max={endDate}
-                  />
-                </div>
-                <div className="flex flex-col gap-1">
-                  <Label
-                    htmlFor="end-date"
-                    className="text-muted-foreground text-[10px]"
-                  >
-                    Até
-                  </Label>
-                  <Input
-                    id="end-date"
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    className="h-8 w-[140px] text-xs"
-                    min={startDate}
-                  />
-                </div>
-              </div>
-            )}
-          </div>
+          {/* Mostrar período atual quando for diário ou semanal */}
+          {accumulationFrequency === "DAILY" && (
+            <div className="text-muted-foreground text-xs">
+              Mostrando:{" "}
+              {dateRange.start.toLocaleDateString("pt-BR", {
+                day: "2-digit",
+                month: "long",
+                year: "numeric",
+              })}{" "}
+              - 24 horas
+            </div>
+          )}
+          {accumulationFrequency === "WEEKLY" && (
+            <div className="text-muted-foreground text-xs">
+              Mostrando:{" "}
+              {dateRange.start.toLocaleDateString("pt-BR", {
+                day: "2-digit",
+                month: "short",
+              })}{" "}
+              até{" "}
+              {dateRange.end.toLocaleDateString("pt-BR", {
+                day: "2-digit",
+                month: "short",
+                year: "numeric",
+              })}{" "}
+              - 7 últimos dias
+            </div>
+          )}
         </div>
       </CardHeader>
       <CardContent className="flex min-h-full flex-1 flex-col p-3 sm:p-4 md:p-6">
@@ -1034,7 +1165,12 @@ export function DailyEarningsChart({ periods }: DailyEarningsChartProps) {
                       fill: "currentColor",
                       opacity: 0.7,
                     }}
-                    tickFormatter={(value) => `Dia ${value}`}
+                    tickFormatter={(value) => {
+                      if (accumulationFrequency === "DAILY") {
+                        return `${value.toString().padStart(2, "0")}h`;
+                      }
+                      return `Dia ${value}`;
+                    }}
                     stroke="currentColor"
                     className="opacity-50"
                     height={40}

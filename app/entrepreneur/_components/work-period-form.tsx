@@ -478,10 +478,12 @@ export default function WorkPeriodForm({
                   <FormLabel>Valor Recebido</FormLabel>
                   <FormControl>
                     <MoneyInput
-                      value={field.value ? field.value.toString() : ""}
+                      value={field.value ? (field.value * 100).toString() : ""}
                       onValueChange={(value) => {
-                        const numericValue = parseFloat(value) || 0;
-                        field.onChange(numericValue);
+                        // MoneyInput retorna centavos, converter para reais
+                        const centsValue = parseFloat(value) || 0;
+                        const reaisValue = centsValue / 100;
+                        field.onChange(reaisValue);
                       }}
                       placeholder="R$ 0,00"
                     />
@@ -500,10 +502,12 @@ export default function WorkPeriodForm({
                   <FormLabel>Despesas</FormLabel>
                   <FormControl>
                     <MoneyInput
-                      value={field.value ? field.value.toString() : ""}
+                      value={field.value ? (field.value * 100).toString() : ""}
                       onValueChange={(value) => {
-                        const numericValue = parseFloat(value) || 0;
-                        field.onChange(numericValue);
+                        // MoneyInput retorna centavos, converter para reais
+                        const centsValue = parseFloat(value) || 0;
+                        const reaisValue = centsValue / 100;
+                        field.onChange(reaisValue);
                       }}
                       placeholder="R$ 0,00"
                     />
