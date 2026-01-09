@@ -36,11 +36,11 @@ async function getUserId() {
 export async function createOrUpdateWorkGoal(data: WorkGoalInput) {
   try {
     const userId = await getUserId();
-    
+
     // Tentar usar o modelo userGoal, se não existir, usar query raw como fallback
     let userGoalModel;
     let useRawQuery = false;
-    
+
     try {
       userGoalModel = (db as any).userGoal;
       if (!userGoalModel) {
@@ -49,18 +49,32 @@ export async function createOrUpdateWorkGoal(data: WorkGoalInput) {
     } catch (e) {
       useRawQuery = true;
     }
-    
-    console.log("Dados recebidos:", JSON.stringify(data, null, 2));
-    
+
+    console.log(
+      "📥 [WORK-GOAL-ACTION] Dados recebidos:",
+      JSON.stringify(data, null, 2),
+    );
+    console.log("📥 [WORK-GOAL-ACTION] Tipos dos valores:", {
+      dailyGoal: typeof data.dailyGoal,
+      weeklyGoal: typeof data.weeklyGoal,
+      monthlyGoal: typeof data.monthlyGoal,
+      customGoal: typeof data.customGoal,
+    });
+
     // Validar dados
     let validatedData;
     try {
       validatedData = workGoalSchema.parse(data);
-      console.log("Dados validados:", JSON.stringify(validatedData, null, 2));
+      console.log(
+        "✅ [WORK-GOAL-ACTION] Dados validados:",
+        JSON.stringify(validatedData, null, 2),
+      );
     } catch (zodError) {
       console.error("Erro de validação Zod:", zodError);
       if (zodError instanceof z.ZodError) {
-        const errorMessages = zodError.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ');
+        const errorMessages = zodError.errors
+          .map((e) => `${e.path.join(".")}: ${e.message}`)
+          .join(", ");
         console.error("Mensagens de erro:", errorMessages);
         return {
           success: false,
@@ -77,7 +91,8 @@ export async function createOrUpdateWorkGoal(data: WorkGoalInput) {
         const result: any = await db.$queryRaw`
           SELECT * FROM UserGoal WHERE userId = ${userId}
         `;
-        existingGoal = Array.isArray(result) && result.length > 0 ? result[0] : null;
+        existingGoal =
+          Array.isArray(result) && result.length > 0 ? result[0] : null;
       } catch (rawError) {
         console.error("Erro ao buscar meta com raw query:", rawError);
         // Se a tabela não existir, existingGoal será null
@@ -94,7 +109,8 @@ export async function createOrUpdateWorkGoal(data: WorkGoalInput) {
     let hasGoal = false;
     if (goalType === "daily" && validatedData.dailyGoal) hasGoal = true;
     else if (goalType === "weekly" && validatedData.weeklyGoal) hasGoal = true;
-    else if (goalType === "monthly" && validatedData.monthlyGoal) hasGoal = true;
+    else if (goalType === "monthly" && validatedData.monthlyGoal)
+      hasGoal = true;
     else if (goalType === "custom" && validatedData.customGoal) {
       hasGoal = true;
       // Validar datas para meta personalizada
@@ -119,9 +135,15 @@ export async function createOrUpdateWorkGoal(data: WorkGoalInput) {
       };
     }
 
-    console.log("Meta existente:", existingGoal ? "Sim" : "Não");
-    console.log("Dados para salvar:", JSON.stringify(validatedData, null, 2));
-    console.log("Usando query raw:", useRawQuery);
+    console.log(
+      "🔍 [WORK-GOAL-ACTION] Meta existente:",
+      existingGoal ? "Sim" : "Não",
+    );
+    console.log(
+      "💾 [WORK-GOAL-ACTION] Dados para salvar:",
+      JSON.stringify(validatedData, null, 2),
+    );
+    console.log("🔧 [WORK-GOAL-ACTION] Usando query raw:", useRawQuery);
 
     let goal;
     try {
@@ -130,7 +152,8 @@ export async function createOrUpdateWorkGoal(data: WorkGoalInput) {
         if (existingGoal) {
           // Atualizar usando raw query
           console.log("Atualizando meta existente com raw query...");
-          await db.$executeRawUnsafe(`
+          await db.$executeRawUnsafe(
+            `
             UPDATE UserGoal 
             SET goalType = ?,
                 dailyGoal = ?,
@@ -143,7 +166,7 @@ export async function createOrUpdateWorkGoal(data: WorkGoalInput) {
                 workDays = ?,
                 updatedAt = NOW()
             WHERE userId = ?
-          `, 
+          `,
             validatedData.goalType,
             validatedData.dailyGoal,
             validatedData.weeklyGoal,
@@ -153,20 +176,24 @@ export async function createOrUpdateWorkGoal(data: WorkGoalInput) {
             validatedData.customEndDate,
             validatedData.maxHoursDay,
             validatedData.workDays,
-            userId
+            userId,
           );
           // Buscar o registro atualizado
           const result: any = await db.$queryRawUnsafe(
             `SELECT * FROM UserGoal WHERE userId = ?`,
-            userId
+            userId,
           );
-          goal = Array.isArray(result) && result.length > 0 ? result[0] : existingGoal;
+          goal =
+            Array.isArray(result) && result.length > 0
+              ? result[0]
+              : existingGoal;
           console.log("Meta atualizada com sucesso");
         } else {
           // Criar usando raw query
           console.log("Criando nova meta com raw query...");
           const id = `clx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-          await db.$executeRawUnsafe(`
+          await db.$executeRawUnsafe(
+            `
             INSERT INTO UserGoal (id, userId, goalType, dailyGoal, weeklyGoal, monthlyGoal, customGoal, customStartDate, customEndDate, maxHoursDay, workDays, createdAt, updatedAt)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW(), NOW())
           `,
@@ -180,15 +207,15 @@ export async function createOrUpdateWorkGoal(data: WorkGoalInput) {
             validatedData.customStartDate,
             validatedData.customEndDate,
             validatedData.maxHoursDay,
-            validatedData.workDays
+            validatedData.workDays,
           );
           // Buscar o registro criado
           const result: any = await db.$queryRawUnsafe(
             `SELECT * FROM UserGoal WHERE id = ?`,
-            id
+            id,
           );
           goal = Array.isArray(result) && result.length > 0 ? result[0] : null;
-          console.log("Meta criada com sucesso");
+          console.log("✅ [WORK-GOAL-ACTION] Meta criada com sucesso:", goal);
         }
       } else {
         // Usar o modelo Prisma normalmente
@@ -199,7 +226,10 @@ export async function createOrUpdateWorkGoal(data: WorkGoalInput) {
             where: { userId },
             data: validatedData,
           });
-          console.log("Meta atualizada com sucesso");
+          console.log(
+            "✅ [WORK-GOAL-ACTION] Meta atualizada com sucesso:",
+            goal,
+          );
         } else {
           // Criar nova meta
           console.log("Criando nova meta...");
@@ -209,7 +239,7 @@ export async function createOrUpdateWorkGoal(data: WorkGoalInput) {
               ...validatedData,
             },
           });
-          console.log("Meta criada com sucesso");
+          console.log("✅ [WORK-GOAL-ACTION] Meta criada com sucesso:", goal);
         }
       }
     } catch (dbError) {
@@ -238,7 +268,7 @@ export async function getWorkGoal() {
     // Tentar usar o modelo userGoal, se não existir, usar query raw como fallback
     let userGoalModel;
     let useRawQuery = false;
-    
+
     try {
       userGoalModel = (db as any).userGoal;
       if (!userGoalModel) {
@@ -254,7 +284,11 @@ export async function getWorkGoal() {
       const result = await db.$queryRaw`
         SELECT * FROM UserGoal WHERE userId = ${userId}
       `;
-      goal = Array.isArray(result) ? (result.length > 0 ? result[0] : null) : result;
+      goal = Array.isArray(result)
+        ? result.length > 0
+          ? result[0]
+          : null
+        : result;
     } else {
       goal = await userGoalModel.findUnique({
         where: { userId },
@@ -274,4 +308,3 @@ export async function getWorkGoal() {
     };
   }
 }
-

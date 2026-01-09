@@ -46,6 +46,17 @@ export async function createWorkPeriod(data: WorkPeriodInput) {
   try {
     const userId = await getUserId();
 
+    console.log(
+      "📥 [WORK-PERIOD-ACTION] Dados recebidos:",
+      JSON.stringify(data, null, 2),
+    );
+    console.log("📥 [WORK-PERIOD-ACTION] Tipos dos valores:", {
+      amount: typeof data.amount,
+      expenses: typeof data.expenses,
+      amountValue: data.amount,
+      expensesValue: data.expenses,
+    });
+
     // Verificar se o modelo existe
     if (!db.workPeriod) {
       return {
@@ -55,6 +66,10 @@ export async function createWorkPeriod(data: WorkPeriodInput) {
     }
 
     const validatedData = workPeriodSchema.parse(data);
+    console.log(
+      "✅ [WORK-PERIOD-ACTION] Dados validados:",
+      JSON.stringify(validatedData, null, 2),
+    );
 
     // Calcular horas trabalhadas
     const hours = calculateHours(
@@ -67,6 +82,12 @@ export async function createWorkPeriod(data: WorkPeriodInput) {
     const amountInCents = Math.round(validatedData.amount);
     const expensesInCents = Math.round(validatedData.expenses);
     const netProfitInCents = amountInCents - expensesInCents;
+
+    console.log("💰 [WORK-PERIOD-ACTION] Conversão para centavos:", {
+      amount: `${validatedData.amount} -> ${amountInCents} centavos`,
+      expenses: `${validatedData.expenses} -> ${expensesInCents} centavos`,
+      netProfit: `${netProfitInCents} centavos`,
+    });
 
     // Combinar data com horários (usando horário brasileiro)
     // A data já vem no horário brasileiro do cliente, precisamos garantir que seja salva corretamente
@@ -105,6 +126,13 @@ export async function createWorkPeriod(data: WorkPeriodInput) {
       },
     });
 
+    console.log("✅ [WORK-PERIOD-ACTION] Período criado com sucesso:", {
+      id: workPeriod.id,
+      amount: workPeriod.amount,
+      expenses: workPeriod.expenses,
+      netProfit: workPeriod.netProfit,
+    });
+
     revalidatePath("/entrepreneur");
     return { success: true, data: workPeriod };
   } catch (error) {
@@ -126,6 +154,12 @@ export async function updateWorkPeriod(
   try {
     const userId = await getUserId();
 
+    console.log("📥 [WORK-PERIOD-ACTION] Atualizando período:", id);
+    console.log(
+      "📥 [WORK-PERIOD-ACTION] Dados recebidos:",
+      JSON.stringify(data, null, 2),
+    );
+
     // Verificar se o modelo existe
     if (!db.workPeriod) {
       return {
@@ -135,6 +169,10 @@ export async function updateWorkPeriod(
     }
 
     const validatedData = workPeriodSchema.partial().parse(data);
+    console.log(
+      "✅ [WORK-PERIOD-ACTION] Dados validados:",
+      JSON.stringify(validatedData, null, 2),
+    );
 
     const existingPeriod = await db.workPeriod.findUnique({
       where: { id },
@@ -212,6 +250,13 @@ export async function updateWorkPeriod(
             ? validatedData.description
             : existingPeriod.description,
       },
+    });
+
+    console.log("✅ [WORK-PERIOD-ACTION] Período atualizado com sucesso:", {
+      id: updatedPeriod.id,
+      amount: updatedPeriod.amount,
+      expenses: updatedPeriod.expenses,
+      netProfit: updatedPeriod.netProfit,
     });
 
     revalidatePath("/entrepreneur");

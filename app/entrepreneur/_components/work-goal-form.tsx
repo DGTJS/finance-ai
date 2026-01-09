@@ -119,6 +119,8 @@ export default function WorkGoalForm({
 
   useEffect(() => {
     if (initialData) {
+      // Os valores vêm do banco em reais (Float)
+      // Precisamos manter em reais para o formulário, mas converter para centavos ao passar para MoneyInput
       form.reset({
         goalType: getInitialGoalType(),
         dailyGoal: initialData.dailyGoal || null,
@@ -135,6 +137,12 @@ export default function WorkGoalForm({
         workDays: initialData.workDays
           ? initialData.workDays.split(",").map(Number)
           : [2, 3, 4, 5, 6],
+      });
+      console.log("📥 [WORK-GOAL-FORM] Dados carregados:", {
+        dailyGoal: initialData.dailyGoal,
+        weeklyGoal: initialData.weeklyGoal,
+        monthlyGoal: initialData.monthlyGoal,
+        customGoal: initialData.customGoal,
       });
     }
   }, [initialData, form]);
@@ -161,7 +169,9 @@ export default function WorkGoalForm({
         hasGoal = true;
         // Validar datas para meta personalizada
         if (!data.customStartDate || !data.customEndDate) {
-          toast.error("Selecione a data inicial e final para a meta personalizada");
+          toast.error(
+            "Selecione a data inicial e final para a meta personalizada",
+          );
           setIsSubmitting(false);
           return;
         }
@@ -178,29 +188,32 @@ export default function WorkGoalForm({
         return;
       }
 
-      console.log("Enviando dados:", {
+      // Preparar dados para envio
+      const goalData = {
         goalType: data.goalType,
         dailyGoal: data.goalType === "daily" ? data.dailyGoal : null,
         weeklyGoal: data.goalType === "weekly" ? data.weeklyGoal : null,
         monthlyGoal: data.goalType === "monthly" ? data.monthlyGoal : null,
         customGoal: data.goalType === "custom" ? data.customGoal : null,
-        customStartDate: data.goalType === "custom" ? data.customStartDate : null,
+        customStartDate:
+          data.goalType === "custom" ? data.customStartDate : null,
         customEndDate: data.goalType === "custom" ? data.customEndDate : null,
         maxHoursDay: data.maxHoursDay,
         workDays: data.workDays.sort((a, b) => a - b).join(","),
+      };
+
+      console.log(
+        "📝 [WORK-GOAL-FORM] Enviando dados:",
+        JSON.stringify(goalData, null, 2),
+      );
+      console.log("📝 [WORK-GOAL-FORM] Valores brutos do form:", {
+        dailyGoal: data.dailyGoal,
+        weeklyGoal: data.weeklyGoal,
+        monthlyGoal: data.monthlyGoal,
+        customGoal: data.customGoal,
       });
 
-      const result = await createOrUpdateWorkGoal({
-        goalType: data.goalType,
-        dailyGoal: data.goalType === "daily" ? data.dailyGoal : null,
-        weeklyGoal: data.goalType === "weekly" ? data.weeklyGoal : null,
-        monthlyGoal: data.goalType === "monthly" ? data.monthlyGoal : null,
-        customGoal: data.goalType === "custom" ? data.customGoal : null,
-        customStartDate: data.goalType === "custom" ? data.customStartDate : null,
-        customEndDate: data.goalType === "custom" ? data.customEndDate : null,
-        maxHoursDay: data.maxHoursDay,
-        workDays: data.workDays.sort((a, b) => a - b).join(","),
-      });
+      const result = await createOrUpdateWorkGoal(goalData);
 
       console.log("Resultado:", result);
 
@@ -225,8 +238,8 @@ export default function WorkGoalForm({
         <DialogHeader>
           <DialogTitle>Configurar Metas de Trabalho</DialogTitle>
           <DialogDescription>
-            Escolha o tipo de meta e defina seus objetivos para o AI Work Planner calcular seu
-            plano ideal.
+            Escolha o tipo de meta e defina seus objetivos para o AI Work
+            Planner calcular seu plano ideal.
           </DialogDescription>
         </DialogHeader>
 
@@ -239,10 +252,7 @@ export default function WorkGoalForm({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Tipo de Meta</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    value={field.value}
-                  >
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Selecione o tipo de meta" />
@@ -256,9 +266,12 @@ export default function WorkGoalForm({
                     </SelectContent>
                   </Select>
                   <FormDescription>
-                    {goalType === "daily" && "Defina quanto você quer ganhar por dia"}
-                    {goalType === "weekly" && "Defina quanto você quer ganhar por semana"}
-                    {goalType === "monthly" && "Defina quanto você quer ganhar por mês"}
+                    {goalType === "daily" &&
+                      "Defina quanto você quer ganhar por dia"}
+                    {goalType === "weekly" &&
+                      "Defina quanto você quer ganhar por semana"}
+                    {goalType === "monthly" &&
+                      "Defina quanto você quer ganhar por mês"}
                     {goalType === "custom" && "Defina uma meta personalizada"}
                   </FormDescription>
                   <FormMessage />
@@ -277,10 +290,20 @@ export default function WorkGoalForm({
                     <FormControl>
                       <MoneyInput
                         placeholder="0,00"
-                        value={field.value ? field.value.toString() : ""}
-                        onValueChange={(value) =>
-                          field.onChange(value ? parseFloat(value) : null)
+                        value={
+                          field.value !== undefined && field.value !== null
+                            ? Math.round(field.value * 100).toString()
+                            : ""
                         }
+                        onValueChange={(value) => {
+                          // MoneyInput retorna centavos (string), converter para reais (number)
+                          const centsValue = parseFloat(value) || 0;
+                          const reaisValue = centsValue / 100;
+                          console.log(
+                            `💰 [WORK-GOAL-FORM] Conversão ${field.name}: ${centsValue} centavos = ${reaisValue} reais`,
+                          );
+                          field.onChange(reaisValue > 0 ? reaisValue : null);
+                        }}
                       />
                     </FormControl>
                     <FormMessage />
@@ -300,10 +323,20 @@ export default function WorkGoalForm({
                     <FormControl>
                       <MoneyInput
                         placeholder="0,00"
-                        value={field.value ? field.value.toString() : ""}
-                        onValueChange={(value) =>
-                          field.onChange(value ? parseFloat(value) : null)
+                        value={
+                          field.value !== undefined && field.value !== null
+                            ? Math.round(field.value * 100).toString()
+                            : ""
                         }
+                        onValueChange={(value) => {
+                          // MoneyInput retorna centavos (string), converter para reais (number)
+                          const centsValue = parseFloat(value) || 0;
+                          const reaisValue = centsValue / 100;
+                          console.log(
+                            `💰 [WORK-GOAL-FORM] Conversão ${field.name}: ${centsValue} centavos = ${reaisValue} reais`,
+                          );
+                          field.onChange(reaisValue > 0 ? reaisValue : null);
+                        }}
                       />
                     </FormControl>
                     <FormMessage />
@@ -323,10 +356,20 @@ export default function WorkGoalForm({
                     <FormControl>
                       <MoneyInput
                         placeholder="0,00"
-                        value={field.value ? field.value.toString() : ""}
-                        onValueChange={(value) =>
-                          field.onChange(value ? parseFloat(value) : null)
+                        value={
+                          field.value !== undefined && field.value !== null
+                            ? Math.round(field.value * 100).toString()
+                            : ""
                         }
+                        onValueChange={(value) => {
+                          // MoneyInput retorna centavos (string), converter para reais (number)
+                          const centsValue = parseFloat(value) || 0;
+                          const reaisValue = centsValue / 100;
+                          console.log(
+                            `💰 [WORK-GOAL-FORM] Conversão ${field.name}: ${centsValue} centavos = ${reaisValue} reais`,
+                          );
+                          field.onChange(reaisValue > 0 ? reaisValue : null);
+                        }}
                       />
                     </FormControl>
                     <FormMessage />
@@ -437,7 +480,10 @@ export default function WorkGoalForm({
                   <FormLabel>Dias Disponíveis para Trabalhar</FormLabel>
                   <div className="grid grid-cols-2 gap-2">
                     {weekdayOptions.map((option) => (
-                      <div key={option.value} className="flex items-center space-x-2">
+                      <div
+                        key={option.value}
+                        className="flex items-center space-x-2"
+                      >
                         <Checkbox
                           id={`day-${option.value}`}
                           checked={field.value?.includes(option.value)}
@@ -454,7 +500,7 @@ export default function WorkGoalForm({
                         />
                         <Label
                           htmlFor={`day-${option.value}`}
-                          className="text-sm font-normal cursor-pointer"
+                          className="cursor-pointer text-sm font-normal"
                         >
                           {option.label}
                         </Label>
@@ -471,7 +517,9 @@ export default function WorkGoalForm({
                 Cancelar
               </Button>
               <Button type="submit" disabled={isSubmitting}>
-                {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                {isSubmitting && (
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                )}
                 Salvar Meta
               </Button>
             </DialogFooter>
