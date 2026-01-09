@@ -37,18 +37,41 @@ export async function createOrUpdateWorkGoal(data: WorkGoalInput) {
   try {
     const userId = await getUserId();
 
-    // Tentar usar o modelo userGoal, se não existir, usar query raw como fallback
-    let userGoalModel;
-    let useRawQuery = false;
-
+    // Verificar se o userId existe na tabela User
     try {
-      userGoalModel = (db as any).userGoal;
-      if (!userGoalModel) {
-        useRawQuery = true;
+      const userExists = await db.user.findUnique({
+        where: { id: userId },
+        select: { id: true },
+      });
+
+      if (!userExists) {
+        console.error("❌ [WORK-GOAL-ACTION] Usuário não encontrado:", userId);
+        return {
+          success: false,
+          error: "Usuário não encontrado. Por favor, faça login novamente.",
+        };
       }
-    } catch (e) {
-      useRawQuery = true;
+
+      console.log("✅ [WORK-GOAL-ACTION] Usuário validado:", userId);
+    } catch (userCheckError) {
+      console.error(
+        "❌ [WORK-GOAL-ACTION] Erro ao verificar usuário:",
+        userCheckError,
+      );
+      return {
+        success: false,
+        error:
+          "Erro ao verificar autenticação. Por favor, faça login novamente.",
+      };
     }
+
+    // Sempre usar raw query para evitar problemas com foreign key constraint
+    // O modelo Prisma pode não estar sincronizado ou ter problemas de relação
+    const useRawQuery = true;
+
+    console.log(
+      "🔧 [WORK-GOAL-ACTION] Usando raw query (forçado para evitar problemas de foreign key)",
+    );
 
     console.log(
       "📥 [WORK-GOAL-ACTION] Dados recebidos:",
@@ -217,33 +240,9 @@ export async function createOrUpdateWorkGoal(data: WorkGoalInput) {
           goal = Array.isArray(result) && result.length > 0 ? result[0] : null;
           console.log("✅ [WORK-GOAL-ACTION] Meta criada com sucesso:", goal);
         }
-      } else {
-        // Usar o modelo Prisma normalmente
-        if (existingGoal) {
-          // Atualizar meta existente
-          console.log("Atualizando meta existente...");
-          goal = await userGoalModel.update({
-            where: { userId },
-            data: validatedData,
-          });
-          console.log(
-            "✅ [WORK-GOAL-ACTION] Meta atualizada com sucesso:",
-            goal,
-          );
-        } else {
-          // Criar nova meta
-          console.log("Criando nova meta...");
-          goal = await userGoalModel.create({
-            data: {
-              userId,
-              ...validatedData,
-            },
-          });
-          console.log("✅ [WORK-GOAL-ACTION] Meta criada com sucesso:", goal);
-        }
       }
     } catch (dbError) {
-      console.error("Erro ao salvar no banco:", dbError);
+      console.error("❌ [WORK-GOAL-ACTION] Erro ao salvar no banco:", dbError);
       throw dbError;
     }
 
