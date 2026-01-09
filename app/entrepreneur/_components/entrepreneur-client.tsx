@@ -569,6 +569,50 @@ export default function EntrepreneurClient({
           </Button>
         </div>
 
+        {/* Grid: Meta + Quanto Vale Sua Hora */}
+        <div className="grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-3">
+          {/* Meta em Destaque */}
+          <div className="col-span-1 lg:col-span-2">
+            {goal && goalValue > 0 ? (
+              <MonthlyGoalHero
+                goalType={goalType}
+                goal={goalValue}
+                currentAmount={goalAnalysis?.currentAmount || 0}
+                remainingAmount={goalAnalysis?.remainingAmount || 0}
+                aiInsight={monthlyGoalInsight}
+              />
+            ) : (
+              <div className="bg-muted/30 rounded-2xl border-2 border-dashed p-12 text-center">
+                <p className="text-muted-foreground">
+                  Configure sua meta mensal para ver seu progresso e receber
+                  recomendações personalizadas.
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* Quanto Vale Sua Hora */}
+          <div className="col-span-1">
+            <HourlyValueCard
+              averageHourlyRate={averageHourlyRate}
+              bestDay={bestDayForCard}
+              bestTimeRange={bestTimeRange}
+            />
+          </div>
+        </div>
+
+        {/* Grid: Resumo Inteligente de Hoje */}
+        <div>
+          <TodayIntelligenceCard
+            todayWeekday={todayWeekday}
+            todayAverage={todayAverage}
+            overallAverage={overallAverage}
+            status={getTodayStatus()}
+            projection={projection}
+            aiInsight={todayInsight}
+          />
+        </div>
+
         {/* Histórico de Serviços */}
         <div>
           <div className="mb-4">
@@ -599,79 +643,23 @@ export default function EntrepreneurClient({
           )}
         </div>
 
-        {/* Quanto Vale Sua Hora - Primeiro no mobile */}
-        <div className="block sm:hidden">
-          <HourlyValueCard
-            averageHourlyRate={averageHourlyRate}
-            bestDay={bestDayForCard}
-            bestTimeRange={bestTimeRange}
-          />
-        </div>
-
-        {/* Grid: Meta (60% mobile / 75% desktop) + Resumo Inteligente de Hoje (40% mobile / 25% desktop) */}
-        <div className="grid grid-cols-5 gap-2 sm:gap-4 md:grid-cols-4 md:gap-6">
-          {/* 1. Hero Section - Meta em Primeiro Lugar */}
-          <div className="col-span-3 md:col-span-3">
-            {goal && goalValue > 0 ? (
-              <MonthlyGoalHero
-                goalType={goalType}
-                goal={goalValue}
-                currentAmount={goalAnalysis?.currentAmount || 0}
-                remainingAmount={goalAnalysis?.remainingAmount || 0}
-                aiInsight={monthlyGoalInsight}
-              />
-            ) : (
-              <div className="bg-muted/30 rounded-2xl border-2 border-dashed p-12 text-center">
-                <p className="text-muted-foreground">
-                  Configure sua meta mensal para ver seu progresso e receber
-                  recomendações personalizadas.
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* 2. Card Resumo Inteligente de Hoje */}
-          <div className="col-span-2 md:col-span-1">
-            <TodayIntelligenceCard
-              todayWeekday={todayWeekday}
-              todayAverage={todayAverage}
-              overallAverage={overallAverage}
-              status={getTodayStatus()}
-              projection={projection}
-              aiInsight={todayInsight}
+        {/* Grid: Calendário de Ganhos */}
+        <div>
+          {dayStats.length > 0 ? (
+            <SmartHeatmap
+              dayStats={dayStats}
+              currentMonth={currentMonth}
+              currentYear={currentYear}
+              aiInsights={heatmapInsights}
             />
-          </div>
-        </div>
-
-        {/* Grid: Calendário + Quanto Vale Sua Hora */}
-        <div className="grid gap-6 lg:grid-cols-3">
-          {/* 3. Calendário de Ganhos */}
-          <div className="lg:col-span-2">
-            {dayStats.length > 0 ? (
-              <SmartHeatmap
-                dayStats={dayStats}
-                currentMonth={currentMonth}
-                currentYear={currentYear}
-                aiInsights={heatmapInsights}
-              />
-            ) : (
-              <div className="rounded-lg border-2 border-dashed p-12 text-center">
-                <p className="text-muted-foreground">
-                  Registre seus períodos de trabalho para ver o calendário de
-                  ganhos.
-                </p>
-              </div>
-            )}
-          </div>
-
-          {/* 4. Quanto Vale Sua Hora - Desktop */}
-          <div className="hidden sm:block">
-            <HourlyValueCard
-              averageHourlyRate={averageHourlyRate}
-              bestDay={bestDayForCard}
-              bestTimeRange={bestTimeRange}
-            />
-          </div>
+          ) : (
+            <div className="rounded-lg border-2 border-dashed p-12 text-center">
+              <p className="text-muted-foreground">
+                Registre seus períodos de trabalho para ver o calendário de
+                ganhos.
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
