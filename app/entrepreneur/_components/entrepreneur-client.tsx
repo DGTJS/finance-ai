@@ -496,32 +496,32 @@ export default function EntrepreneurClient({
                   Selecione a visualização desejada
                 </p>
               </div>
-              <div className="flex gap-2">
+              <div className="flex gap-1 sm:gap-2">
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => router.push("/")}
-                  className="gap-2"
+                  className="h-7 gap-1 px-2 text-[10px] sm:gap-2 sm:px-3 sm:text-xs"
                 >
                   <span>💰</span>
-                  Financeiro
+                  <span className="hidden sm:inline">Financeiro</span>
                 </Button>
                 <Button
                   variant="default"
                   size="sm"
-                  className="bg-primary text-primary-foreground gap-2"
+                  className="bg-primary text-primary-foreground h-7 gap-1 px-2 text-[10px] sm:gap-2 sm:px-3 sm:text-xs"
                 >
                   <span>💼</span>
-                  Freelancer
+                  <span className="hidden sm:inline">Freelancer</span>
                 </Button>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={() => router.push("/dashboard/company")}
-                  className="gap-2"
+                  className="h-7 gap-1 px-2 text-[10px] sm:gap-2 sm:px-3 sm:text-xs"
                 >
                   <span>🏢</span>
-                  Empresa
+                  <span className="hidden sm:inline">Empresa</span>
                 </Button>
               </div>
             </div>

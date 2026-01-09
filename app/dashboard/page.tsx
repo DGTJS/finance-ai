@@ -143,33 +143,33 @@ export default function DashboardPage() {
       <div className="bg-background min-h-screen">
         <div className="container mx-auto space-y-4 p-3 sm:space-y-6 sm:p-4 md:p-6">
           {/* ===== HEADER COM BOTÕES DE DASHBOARD E REFRESH ===== */}
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-1 sm:gap-2">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setDashboardView("financeiro")}
-                className="gap-2"
+                className="h-7 gap-1 px-2 text-[10px] sm:gap-2 sm:px-3 sm:text-xs"
               >
                 <span>💰</span>
-                Financeiro
+                <span className="hidden sm:inline">Financeiro</span>
               </Button>
               <Button
                 variant="default"
                 size="sm"
-                className="bg-primary text-primary-foreground gap-2"
+                className="bg-primary text-primary-foreground h-7 gap-1 px-2 text-[10px] sm:gap-2 sm:px-3 sm:text-xs"
               >
                 <span>💼</span>
-                Freelancer
+                <span className="hidden sm:inline">Freelancer</span>
               </Button>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => router.push("/dashboard/company")}
-                className="gap-2"
+                className="h-7 gap-1 px-2 text-[10px] sm:gap-2 sm:px-3 sm:text-xs"
               >
                 <span>🏢</span>
-                Empresa
+                <span className="hidden sm:inline">Empresa</span>
               </Button>
             </div>
             <Button
@@ -177,12 +177,12 @@ export default function DashboardPage() {
               disabled={isRefreshing || isLoading}
               variant="outline"
               size="sm"
-              className="ml-auto gap-2"
+              className="h-7 gap-1 px-2 text-[10px] sm:gap-2 sm:px-3 sm:text-xs"
             >
               <RefreshCw
-                className={`h-4 w-4 ${isRefreshing || isLoading ? "animate-spin" : ""}`}
+                className={`h-3 w-3 sm:h-4 sm:w-4 ${isRefreshing || isLoading ? "animate-spin" : ""}`}
               />
-              Atualizar
+              <span className="hidden sm:inline">Atualizar</span>
             </Button>
           </div>
           <FreelancerDashboard />

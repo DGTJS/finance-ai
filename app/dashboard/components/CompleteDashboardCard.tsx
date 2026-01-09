@@ -79,43 +79,43 @@ export function CompleteDashboardCard({
   return (
     <Card className="bg-background overflow-hidden border-0 shadow-sm">
       {/* Header integrado */}
-      <div className="bg-muted/20 border-b px-6 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
+      <div className="bg-muted/20 border-b px-3 py-2.5 sm:px-6 sm:py-3">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1 sm:gap-2">
             <Button
               variant={dashboardView === "financeiro" ? "default" : "ghost"}
               size="sm"
               onClick={() => onViewChange("financeiro")}
               className={cn(
-                "h-7 gap-1.5 px-3 text-xs font-medium",
+                "h-7 gap-1 px-2 text-[10px] font-medium sm:gap-1.5 sm:px-3 sm:text-xs",
                 dashboardView === "financeiro" &&
                   "bg-primary text-primary-foreground shadow-sm",
               )}
             >
               <span>💰</span>
-              Financeiro
+              <span className="hidden sm:inline">Financeiro</span>
             </Button>
             <Button
               variant={dashboardView === "freelancer" ? "default" : "ghost"}
               size="sm"
               onClick={() => onViewChange("freelancer")}
               className={cn(
-                "h-7 gap-1.5 px-3 text-xs font-medium",
+                "h-7 gap-1 px-2 text-[10px] font-medium sm:gap-1.5 sm:px-3 sm:text-xs",
                 dashboardView === "freelancer" &&
                   "bg-primary text-primary-foreground shadow-sm",
               )}
             >
               <span>💼</span>
-              Freelancer
+              <span className="hidden sm:inline">Freelancer</span>
             </Button>
             <Button
               variant="ghost"
               size="sm"
               onClick={() => router.push("/dashboard/company")}
-              className="h-7 gap-1.5 px-3 text-xs font-medium"
+              className="h-7 gap-1 px-2 text-[10px] font-medium sm:gap-1.5 sm:px-3 sm:text-xs"
             >
               <span>🏢</span>
-              Empresa
+              <span className="hidden sm:inline">Empresa</span>
             </Button>
           </div>
           <Button
@@ -123,12 +123,15 @@ export function CompleteDashboardCard({
             disabled={isRefreshing}
             variant="ghost"
             size="sm"
-            className="h-7 gap-1.5 px-3 text-xs"
+            className="h-7 gap-1 px-2 text-[10px] sm:gap-1.5 sm:px-3 sm:text-xs"
           >
             <RefreshCw
-              className={cn("h-3.5 w-3.5", isRefreshing && "animate-spin")}
+              className={cn(
+                "h-3 w-3 sm:h-3.5 sm:w-3.5",
+                isRefreshing && "animate-spin",
+              )}
             />
-            Atualizar
+            <span className="hidden sm:inline">Atualizar</span>
           </Button>
         </div>
       </div>

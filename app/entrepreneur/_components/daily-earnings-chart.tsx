@@ -92,9 +92,38 @@ export function DailyEarningsChart({ periods }: DailyEarningsChartProps) {
   >([]);
 
   // Frequência de acumulação dos ganhos (também controla o período exibido)
+  // Carregar preferência salva do localStorage ou usar "MONTHLY" como padrão
   const [accumulationFrequency, setAccumulationFrequency] = useState<
     "DAILY" | "WEEKLY" | "MONTHLY"
-  >("MONTHLY");
+  >(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const saved = localStorage.getItem("freelancer-accumulation-frequency");
+        if (saved === "DAILY" || saved === "WEEKLY" || saved === "MONTHLY") {
+          return saved;
+        }
+      } catch (error) {
+        // Ignorar erros do localStorage (modo privado, etc)
+        console.warn("Não foi possível acessar localStorage:", error);
+      }
+    }
+    return "MONTHLY";
+  });
+
+  // Salvar preferência no localStorage quando mudar
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.setItem(
+          "freelancer-accumulation-frequency",
+          accumulationFrequency,
+        );
+      } catch (error) {
+        // Ignorar erros do localStorage
+        console.warn("Não foi possível salvar no localStorage:", error);
+      }
+    }
+  }, [accumulationFrequency]);
 
   // Função para buscar e atualizar custos fixos
   const fetchFixedCosts = async () => {
