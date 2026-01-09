@@ -161,11 +161,13 @@ export async function createFixedCost(data: FixedCostInput) {
       entityId: data.entityId || null,
     };
 
-    console.log("[CREATE FIXED COST] Data received:", {
+    console.log("📥 [FIXED-COST-ACTION] Dados recebidos:", {
       data,
       createData,
       isFixedValue: data.isFixed,
       isFixedType: typeof data.isFixed,
+      amount: data.amount,
+      amountType: typeof data.amount,
     });
 
     let fixedCost;
@@ -270,11 +272,12 @@ export async function createFixedCost(data: FixedCostInput) {
       // IMPORTANTE: Para frequency = "ONCE", isFixed sempre deve ser false
       const isFixedValue = 0; // false para custos únicos
 
-      console.log("[SQL RAW INSERT] Values for ONCE:", {
+      console.log("💾 [FIXED-COST-ACTION] SQL RAW INSERT para ONCE:", {
         id,
         userId: createData.userId,
         name: createData.name,
         amount: createData.amount,
+        amountType: typeof createData.amount,
         frequency: createData.frequency,
         isFixed: isFixedValue,
         description: createData.description,

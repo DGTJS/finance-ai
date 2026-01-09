@@ -158,6 +158,13 @@ export default function WorkGoalForm({
   ];
 
   const onSubmit = async (data: WorkGoalFormData) => {
+    console.log("📝 [WORK-GOAL-FORM] Submit iniciado", {
+      data,
+      timestamp: new Date().toISOString(),
+      userAgent:
+        typeof navigator !== "undefined" ? navigator.userAgent : "unknown",
+    });
+
     setIsSubmitting(true);
     try {
       // Validar que pelo menos uma meta está preenchida baseada no tipo
@@ -215,17 +222,18 @@ export default function WorkGoalForm({
 
       const result = await createOrUpdateWorkGoal(goalData);
 
-      console.log("Resultado:", result);
+      console.log("✅ [WORK-GOAL-FORM] Resultado:", result);
 
       if (result.success) {
         toast.success("Meta salva com sucesso!");
         onSuccess();
         onClose();
       } else {
-        console.error("Erro ao salvar:", result.error);
+        console.error("❌ [WORK-GOAL-FORM] Erro ao salvar:", result.error);
         toast.error(result.error || "Erro ao salvar meta");
       }
     } catch (error) {
+      console.error("❌ [WORK-GOAL-FORM] Exceção:", error);
       toast.error("Erro ao salvar meta");
     } finally {
       setIsSubmitting(false);

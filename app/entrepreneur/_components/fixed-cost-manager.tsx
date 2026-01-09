@@ -151,16 +151,20 @@ export default function FixedCostManager({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    e.stopPropagation(); // Prevenir propagação no mobile
 
-    console.log("[FORM SUBMIT] Iniciado", {
+    console.log("📝 [FIXED-COST-FORM] Submit iniciado", {
       isSubmittingRef: isSubmittingRef.current,
       isLoading,
+      formData,
       timestamp: new Date().toISOString(),
+      userAgent:
+        typeof navigator !== "undefined" ? navigator.userAgent : "unknown",
     });
 
     // Prevenir duplo submit usando ref (mais confiável que state)
     if (isSubmittingRef.current || isLoading) {
-      console.log("[FORM SUBMIT] Bloqueado - já está submetendo");
+      console.log("⚠️ [FIXED-COST-FORM] Bloqueado - já está submetendo");
       return;
     }
 
@@ -194,7 +198,7 @@ export default function FixedCostManager({
         isActive: formData.isActive !== undefined ? formData.isActive : true,
       };
 
-      console.log("[FORM SUBMIT] Complete form state:", {
+      console.log("📤 [FIXED-COST-FORM] Enviando dados:", {
         formDataRaw: formData,
         isUniqueCost,
         finalFrequency,
@@ -204,10 +208,14 @@ export default function FixedCostManager({
 
       let result;
       if (editingCost) {
+        console.log("🔄 [FIXED-COST-FORM] Atualizando custo:", editingCost.id);
         result = await updateFixedCost(editingCost.id, dataToSend);
       } else {
+        console.log("➕ [FIXED-COST-FORM] Criando novo custo");
         result = await createFixedCost(dataToSend);
       }
+
+      console.log("✅ [FIXED-COST-FORM] Resultado:", result);
 
       if (result.success) {
         toast.success(
@@ -218,9 +226,11 @@ export default function FixedCostManager({
         handleCloseForm();
         loadFixedCosts();
         // Disparar evento para atualizar o gráfico
-        window.dispatchEvent(new CustomEvent("fixedCostsUpdated"));
+        if (typeof window !== "undefined") {
+          window.dispatchEvent(new CustomEvent("fixedCostsUpdated"));
+        }
       } else {
-        console.error("[FORM SUBMIT] Erro do servidor:", result.error);
+        console.error("❌ [FIXED-COST-FORM] Erro do servidor:", result.error);
         toast.error(result.error || "Erro ao salvar custo fixo");
       }
     } catch (error: any) {
@@ -458,13 +468,19 @@ export default function FixedCostManager({
               <Label htmlFor="amount">Valor</Label>
               <MoneyInput
                 id="amount"
-                value={formData.amount > 0 ? formData.amount.toString() : ""}
+                value={
+                  formData.amount > 0
+                    ? Math.round(formData.amount * 100).toString()
+                    : ""
+                }
                 onValueChange={(value) => {
-                  // O MoneyInput retorna string no formato "1234.56" (ponto como separador decimal)
-                  const numValue = value
-                    ? parseFloat(value.replace(/[^\d.-]/g, "")) || 0
-                    : 0;
-                  setFormData({ ...formData, amount: numValue });
+                  // MoneyInput retorna centavos (string), converter para reais (number)
+                  const centsValue = parseFloat(value) || 0;
+                  const reaisValue = centsValue / 100;
+                  console.log(
+                    `💰 [FIXED-COST-FORM] Conversão: ${centsValue} centavos = ${reaisValue} reais`,
+                  );
+                  setFormData({ ...formData, amount: reaisValue });
                 }}
                 placeholder="R$ 0,00"
                 required
